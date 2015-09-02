@@ -35,6 +35,8 @@ PHY_OBJS += $(TOP_DIR)/PHY/MODULATION/slot_fep.o
 PHY_OBJS += $(TOP_DIR)/PHY/MODULATION/slot_fep_mbsfn.o
 PHY_OBJS += $(TOP_DIR)/PHY/MODULATION/slot_fep_ul.o
 PHY_OBJS += $(TOP_DIR)/PHY/MODULATION/ul_7_5_kHz.o
+PHY_OBJS += $(TOP_DIR)/PHY/MODULATION/ufmc_mod.o
+PHY_OBJS += $(TOP_DIR)/PHY/MODULATION/rx_pdsch_ufmc_sync.o
 PHY_OBJS += $(TOP_DIR)/PHY/LTE_ESTIMATION/freq_equalization.o
 PHY_OBJS += $(TOP_DIR)/PHY/LTE_ESTIMATION/lte_sync_time.o
 PHY_OBJS += $(TOP_DIR)/PHY/LTE_ESTIMATION/lte_sync_timefreq.o
@@ -69,7 +71,7 @@ PHY_OBJS += $(TOP_DIR)/PHY/INIT/lte_init.o
 PHY_OBJS += $(TOP_DIR)/PHY/INIT/lte_parms.o
 PHY_OBJS += $(TOP_DIR)/PHY/INIT/init_top.o
 PHY_OBJS += $(TOP_DIR)/PHY/TOOLS/file_output.o
-PHY_OBJS += $(TOP_DIR)/PHY/TOOLS/fft.o
+#PHY_OBJS += $(TOP_DIR)/PHY/TOOLS/fft.o
 PHY_OBJS += $(TOP_DIR)/PHY/TOOLS/lte_dfts.o
 PHY_OBJS += $(TOP_DIR)/PHY/TOOLS/log2_approx.o
 PHY_OBJS += $(TOP_DIR)/PHY/TOOLS/cmult_sv.o
@@ -84,5 +86,6 @@ PHY_OBJS += $(TOP_DIR)/PHY/TOOLS/smbv.o
 endif
 PHY_OBJS += $(TOP_DIR)/PHY/TOOLS/time_meas.o
 PHY_OBJS += $(TOP_DIR)/PHY/TOOLS/lut.o
+PHY_OBJS += $(TOP_DIR)/PHY/TOOLS/ufmc_filter.o
 #PHY_OBJS += $(TOP_DIR)/SIMULATION/TOOLS/rangen_double.o
 
