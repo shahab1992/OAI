@@ -178,7 +178,7 @@ ulsim : $(OBJ) ulsim.c $(LFDS_DIR)/bin/liblfds611.a #ulsim_form.c
 	@echo "Compiling [ulsim.c]"
 	@$(CC) ulsim.c -o ulsim $(CFLAGS) $(OBJ) $(LFLAGS) 
 
-ufmcsim : $(OBJ) ulsim.c $(LFDS_DIR)/bin/liblfds611.a #ulsim_form.c
+ufmcsim : $(OBJ) ufmcsim.c $(LFDS_DIR)/bin/liblfds611.a #ulsim_form.c
 	@echo "Compiling [ufmcsim.c]"
 	@$(CC) ufmcsim.c -o ufmcsim $(CFLAGS) $(OBJ) $(LFLAGS) 
 

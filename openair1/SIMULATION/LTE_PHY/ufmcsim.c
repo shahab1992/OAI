@@ -63,6 +63,7 @@ extern short ul_ref_sigs_ufmc[30][2][33][2][2048<<1];//u,v,MSC_RS,cyclic_shift,d
 //#define NO_DCI
 
 #define BW 7.68
+#define AMP 4096
 //#define ABSTRACTION
 //#define PERFECT_CE
 

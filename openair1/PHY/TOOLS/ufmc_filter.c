@@ -381,7 +381,8 @@ void ii_CreateModvec(uint16_t n_rb,// current resource block index
 		  int16_t *mod_vec) //output array
 {
   int16_t i;
-  float carrierind = (first_carrier+12*n_rb)+(float)(12+1)/2; //band are more or less superimposed if I put 6 instead of 12 
+  //float carrierind = (first_carrier+12*n_rb)+(float)(12+1)/2; //band are more or less superimposed if I put 6 instead of 12 
+  float carrierind = (first_carrier+12*n_rb)+1; //FK: hack for lab
   // FK: handle wraparound
   if (carrierind >= FFTsize)
     carrierind = carrierind-FFTsize;
