@@ -612,12 +612,12 @@ void generate_RIV_tables()
     allocdist0_0_odd  = 0;
     for (Lcrbs=1; Lcrbs<=(25-RBstart); Lcrbs++) {
       nVRB = Lcrbs-1+RBstart;
-      printf("RBstart %d, len %d --> ",RBstart,Lcrbs);
+      //printf("RBstart %d, len %d --> ",RBstart,Lcrbs);
       alloc0     |= (1<<nVRB);
       allocdist0_0_even |= (1<<get_prb(25,0,nVRB,0));
       allocdist0_0_odd  |= (1<<get_prb(25,1,nVRB,0));
 
-      printf("alloc 0 %x, allocdist0_even %x, allocdist0_odd %x\n",alloc0,allocdist0_0_even,allocdist0_0_odd);
+      //printf("alloc 0 %x, allocdist0_even %x, allocdist0_odd %x\n",alloc0,allocdist0_0_even,allocdist0_0_odd);
       RIV=computeRIV(25,RBstart,Lcrbs);
 
       if (RIV>RIV_max25)
@@ -743,8 +743,8 @@ void generate_RIV_tables()
       // Distributed Gap1, even slot
       nVRB_even_dist = get_prb(100,0,nVRB,0);
 
-      if ((RBstart==0) && (Lcrbs<=8))
-	printf("nVRB %d => nVRB_even_dist %d\n",nVRB,nVRB_even_dist);
+//      if ((RBstart==0) && (Lcrbs<=8))
+//	printf("nVRB %d => nVRB_even_dist %d\n",nVRB,nVRB_even_dist);
 
 
       if (nVRB_even_dist<32)
@@ -755,14 +755,14 @@ void generate_RIV_tables()
 	allocdist2_0_even |= (1<<(nVRB_even_dist-64));
       else
 	allocdist3_0_even |= (1<<(nVRB_even_dist-96));
-      if ((RBstart==0) && (Lcrbs<=8))
+/*      if ((RBstart==0) && (Lcrbs<=8))
 	printf("rballoc =>(%08x.%08x.%08x.%08x)\n",
 	       allocdist0_0_even,
 	       allocdist1_0_even,
 	       allocdist2_0_even,
 	       allocdist3_0_even
 	       );
-
+*/
       // Distributed Gap1, odd slot
       nVRB_odd_dist = get_prb(100,1,nVRB,0);
       if (nVRB_odd_dist<32)
@@ -861,7 +861,8 @@ uint8_t get_transmission_mode(module_id_t Mod_id, uint8_t CC_id, rnti_t rnti)
   return(PHY_vars_eNB_g[Mod_id][CC_id]->transmission_mode[UE_id]);
 }
 
-int generate_eNB_dlsch_params_from_dci(uint8_t subframe,
+int generate_eNB_dlsch_params_from_dci(int frame,
+				       uint8_t subframe,
                                        void *dci_pdu,
                                        uint16_t rnti,
                                        DCI_format_t dci_format,
@@ -886,7 +887,7 @@ int generate_eNB_dlsch_params_from_dci(uint8_t subframe,
   uint8_t rv=0,rv1=0,rv2=0;
   uint8_t rah=0;
   uint8_t TPC=0;
-  LTE_DL_eNB_HARQ_t *dlsch0_harq,*dlsch1_harq;
+  LTE_DL_eNB_HARQ_t *dlsch0_harq=NULL,*dlsch1_harq=NULL;
 
   //   printf("Generate eNB DCI, format %d, rnti %x (pdu %p)\n",dci_format,rnti,dci_pdu);
 
@@ -2630,6 +2631,16 @@ int generate_eNB_dlsch_params_from_dci(uint8_t subframe,
     break;
   }
 
+  
+  if (dlsch0_harq) {
+    dlsch0_harq->frame   = frame;
+    dlsch0_harq->subframe = subframe;
+  }
+  if (dlsch1_harq) {
+    dlsch1_harq->frame   = frame;
+    dlsch1_harq->subframe = subframe;
+  }
+
 #ifdef DEBUG_DCI
 
   if (dlsch0) {
@@ -3937,7 +3948,7 @@ int generate_ue_dlsch_params_from_dci(int frame,
         ndi      = ((DCI1A_10MHz_FDD_t *)dci_pdu)->ndi;
         TPC      = ((DCI1A_10MHz_FDD_t *)dci_pdu)->TPC;
         harq_pid  = ((DCI1A_10MHz_FDD_t *)dci_pdu)->harq_pid;
-        //printf("FDD 1A: mcs %d, rballoc %x,ndi %d, rv %d, TPC %d\n",mcs,rballoc,ndi,rv,TPC);
+        //printf("FDD 1A: mcs %d, vrb_type %d, rballoc %x,ndi %d, rv %d, TPC %d\n",mcs,vrb_type,rballoc,ndi,rv,TPC);
       }
 
       if ((rnti==si_rnti) || (rnti==p_rnti) || (rnti==ra_rnti)) { //
@@ -3963,6 +3974,7 @@ int generate_ue_dlsch_params_from_dci(int frame,
 	  dlsch0_harq->rb_alloc_even[1] = localRIV2alloc_LUT50_1[rballoc];
 	  dlsch0_harq->rb_alloc_odd[0]  = localRIV2alloc_LUT50_0[rballoc];
 	  dlsch0_harq->rb_alloc_odd[1]  = localRIV2alloc_LUT50_1[rballoc];
+	  //	  printf("rballoc: %08x.%08x\n",dlsch0_harq->rb_alloc_even[0],dlsch0_harq->rb_alloc_even[1]);
       } else { // DISTRIBUTED
 	if ((rballoc&(1<<10)) == 0) {
 	  rballoc = rballoc&(~(1<<10));

@@ -231,7 +231,7 @@ int rx_pdsch(PHY_VARS_UE *phy_vars_ue,
                                          subframe,
                                          phy_vars_ue->high_speed_flag,
                                          frame_parms);
-      else
+      
         nb_rb = dlsch_extract_rbs_single(lte_ue_common_vars->rxdataF,
                                          lte_ue_common_vars->dl_ch_estimates[eNB_id],
                                          lte_ue_pdsch_vars[eNB_id_i]->rxdataF_ext,
@@ -248,8 +248,8 @@ int rx_pdsch(PHY_VARS_UE *phy_vars_ue,
 
   //  printf("nb_rb = %d, eNB_id %d\n",nb_rb,eNB_id);
   if (nb_rb==0) {
-    //LOG_W(PHY,"dlsch_demodulation.c: nb_rb=0\n");
-    return(0);
+    LOG_D(PHY,"dlsch_demodulation.c: nb_rb=0\n");
+    return(-1);
   }
 
   /*

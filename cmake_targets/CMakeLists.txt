@@ -134,7 +134,7 @@ else (CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7l")
     set(C_FLAGS_PROCESSOR "${C_FLAGS_PROCESSOR} -mavx2")
   endif()
   if (CPUINFO MATCHES "sse4_2")
-    set(C_FLAGS_PROCESSOR "${C_FLAGS_PROCESSOR} -msse4.2 -mavx2")
+    set(C_FLAGS_PROCESSOR "${C_FLAGS_PROCESSOR} -msse4.2")
   endif()
   if (CPUINFO MATCHES "sse4_1")
     set(C_FLAGS_PROCESSOR "${C_FLAGS_PROCESSOR} -msse4.1")
@@ -152,6 +152,9 @@ set(CMAKE_C_FLAGS
 # add autotools definitions that were maybe used!
 set(CMAKE_C_FLAGS
   "${CMAKE_C_FLAGS} -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_FCNTL_H=1 -DHAVE_ARPA_INET_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_SYS_SOCKET_H=1 -DHAVE_STRERROR=1 -DHAVE_SOCKET=1 -DHAVE_MEMSET=1 -DHAVE_GETTIMEOFDAY=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_LIBSCTP"
+)
+set(CMAKE_CXX_FLAGS
+  "${CMAKE_CXX_FLAGS} ${C_FLAGS_PROCESSOR}"
 )
 # set a flag for changes in the source code
 # these changes are related to hardcoded path to include .h files
@@ -186,7 +189,10 @@ add_boolean_option(MSG_PRINT  False "print debug messages")
 add_boolean_option(DISABLE_XER_PRINT False "print XER Format")
 add_boolean_option(XER_PRINT False "print XER Format")
 add_boolean_option(RRC_MSG_PRINT False "print RRC messages")
-add_boolean_option(PDCP_MSG_PRINT False "print PDCP messages")
+add_boolean_option(PDCP_MSG_PRINT False "print PDCP messages to /tmp/pdcp.log")
+add_boolean_option(DEBUG_PDCP_PAYLOAD False "print PDCP PDU to stdout")  # if true, make sure that global and PDCP log levels are trace 
+add_boolean_option(DEBUG_MAC_INTERFACE False "print MAC-RLC PDU exchange to stdout") # if true, make sure that global and PDCP log levels are trace 
+add_boolean_option(TRACE_RLC_PAYLOAD False "print RLC PDU to stdout") # if true, make sure that global and PDCP log levels are trace 
 add_boolean_option(TEST_OMG False "???")
 add_boolean_option(DEBUG_OMG False "???")
 add_boolean_option(XFORMS False "This adds the possibility to see the signal oscilloscope")
@@ -379,7 +385,7 @@ elseif (${RF_BOARD} STREQUAL "OAI_BLADERF")
     )
   LINK_DIRECTORIES("/usr/lib/x86_64-linux-gnu")
   set(option_HW_lib "bladeRF")
-  #set(LOWLATENCY False)
+#set(LOWLATENCY False)
 
 elseif (${RF_BOARD} STREQUAL "ETHERNET")
   include_directories ("${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB")
@@ -920,7 +926,7 @@ if (${ENABLE_RAL})
   set(RAL_LIB RAL)
 endif()
 
-if(MIH_C_MEDIEVAL_EXTENSIONS)
+if(${MIH_C_MEDIEVAL_EXTENSIONS})
   set(MIH_SRC
     ${RAL_LTE_DIR}INTERFACE-802.21/C/MIH_C_header_codec.c
     ${RAL_LTE_DIR}INTERFACE-802.21/C/MIH_C_msg_codec.c
@@ -1842,6 +1848,7 @@ target_link_libraries (oaisim_nos1 forms)
 
 foreach(myExe dlsim ulsim pbchsim scansim mbmssim pdcchsim pucchsim prachsim syncsim)
   add_executable(${myExe}
+    ${OPENAIR_BIN_DIR}/messages_xml.h
     ${OPENAIR1_DIR}/SIMULATION/LTE_PHY/${myExe}.c
     ${XFORMS_SOURCE}
     )
@@ -2085,3 +2092,37 @@ ADD_CUSTOM_TARGET(oarf
    DEPENDS ${OCT_FILES}
 )
  
+#CMAKE INSTALL and CPACK
+
+#INSTALL(PROGRAMS lte-softmodem ${OPENAIR_DIR}/targets DESTINATION bin)
+#INSTALL(PROGRAMS oaisim ${OPENAIR_DIR}/targets DESTINATION bin)
+
+
+#SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "OpenAirInterface")
+#SET(CPACK_PACKAGE_VENDOR "Eurecom")
+#SET(CPACK_PACKAGE_DESCRIPTION_FILE "${OPENAIR_DIR}/README.txt")
+#SET(CPACK_RESOURCE_FILE_LICENSE "${OPENAIR_DIR}/COPYING")
+#SET(CPACK_PACKAGE_VERSION_MAJOR "1")
+#SET(CPACK_PACKAGE_VERSION_MINOR "1")
+#SET(CPACK_PACKAGE_VERSION_PATCH "1")
+
+#SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+#SET(CPACK_STRIP_FILES "${OPENAIR_TARGETS}/bin")
+#SET(CPACK_SOURCE_STRIP_FILES "")
+
+##debian specific 
+#SET(CPACK_DEBIAN_PACKAGE_NAME "OAI") 
+#SET(CPACK_DEBIAN_PACKAGE_VERSION "${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+##dpkg --print-architecture (do not use i686
+#SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+
+#SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)")
+#SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libpthread.so.0  libm.so.6 libconfig.so.9 librt.so.1 libcrypt.so.1 libcrypto.so.1.0.0  libnettle.so.4 libsctp.so.1 libc.so.6")
+#SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "EURECOM-OSA")
+
+#SET(CPACK_PACKAGE_EXECUTABLES "lte-softmodem" "mme_gw.Rel10" "openair-hss")
+
+#SET(CPACK_DEBIAN_PACKAGE_DESCRIPTION "OpenAirInterface")
+#SET(CPACK_DEBIAN_PACKAGE_Section "Beta-Release")
+
+#INCLUDE(CPack)
