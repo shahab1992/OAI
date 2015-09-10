@@ -86,4 +86,6 @@ extern fifo_dump_emos_eNB emos_dump_eNB;
 #endif
 */
 
+extern int ufmc_flag;
+
 #endif /*__SCHED_EXTERN_H__ */

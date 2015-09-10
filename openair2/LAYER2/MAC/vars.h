@@ -90,7 +90,7 @@ unsigned char NB_INST=0;
 #endif
 
 
-DCI0_5MHz_TDD_1_6_t       UL_alloc_pdu;
+DCI0_10MHz_FDD_t       UL_alloc_pdu;
 
 DCI1A_5MHz_TDD_1_6_t      DLSCH_alloc_pdu1A;
 DCI1A_5MHz_TDD_1_6_t      RA_alloc_pdu;

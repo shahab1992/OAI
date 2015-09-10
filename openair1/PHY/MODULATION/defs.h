@@ -99,6 +99,23 @@ void remove_625_Hz(PHY_VARS_eNB *phy_vars_eNB,int16_t *prach);
 
 void apply_625_Hz(PHY_VARS_UE *phy_vars_ue,int16_t *prach);
 
+void PHY_UFMC_mod(int *input,                       /// pointer to complex input
+                  int *output,                      /// pointer to complex output
+                  unsigned char log2fftsize,        /// log2(FFT_SIZE)
+                  unsigned char nb_symbols,         /// number of OFDM symbols
+                  unsigned short nb_prefix_samples,  /// cyclic prefix length
+		  unsigned short first_carrier,	   /// first subcarrier offset
+		  LTE_UL_UE_HARQ_t *ulsch,	   /// ulsch structure
+                  Extension_t etype                /// type of extension
+		  );
+
+void normal_prefix_UFMC_mod(int32_t *txdataF,
+			    int32_t *txdata,
+			    uint8_t nsymb,
+			    LTE_DL_FRAME_PARMS *frame_parms,
+			    LTE_UL_UE_HARQ_t *ulsch);
+
+
 #endif
 /** @}*/
 #endif

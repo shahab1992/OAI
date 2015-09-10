@@ -649,7 +649,7 @@ PRACH_RESOURCES_t prach_resources_local;
 void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstraction_flag,runmode_t mode,relaying_type_t r_type)
 {
 
-  //  int i_d;
+  int i;
   uint16_t first_rb, nb_rb;
   uint8_t harq_pid;
   unsigned int input_buffer_length;
@@ -865,8 +865,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
         } else {
           input_buffer_length = phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->TBS/8;
 
-#ifdef OPENAIR2
-
+	  if (ufmc_flag==0) {
           //  LOG_D(PHY,"[UE  %d] ULSCH : Searching for MAC SDUs\n",Mod_id);
           if (phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->round==0) {
             //if (phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->calibration_flag == 0) {
@@ -903,7 +902,8 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
           LOG_T(PHY,"\n");
 #endif
 #endif
-#else //OPENAIR2
+	  }
+	  else {
           // the following lines were necessary for the calibration in CROWN
           /*
           if (phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->calibration_flag == 0) {
@@ -926,8 +926,8 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
           for (i=0;i<input_buffer_length;i++)
             ulsch_input_buffer[i]= i;
           */
+	  }
 
-#endif //OPENAIR2
           start_meas(&phy_vars_ue->ulsch_encoding_stats);
 
           if (abstraction_flag==0) {
@@ -959,12 +959,12 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
         }
 
         if (abstraction_flag == 0) {
-#ifdef OPENAIR2
+	  if (ufmc_flag==0) {
           pusch_power_cntl(phy_vars_ue,subframe_tx,eNB_id,1, abstraction_flag);
           phy_vars_ue->tx_power_dBm = phy_vars_ue->ulsch_ue[eNB_id]->Po_PUSCH;
-#else
+	  } else {
           phy_vars_ue->tx_power_dBm = UE_TX_POWER;
-#endif
+	  }
           phy_vars_ue->tx_total_RE = nb_rb*12;
 	  
 #if defined(EXMIMO) || defined(OAI_USRP)
@@ -1001,6 +1001,42 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
           phy_vars_ue->sr[subframe_tx]=0;
         }
       } // ULSCH is active
+
+      /*
+      if ((ufmc_flag==1) && (subframe_tx>=4) && (subframe_tx<=7)) {
+	generate_ul_signal = 1;
+
+	generate_drs_pusch(phy_vars_ue,
+			   eNB_id,
+			   AMP,
+			   subframe_tx,
+			   phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->first_rb,
+			   phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->nb_rb,
+			   0);
+	input_buffer_length = phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->TBS/8;
+        input_buffer = (unsigned char *)malloc(input_buffer_length+4);
+	for (i=0; i<input_buffer_length; i++)
+	  ulsch_input_buffer[i]= (uint8_t)(taus()&0xff);
+	if (ulsch_encoding(input_buffer,
+			   phy_vars_ue,
+			   harq_pid,
+			   eNB_id,
+			   1, // transmission mode
+			   0, //control_only_flag
+			   0 // Nbundled
+			   )==-1) {
+	  LOG_E(PHY,"Problem with ulsch_encoding for ufmc\n");
+	}
+	free(input_buffer);
+	input_buffer=NULL;
+	ulsch_modulation(phy_vars_ue->lte_ue_common_vars.txdataF,
+			 AMP,
+			 frame_tx,
+			 subframe_tx,
+			 &phy_vars_ue->lte_frame_parms,
+			 phy_vars_ue->ulsch_ue[eNB_id]);
+      }
+	*/
 
 #ifdef PUCCH
       else if (phy_vars_ue->UE_mode[eNB_id] == PUSCH) { // check if we need to use PUCCH 1a/1b
@@ -1253,7 +1289,33 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
           start_meas(&phy_vars_ue->ofdm_mod_stats);
 
           for (aa=0; aa<frame_parms->nb_antennas_tx; aa++) {
-            if (frame_parms->Ncp == 1)
+	    if (ufmc_flag==1) {
+	      if (frame_parms->Ncp == 1)
+              PHY_UFMC_mod(&phy_vars_ue->lte_ue_common_vars.txdataF[aa][subframe_tx*nsymb*frame_parms->ofdm_symbol_size],
+#if defined(EXMIMO) || defined(OAI_USRP)
+                           dummy_tx_buffer,
+#else
+                           &phy_vars_ue->lte_ue_common_vars.txdata[aa][ulsch_start],
+#endif
+                           frame_parms->log2_symbol_size,
+                           nsymb,
+                           frame_parms->nb_prefix_samples,
+			   frame_parms->first_carrier_offset,
+			   phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid],
+                           CYCLIC_PREFIX);
+            else
+              normal_prefix_UFMC_mod(&phy_vars_ue->lte_ue_common_vars.txdataF[aa][subframe_tx*nsymb*frame_parms->ofdm_symbol_size],
+#if defined(EXMIMO) || defined(OAI_USRP)
+                                dummy_tx_buffer,
+#else
+                                &phy_vars_ue->lte_ue_common_vars.txdata[aa][ulsch_start],
+#endif
+                                nsymb,
+			        &phy_vars_ue->lte_frame_parms,
+                                phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]);
+
+	    } else {
+	      if (frame_parms->Ncp == 1)
               PHY_ofdm_mod(&phy_vars_ue->lte_ue_common_vars.txdataF[aa][subframe_tx*nsymb*frame_parms->ofdm_symbol_size],
 #if defined(EXMIMO) || defined(OAI_USRP)
                            dummy_tx_buffer,
@@ -1273,6 +1335,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
 #endif
                                 nsymb,
                                 &phy_vars_ue->lte_frame_parms);
+	    }
 
             /*
               if (subframe_tx == 8) {
@@ -2358,6 +2421,22 @@ int lte_ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *phy_vars_ue,uint8_t abst
         LOG_D(PHY,"[UE  %d] Generate UE ULSCH CBA_RNTI format 0 (subframe %d)\n",phy_vars_ue->Mod_id,subframe_rx);
 #endif
         phy_vars_ue->ulsch_ue[eNB_id]->num_cba_dci[(subframe_rx+4)%10]++;
+      }
+
+      if ((phy_vars_ue->UE_mode[eNB_id] >= PRACH) && (ufmc_flag==1)) {
+	if (generate_ue_ulsch_params_from_dci((void *)&UL_alloc_pdu,
+					      0x1111,
+					      subframe_rx,
+					      format0,
+					      phy_vars_ue,
+					      SI_RNTI,
+					      0,
+					      P_RNTI,
+					      CBA_RNTI,
+					      eNB_id,
+					      0)!=0) {
+	  LOG_E(PHY,"Error in generating parameters for UFMC\n");
+	}
       }
     }
 

@@ -2761,6 +2761,15 @@ int main( int argc, char **argv )
     openair_daq_vars.auto_freq_correction = 0;
     openair_daq_vars.use_ia_receiver = 0;
 
+    ufmc_flag=1;
+    UL_alloc_pdu.type    = 0;
+    UL_alloc_pdu.hopping = 0;
+    UL_alloc_pdu.rballoc = computeRIV(UE[0]->lte_frame_parms.N_RB_UL,0,1);
+    UL_alloc_pdu.mcs     = 2;
+    UL_alloc_pdu.ndi     = 1;
+    UL_alloc_pdu.TPC     = 0;
+    UL_alloc_pdu.cqi_req = 0;
+    UL_alloc_pdu.cshift  = 0;
 
 
     //  printf("tx_max_power = %d -> amp %d\n",tx_max_power,get_tx_amp(tx_max_power,tx_max_power));

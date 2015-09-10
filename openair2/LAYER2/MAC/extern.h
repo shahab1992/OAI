@@ -92,7 +92,7 @@ extern uint32_t RRC_CONNECTION_FLAG;
 
 extern uint8_t rb_table[33];
 
-extern DCI0_5MHz_TDD_1_6_t       UL_alloc_pdu;
+extern DCI0_10MHz_FDD_t       UL_alloc_pdu;
 
 extern DCI1A_5MHz_TDD_1_6_t      RA_alloc_pdu;
 extern DCI1A_5MHz_TDD_1_6_t      DLSCH_alloc_pdu1A;
