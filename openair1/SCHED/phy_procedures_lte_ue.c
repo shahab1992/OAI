@@ -780,7 +780,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
 
 
 #ifdef DEBUG_PHY_PROC
-        LOG_D(PHY,
+        LOG_I(PHY,
               "[UE  %d][PUSCH %d] Frame %d subframe %d Generating PUSCH : first_rb %d, nb_rb %d, round %d, mcs %d, rv %d, cyclic_shift %d (cyclic_shift_common %d,n_DMRS2 %d,n_PRS %d), ACK (%d,%d), O_ACK %d\n",
               Mod_id,harq_pid,frame_tx,subframe_tx,
               first_rb,nb_rb,
@@ -1001,42 +1001,6 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
           phy_vars_ue->sr[subframe_tx]=0;
         }
       } // ULSCH is active
-
-      /*
-      if ((ufmc_flag==1) && (subframe_tx>=4) && (subframe_tx<=7)) {
-	generate_ul_signal = 1;
-
-	generate_drs_pusch(phy_vars_ue,
-			   eNB_id,
-			   AMP,
-			   subframe_tx,
-			   phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->first_rb,
-			   phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->nb_rb,
-			   0);
-	input_buffer_length = phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->TBS/8;
-        input_buffer = (unsigned char *)malloc(input_buffer_length+4);
-	for (i=0; i<input_buffer_length; i++)
-	  ulsch_input_buffer[i]= (uint8_t)(taus()&0xff);
-	if (ulsch_encoding(input_buffer,
-			   phy_vars_ue,
-			   harq_pid,
-			   eNB_id,
-			   1, // transmission mode
-			   0, //control_only_flag
-			   0 // Nbundled
-			   )==-1) {
-	  LOG_E(PHY,"Problem with ulsch_encoding for ufmc\n");
-	}
-	free(input_buffer);
-	input_buffer=NULL;
-	ulsch_modulation(phy_vars_ue->lte_ue_common_vars.txdataF,
-			 AMP,
-			 frame_tx,
-			 subframe_tx,
-			 &phy_vars_ue->lte_frame_parms,
-			 phy_vars_ue->ulsch_ue[eNB_id]);
-      }
-	*/
 
 #ifdef PUCCH
       else if (phy_vars_ue->UE_mode[eNB_id] == PUSCH) { // check if we need to use PUCCH 1a/1b
@@ -1260,6 +1224,73 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
       }
 
 #endif // end CBA
+    }
+
+    if (phy_vars_ue->UE_mode[eNB_id] >= PRACH) {
+
+      if ((ufmc_flag==1)) {// && (subframe_tx>=4) && (subframe_tx<=7)) {
+
+	harq_pid = subframe2harq_pid(&phy_vars_ue->lte_frame_parms,
+				     frame_tx,
+				     subframe_tx);
+	phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->first_rb = 1;
+	phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->nb_rb = 1;
+
+	phy_vars_ue->ulsch_ue[eNB_id]->Nsymb_pusch = 12-(frame_parms->Ncp<<1);
+
+
+#ifdef DEBUG_PHY_PROC
+        LOG_I(PHY,
+              "[UE  %d][PUSCH %d] Frame %d subframe %d Generating PUSCH/UFMC : first_rb %d, nb_rb %d, round %d, mcs %d, rv %d, cyclic_shift %d (cyclic_shift_common %d,n_DMRS2 %d,n_PRS %d), ACK (%d,%d), O_ACK %d\n",
+              Mod_id,harq_pid,frame_tx,subframe_tx,
+              phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->first_rb,
+	      phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->nb_rb,
+              phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->round,
+              phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->mcs,
+              phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->rvidx,
+              (frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift+
+               phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->n_DMRS2+
+               frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[slot_tx])%12,
+              frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift,
+              phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->n_DMRS2,
+              frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[slot_tx],
+              phy_vars_ue->ulsch_ue[eNB_id]->o_ACK[0],phy_vars_ue->ulsch_ue[eNB_id]->o_ACK[1],
+              phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->O_ACK);
+#endif
+
+	generate_drs_pusch(phy_vars_ue,
+			   eNB_id,
+			   AMP,
+			   subframe_tx,
+			   phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->first_rb,
+			   phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->nb_rb,
+			   0);
+	input_buffer_length = phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->TBS/8;
+	for (i=0; i<input_buffer_length; i++)
+	  ulsch_input_buffer[i]= (uint8_t)(taus()&0xff);
+	if (ulsch_encoding(ulsch_input_buffer,
+			   phy_vars_ue,
+			   harq_pid,
+			   eNB_id,
+			   1, // transmission mode
+			   0, //control_only_flag
+			   0 // Nbundled
+			   )==-1) {
+	  LOG_E(PHY,"Problem with ulsch_encoding for ufmc\n");
+	}
+	ulsch_modulation(phy_vars_ue->lte_ue_common_vars.txdataF,
+			 AMP,
+			 frame_tx,
+			 subframe_tx,
+			 &phy_vars_ue->lte_frame_parms,
+			 phy_vars_ue->ulsch_ue[eNB_id]);
+
+	generate_ul_signal = 1;
+      }
+    }
+
+
+    //if (phy_vars_ue->UE_mode[eNB_id] != PRACH) {
 
       if (abstraction_flag == 0) {
         nsymb = (frame_parms->Ncp == 0) ? 14 : 12;
@@ -1289,7 +1320,8 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
           start_meas(&phy_vars_ue->ofdm_mod_stats);
 
           for (aa=0; aa<frame_parms->nb_antennas_tx; aa++) {
-	    if (ufmc_flag==1) {
+	    if (ufmc_flag==0) {
+	      LOG_I(PHY,"Frame %d, subframe %d: Generating UFMC signal part 2\n", frame_tx, subframe_tx);
 	      if (frame_parms->Ncp == 1)
               PHY_UFMC_mod(&phy_vars_ue->lte_ue_common_vars.txdataF[aa][subframe_tx*nsymb*frame_parms->ofdm_symbol_size],
 #if defined(EXMIMO) || defined(OAI_USRP)
@@ -1401,7 +1433,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
           }
         }
       }
-    } // mode != PRACH
+      //} // mode != PRACH
 
     //  }// slot_tx is even
     //  else {  // slot_tx is odd, do the PRACH here
@@ -2422,22 +2454,7 @@ int lte_ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *phy_vars_ue,uint8_t abst
 #endif
         phy_vars_ue->ulsch_ue[eNB_id]->num_cba_dci[(subframe_rx+4)%10]++;
       }
-
-      if ((phy_vars_ue->UE_mode[eNB_id] >= PRACH) && (ufmc_flag==1)) {
-	if (generate_ue_ulsch_params_from_dci((void *)&UL_alloc_pdu,
-					      0x1111,
-					      subframe_rx,
-					      format0,
-					      phy_vars_ue,
-					      SI_RNTI,
-					      0,
-					      P_RNTI,
-					      CBA_RNTI,
-					      eNB_id,
-					      0)!=0) {
-	  LOG_E(PHY,"Error in generating parameters for UFMC\n");
-	}
-      }
+    
     }
 
     else {
@@ -2457,6 +2474,26 @@ int lte_ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *phy_vars_ue,uint8_t abst
     }
 
   }
+  /*
+      if ((phy_vars_ue->UE_mode[eNB_id] >= PRACH) && (ufmc_flag==1)) {
+	if (generate_ue_ulsch_params_from_dci((void *)&UL_alloc_pdu,
+					      0x1111,
+					      subframe_rx,
+					      format0,
+					      phy_vars_ue,
+					      SI_RNTI,
+					      0,
+					      P_RNTI,
+					      CBA_RNTI,
+					      eNB_id,
+					      0)!=0) {
+	  LOG_E(PHY,"Error in generating parameters for UFMC\n");
+	}
+	else {
+	  LOG_I(PHY,"frame %d, subframe %d: Generating parameters for UFMC\n",frame_rx,subframe_rx);
+	}
+      }
+  */
 /*
   if ((frame_rx > 1000) && ((frame_rx&1)==0) && (subframe_rx == 5)) {
     write_output("rxsig0.m","rxs0", phy_vars_ue->lte_ue_common_vars.rxdata[0],10*phy_vars_ue->lte_frame_parms.samples_per_tti,1,1);
@@ -2502,6 +2539,9 @@ int phy_procedures_UE_RX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstrac
   int subframe_prev = (subframe_rx+9)%10;
 #ifdef OPENAIR2
   int CC_id = phy_vars_ue->CC_id;
+#endif
+#ifdef DEBUG_PHY_PROC
+  int i;
 #endif
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_UE_RX, VCD_FUNCTION_IN);

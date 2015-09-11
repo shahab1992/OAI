@@ -2123,6 +2123,10 @@ static void get_options (int argc, char **argv)
         downlink_frequency[CC_id][1] = downlink_frequency[CC_id][0];
         downlink_frequency[CC_id][2] = downlink_frequency[CC_id][0];
         downlink_frequency[CC_id][3] = downlink_frequency[CC_id][0];
+	uplink_frequency_offset[CC_id][0] = -120000000;
+	uplink_frequency_offset[CC_id][1] = -120000000;
+	uplink_frequency_offset[CC_id][2] = -120000000;
+	uplink_frequency_offset[CC_id][3] = -120000000;
         printf("Downlink for CC_id %d frequency set to %u\n", CC_id, downlink_frequency[CC_id][0]);
       }
 
