@@ -2042,7 +2042,7 @@ static void get_options (int argc, char **argv)
     {NULL, 0, NULL, 0}
   };
 
-  while ((c = getopt_long (argc, argv, "C:dK:g:F:G:hqO:m:SUVRM:r:P:Ws:t:x:",long_options,NULL)) != -1) {
+  while ((c = getopt_long (argc, argv, "C:F:G:K:M:O:P:RSUVWdg:hm:qr:s:t:ux:",long_options,NULL)) != -1) {
     switch (c) {
     case LONG_OPTION_MAXPOWER:
       tx_max_power[0]=atoi(optarg);
@@ -2316,6 +2316,10 @@ static void get_options (int argc, char **argv)
     case 'h':
       help ();
       exit (-1);
+
+    case 'u':
+      ufmc_flag=1;
+      break;
        
     default:
       help ();
@@ -2765,7 +2769,7 @@ int main( int argc, char **argv )
     openair_daq_vars.auto_freq_correction = 0;
     openair_daq_vars.use_ia_receiver = 0;
 
-    ufmc_flag=1;
+    /*
     UL_alloc_pdu.type    = 0;
     UL_alloc_pdu.hopping = 0;
     UL_alloc_pdu.rballoc = computeRIV(UE[0]->lte_frame_parms.N_RB_UL,0,1);
@@ -2774,7 +2778,7 @@ int main( int argc, char **argv )
     UL_alloc_pdu.TPC     = 0;
     UL_alloc_pdu.cqi_req = 0;
     UL_alloc_pdu.cshift  = 0;
-
+    */
 
     //  printf("tx_max_power = %d -> amp %d\n",tx_max_power,get_tx_amp(tx_max_power,tx_max_power));
   } else {
