@@ -1320,7 +1320,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
           start_meas(&phy_vars_ue->ofdm_mod_stats);
 
           for (aa=0; aa<frame_parms->nb_antennas_tx; aa++) {
-	    if (ufmc_flag==0) {
+	    if (ufmc_flag==1) {
 	      LOG_I(PHY,"Frame %d, subframe %d: Generating UFMC signal part 2\n", frame_tx, subframe_tx);
 	      if (frame_parms->Ncp == 1)
               PHY_UFMC_mod(&phy_vars_ue->lte_ue_common_vars.txdataF[aa][subframe_tx*nsymb*frame_parms->ofdm_symbol_size],
