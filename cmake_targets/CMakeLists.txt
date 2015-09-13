@@ -777,6 +777,7 @@ set(PHY_SRC
   ${OPENAIR1_DIR}/PHY/LTE_ESTIMATION/lte_dl_channel_estimation.c
   ${OPENAIR1_DIR}/PHY/LTE_ESTIMATION/lte_dl_mbsfn_channel_estimation.c
   ${OPENAIR1_DIR}/PHY/LTE_ESTIMATION/lte_ul_channel_estimation.c
+  ${OPENAIR1_DIR}/PHY/LTE_ESTIMATION/lte_ul_channel_estimation_ufmc.c
   ${OPENAIR1_DIR}/PHY/LTE_ESTIMATION/lte_est_freq_offset.c
   ${OPENAIR1_DIR}/PHY/LTE_ESTIMATION/lte_ue_measurements.c
   ${OPENAIR1_DIR}/PHY/LTE_ESTIMATION/lte_eNB_measurements.c
@@ -805,6 +806,7 @@ set(PHY_SRC
   ${OPENAIR1_DIR}/PHY/TOOLS/log2_approx.c
   ${OPENAIR1_DIR}/PHY/TOOLS/cmult_sv.c
   ${OPENAIR1_DIR}/PHY/TOOLS/cmult_vv.c
+  ${OPENAIR1_DIR}/PHY/TOOLS/cadd_vv.c
   ${OPENAIR1_DIR}/PHY/TOOLS/cdot_prod.c
   ${OPENAIR1_DIR}/PHY/TOOLS/signal_energy.c
   ${OPENAIR1_DIR}/PHY/TOOLS/dB_routines.c
