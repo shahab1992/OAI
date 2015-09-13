@@ -1,0 +1,26 @@
+var structpdcp__s =
+[
+    [ "header_compression_profile", "structpdcp__s.html#a71ec47079b00b8b59786c0b9662d174b", null ],
+    [ "is_ue", "structpdcp__s.html#a2916665c775b6b689b076f8e48228225", null ],
+    [ "is_srb", "structpdcp__s.html#a0bff9e6a5cf9057d7a5d2eca6ffacee9", null ],
+    [ "cipheringAlgorithm", "structpdcp__s.html#ac1f100901c02c883015b1d08c83a1deb", null ],
+    [ "integrityProtAlgorithm", "structpdcp__s.html#a9004c486ae3ac81c46c4398b8f2f296a", null ],
+    [ "kUPenc", "structpdcp__s.html#a7ecfcbcd86871c60bc7b2a0ff2f1fb04", null ],
+    [ "kRRCint", "structpdcp__s.html#a81c85c731d6304483cf3e97c0f014d27", null ],
+    [ "kRRCenc", "structpdcp__s.html#ab4e75c382135d844070cb1605552ddaa", null ],
+    [ "security_activated", "structpdcp__s.html#a6eef5cbdf797f7833a161a084abe92e1", null ],
+    [ "rlc_mode", "structpdcp__s.html#ac2d2987fd52689fdb0d501c8fab5c6cf", null ],
+    [ "status_report", "structpdcp__s.html#a42a7a53c22a2de15b54685244909fc6c", null ],
+    [ "seq_num_size", "structpdcp__s.html#a79f57563584907ddee1be2cbd7ed0006", null ],
+    [ "lcid", "structpdcp__s.html#a8425f57c27d5417ee4ed0467a66ba7ce", null ],
+    [ "rb_id", "structpdcp__s.html#a1f092efedc5224c606fcfe18bf0d6519", null ],
+    [ "next_pdcp_tx_sn", "structpdcp__s.html#a8961d5a33ee586d5516c1bf5ef56c6ab", null ],
+    [ "next_pdcp_rx_sn", "structpdcp__s.html#a28e9e82ce8eca23a37fb0788474c1cc4", null ],
+    [ "next_pdcp_rx_sn_before_integrity", "structpdcp__s.html#a85ace3b23736b5dc3b91baa6ef4c9a0a", null ],
+    [ "tx_hfn", "structpdcp__s.html#a5b99a844256751abc41bf86dd4c32199", null ],
+    [ "rx_hfn", "structpdcp__s.html#ac2381bc55eb5185e71822c7c2d86c99c", null ],
+    [ "rx_hfn_offset", "structpdcp__s.html#a6cd92f50649654981536112b94593fb9", null ],
+    [ "last_submitted_pdcp_rx_sn", "structpdcp__s.html#a53249067ecd8321cdc03d30786064457", null ],
+    [ "missing_pdu_bitmap", "structpdcp__s.html#a6369bfefefe8cb0e1b246b0803f0a130", null ],
+    [ "first_missing_pdu", "structpdcp__s.html#a983ffa72850b68d3a53a7a7bfa51d62c", null ]
+];

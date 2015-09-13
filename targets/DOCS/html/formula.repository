@@ -1,0 +1,79 @@
+\form#0:$ 2^{15} \times 2/\sqrt{10}$
+\form#1:$ 2^{15} \times 1/\sqrt{10}$
+\form#2:$ 2^{15} \times 4/\sqrt{42}$
+\form#3:$ 2^{15} \times 2/\sqrt{42}$
+\form#4:$ 2^{15} \times 1/\sqrt{42}$
+\form#5:$ 2^{15} \times 2/sqrt(20)$
+\form#6:$ 2^{15} \times 1/\sqrt{20}$
+\form#7:$ 2^{15} \times 4/\sqrt{84}$
+\form#8:$ 2^{15} \times 2/\sqrt{84}$
+\form#9:$ 2^{15} \times 1/\sqrt{84}$
+\form#10:$N_\text{ANRep}$
+\form#11:$P_A$
+\form#12:$\alpha$
+\form#13:$N_\text{CS}$
+\form#14:$n^{(1)}_\text{PUCCH,ANRep}$
+\form#15:$\Delta^\text{PUCCH}_\text{shift}$
+\form#16:$N^{(2)}_\text{RB}$
+\form#17:$N^{(1)}_\text{CS}$
+\form#18:$N^{(1)}_\text{PUCCH}$
+\form#19:$\Delta SS$
+\form#20:$N_{sb}$
+\form#21:$N^{HO}_{RB}$
+\form#22:$I^\text{HARQ-ACK}_\text{offset}$
+\form#23:$I^{RI}_\text{offset}$
+\form#24:$I^{CQI}_\text{offset}$
+\form#25:$P_B$
+\form#26:$m^\text{max}_\text{SRS,0}$
+\form#27:$B_\text{SRS}$
+\form#28:$b_\text{hop}\in\{0,1,2,3\}$
+\form#29:$n_\text{RRC}$
+\form#30:$k_\text{TC}\in\{0,1\}$
+\form#31:$I_\text{SRS}$
+\form#32:$n^\text{CS}_\text{SRS}$
+\form#33:$P_\text{0\_UE\_PUSCH}(1)$
+\form#34:$P_\text{0\_UE\_PUCCH}(1)$
+\form#35:$P_\text{SRS\_OFFSET}$
+\form#36:$P_\text{0\_NOMINAL\_PUSCH}(1)$
+\form#37:$P_\text{0\_NOMINAL\_PUCCH}$
+\form#38:$\Delta_\text{PREAMBLE\_Msg3}$
+\form#39:$\Delta_\text{F\_PUCCH}(F)$
+\form#40:$n^{(1)}_\text{PUCCH,SRI}$
+\form#41:$I_\text{SR}$
+\form#42:$n^{(2)}_\text{PUCCH}$
+\form#43:$I_\text{CQI/PMI}$
+\form#44:$I_\text{RI}$
+\form#45:$\Delta_\text{offset}$
+\form#46:$\log_2(\max|H_i|^2)$
+\form#47:$\overline{w}$
+\form#48:$K_{\pi}$
+\form#49:$E$
+\form#50:$N_{\mathrm{RB}}^{\mathrm{DL}}$
+\form#51:$N_{\mathrm{ID}}^{\mathrm{cell}}$
+\form#52:$N_{\mathrm{cp}}$
+\form#53:$p$
+\form#54:$N_{\mathrm{group}}^{\mathrm{PHICH}}$
+\form#55:$\mathbf{y} = y + \alpha\mathbf{x}$
+\form#56:$\mathbf{y} = \mathbf{x_1}\odot\mathbf{x_2}$
+\form#57:$\mathbf{y} += \mathbf{x_1}\odot\mathbf{x_2}$
+\form#58:$\mathbf{y} = \mathbf{y} + \mathbf{x_1}\odot\mathbf{x_2}^*$
+\form#59:$\mathbf{y} = \alpha\mathbf{x}$
+\form#60:$\mathbf{y} = \alpha + \mathbf{x}$
+\form#61:$\mathbf{z} = \mathbf{x} + \mathbf{y}$
+\form#62:$N_d$
+\form#63:$x$
+\form#64:$N$
+\form#65:$[-L\sigma,L\sigma)$
+\form#66:$L$
+\form#67:$l\in\{-2^{N-1},-2^{N-1}+1,\cdots,0,1,\cdots,2^{N-1}-1\}$
+\form#68:$E_l = \begin{cases} x\in\left[-\infty,-L\sigma\right) & l=-2^{N-1}, \\ x\in\left[\frac{lL\sigma}{2^{N-1}},\frac{(l+1)L\sigma}{2^{N-1}}\right) & <l>-2^{N-1}, \\ x\in\left[L\sigma,\infty\right) & l>-2^{N-1}, \end{cases}$
+\form#69:$\Pr(E_l) = \begin{cases} \mathrm{erfc}(L) & l=-2^{N-1}, \\ \mathrm{erfc}(L) & l>-2^{N-1}, \\ \mathrm{erf}\left(\frac{lL}{2^{N-1}}\right) \mathrm{erfc}\left(\frac{(l-1)L}{2^{N-1}}\right)& l>-2^{N-1}. \end{cases}$
+\form#70:$2^{\mathrm{Nbits}-1}$
+\form#71:$i$
+\form#72:$2^{31}\mathrm{erf}\left(\frac{iL}{2^{N-1}}\right)$
+\form#73:$\left[0,\frac{i}{2^{N-1}}\right)$
+\form#74:$\mathrm{u}$
+\form#75:$(i,i+1)$
+\form#76:$ 2^{31}\mathrm{erf}\left(\frac{i}{2^{Nbits-1}}\right) < |u| \leq 2^{31}\mathrm{erf}\left(\frac{i+1}{2^{Nbits-1}}\right) $
+\form#77:$\mathrm{sgn}(u)i$
+\form#78:$Nbits-1$

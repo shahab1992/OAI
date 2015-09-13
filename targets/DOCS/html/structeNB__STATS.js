@@ -1,0 +1,27 @@
+var structeNB__STATS =
+[
+    [ "total_num_bcch_pdu", "structeNB__STATS.html#a95967c1276060f736bc11c54887a401a", null ],
+    [ "bcch_buffer", "structeNB__STATS.html#afeb5b572740dc23decbb79e649458ccf", null ],
+    [ "total_bcch_buffer", "structeNB__STATS.html#a07ad306a171887bd522e2a0140946af8", null ],
+    [ "bcch_mcs", "structeNB__STATS.html#a515112464d8f86da2890f008896c6ac7", null ],
+    [ "total_num_ccch_pdu", "structeNB__STATS.html#a2e8717b0104f91d48a9dabb88cc0cf49", null ],
+    [ "ccch_buffer", "structeNB__STATS.html#a33598e653981c81273cd5a65f53ecbe7", null ],
+    [ "total_ccch_buffer", "structeNB__STATS.html#a63885e454bda6f4047c42f9f77c79a26", null ],
+    [ "ccch_mcs", "structeNB__STATS.html#a4ac9732fb30a9ea9b86dbb395316f745", null ],
+    [ "num_dlactive_UEs", "structeNB__STATS.html#a9a54db0c927a3a44383022defa5520d6", null ],
+    [ "available_prbs", "structeNB__STATS.html#a85df49f7a68e92ddb87e964cb7c2fa45", null ],
+    [ "total_available_prbs", "structeNB__STATS.html#a66e7978b5d79f2ae6951d1abb9311b50", null ],
+    [ "available_ncces", "structeNB__STATS.html#ae6e902a107feef91ab85032fee2308b6", null ],
+    [ "dlsch_bitrate", "structeNB__STATS.html#ae5a9712582a2b638c1f082f383779fb0", null ],
+    [ "dlsch_bytes_tx", "structeNB__STATS.html#a45b0bd8f7863fa15115f60bd6d0330a0", null ],
+    [ "dlsch_pdus_tx", "structeNB__STATS.html#a67b64e9e52dbcf2e34a2554b1f6d53c5", null ],
+    [ "total_dlsch_bitrate", "structeNB__STATS.html#ab53341296be27d62953480026c8bdfc9", null ],
+    [ "total_dlsch_bytes_tx", "structeNB__STATS.html#a2513bb876f8d7e61ae446e775d639407", null ],
+    [ "total_dlsch_pdus_tx", "structeNB__STATS.html#a183f9156a6c1929bfe7835df787dc0ad", null ],
+    [ "ulsch_bitrate", "structeNB__STATS.html#ad6da160ed8710e6bc63075ece013859e", null ],
+    [ "ulsch_bytes_rx", "structeNB__STATS.html#a848fbf68b8c154e3ba6e7a06b4c1a84d", null ],
+    [ "ulsch_pdus_rx", "structeNB__STATS.html#a88cd979a5bd53814942418e9adb6f94d", null ],
+    [ "total_ulsch_bitrate", "structeNB__STATS.html#a2bc1a65bff2ddc2e3fb00035f40d225d", null ],
+    [ "total_ulsch_bytes_rx", "structeNB__STATS.html#ad72880b9d340405379e14d776e346818", null ],
+    [ "total_ulsch_pdus_rx", "structeNB__STATS.html#a6fc6bb3ecc15a16ac6e1c345a3fcd241", null ]
+];

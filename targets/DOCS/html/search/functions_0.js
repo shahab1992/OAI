@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['add_5fcommon_5fdci',['add_common_dci',['../group____mac.html#ga023680db5de37e2b178497483b5f17d9',1,'proto.h']]],
+  ['add_5fcpx_5fvector',['add_cpx_vector',['../group____PHY__DSP__TOOLS__.html#ga9a7b0e7594dca293bd67f4932eb10453',1,'defs.h']]],
+  ['add_5fcpx_5fvector32',['add_cpx_vector32',['../group____PHY__DSP__TOOLS__.html#gab793efc15f8d344fac435fdfd88bf47f',1,'defs.h']]],
+  ['add_5fnew_5fue',['add_new_ue',['../group____mac.html#ga1fa42454887769e20671847005ef48c1',1,'proto.h']]],
+  ['add_5freal_5fvector64',['add_real_vector64',['../group____PHY__DSP__TOOLS__.html#ga9f63a38aefb8b75c753f5cca03635527',1,'defs.h']]],
+  ['add_5freal_5fvector64_5fscalar',['add_real_vector64_scalar',['../group____PHY__DSP__TOOLS__.html#gaa59bbe59f15b472aab5cc2db54fdbe72',1,'defs.h']]],
+  ['add_5fue',['add_ue',['../group____PHY__PROCEDURES__.html#gadd72fa00577df0aaf7157e92ce520946',1,'defs.h']]],
+  ['add_5fue_5fdlsch_5finfo',['add_ue_dlsch_info',['../group____mac.html#ga012923f4dd41482755ba15bb558f4f10',1,'proto.h']]],
+  ['add_5fue_5fspec_5fdci',['add_ue_spec_dci',['../group____mac.html#gaa5e128c12c5d4e7a43c929f563c0b3cf',1,'proto.h']]],
+  ['add_5fue_5fulsch_5finfo',['add_ue_ulsch_info',['../group____mac.html#ga19f1ad54e9af511431bfbdad27ce833a',1,'proto.h']]],
+  ['add_5fvector16',['add_vector16',['../group____PHY__DSP__TOOLS__.html#gaf211cd66992d4c38a48cbc85050c5ea2',1,'defs.h']]],
+  ['add_5fvector16_5f64',['add_vector16_64',['../group____PHY__DSP__TOOLS__.html#ga04fa8324d02ada905afc492ca78dc95a',1,'defs.h']]],
+  ['adjust_5fbsr_5finfo',['adjust_bsr_info',['../group____mac.html#ga2bb8541b23243e211020c2950ba5c265',1,'proto.h']]],
+  ['adjust_5fg',['adjust_G',['../group____PHY__TRANSPORT__.html#ga150272e708803e92a6610c3f27ca54e5',1,'proto.h']]],
+  ['adjust_5fg2',['adjust_G2',['../group____PHY__TRANSPORT__.html#gad40d1ab4039c5cd2a0270a013ecda1df',1,'proto.h']]],
+  ['allocate_5fprbs',['allocate_prbs',['../group____mac.html#gac9c324ed2e5dc5506bb5bae211132b79',1,'proto.h']]],
+  ['allocate_5fprbs_5fsub',['allocate_prbs_sub',['../group____mac.html#ga472dabadc59df328acf755896fba8a0f',1,'proto.h']]],
+  ['allocate_5fres_5fin_5frb',['allocate_REs_in_RB',['../group____PHY__TRANSPORT__.html#ga8fc1fe3dc9305dd94c4287657dcb5bf0',1,'proto.h']]],
+  ['angle',['angle',['../group____PHY__DSP__TOOLS__.html#ga0dd6cd2b2ce9517132361642c6684b6a',1,'defs.h']]],
+  ['apply_5f625_5fhz',['apply_625_Hz',['../group____PHY__MODULATION__.html#ga48d796b926279302e516e1d617e228ae',1,'defs.h']]],
+  ['apply_5f7_5f5_5fkhz',['apply_7_5_kHz',['../group____PHY__MODULATION__.html#gafaa11fbd79fa56a4cf8bed43d65f22aa',1,'defs.h']]],
+  ['assign_5fmax_5fmcs_5fmin_5frb',['assign_max_mcs_min_rb',['../group____mac.html#ga11ba9821ce7f60e0028069960a8b9d21',1,'proto.h']]]
+];
