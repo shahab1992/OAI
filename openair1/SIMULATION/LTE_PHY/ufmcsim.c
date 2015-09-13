@@ -1121,6 +1121,28 @@ int main(int argc, char **argv)
 	    printf("ufmc_flag = %d\n",ufmc_flag);
             for (aa=0; aa<1; aa++) {
 	      if (ufmc_flag==1){
+
+		switch(PHY_vars_eNB->lte_frame_parms.N_RB_UL) {
+		case 6:
+		  ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,16,128,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
+		  break;
+		case 15:
+		  ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,16,256,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
+		  break;
+		case 25:
+		  ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,32,512,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
+		  break;
+		case 50:
+		  ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,64,1024,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
+		  break;
+		case 75:
+		  ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,96,1536,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
+		  break;
+		case 100:
+		  ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,128,2048,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
+		  break;
+		}
+
 		if (frame_parms->Ncp == 1){
 		  PHY_UFMC_mod(&PHY_vars_UE->lte_ue_common_vars.txdataF[aa][subframe*nsymb*OFDM_SYMBOL_SIZE_COMPLEX_SAMPLES_NO_PREFIX],        // input
 			      &txdata[aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],         // output
@@ -1297,19 +1319,19 @@ int main(int argc, char **argv)
 	  write_output("rxsig2all.m","rxsig2all", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][0],PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe*2,1,1);
 	  
 	  //Try to put my function for timing synchro
-	  /*generate_drs_pdsch(PHY_vars_UE,0,
+	  /*generate_drs_pusch(PHY_vars_UE,0,
                                AMP,subframe,
                                PHY_vars_UE->ulsch_ue[0]->harq_processes[harq_pid]->first_rb,
                                PHY_vars_UE->ulsch_ue[0]->harq_processes[harq_pid]->nb_rb,
 			       drs_gen,
                                0);*/
-	  generate_drs_pdsch_Rx(PHY_vars_eNB,
+	  generate_drs_ufmc_Rx(PHY_vars_eNB,
                        0,
                        AMP,
                        subframe,
                        0,
 		       nsymb);
-	  rx_pdsch_ufmc_sync(PHY_vars_eNB,0,AMP,subframe,0);
+	  rx_pusch_ufmc_sync(PHY_vars_eNB,0,AMP,subframe,0);
 	  
           for (l=subframe*PHY_vars_UE->lte_frame_parms.symbols_per_tti; l<((1+subframe)*PHY_vars_UE->lte_frame_parms.symbols_per_tti); l++) {
 

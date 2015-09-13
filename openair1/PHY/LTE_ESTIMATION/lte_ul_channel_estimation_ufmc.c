@@ -44,126 +44,6 @@ This section deals with basic functions for OFDM Modulation.
 
 int16_t ul_ref_sigs_ufmc[30][2][33][2][2048<<1];//u,v,MSC_RS,cyclic_shift,dft size
 
-/*generate_drs_pdsch(PHY_vars_UE,0,
-                               AMP,subframe,
-                               PHY_vars_UE->ulsch_ue[0]->harq_processes[harq_pid]->first_rb,
-                               PHY_vars_UE->ulsch_ue[0]->harq_processes[harq_pid]->nb_rb,
-			       drs_gen,
-                               0);
-generate_drs_pdsch(PHY_vars_UE,0,AMP,subframe,first_rb,nb_rb,drs_gen,0);
-*/
-
-
-int generate_drs_pdsch(PHY_VARS_UE *phy_vars_ue,
-                       uint8_t eNB_id,
-                       short amp,
-                       unsigned int subframe,
-                       unsigned int first_rb,
-                       unsigned int nb_rb,
-		       int16_t *drs_array,//output added by myself
-                       uint8_t ant)
-{
-
-  uint16_t k,l,Msc_RS,Msc_RS_idx,rb,drs_offset;
-  uint16_t * Msc_idx_ptr;
-  int subframe_offset,re_offset,symbol_offset;
-
-  //uint32_t phase_shift; // phase shift for cyclic delay in DM RS
-  //uint8_t alpha_ind;
-
-  int16_t alpha_re[12] = {32767, 28377, 16383,     0,-16384,  -28378,-32768,-28378,-16384,    -1, 16383, 28377};
-  int16_t alpha_im[12] = {0,     16383, 28377, 32767, 28377,   16383,     0,-16384,-28378,-32768,-28378,-16384};
-
-  uint8_t cyclic_shift,cyclic_shift0,cyclic_shift1;
-  LTE_DL_FRAME_PARMS *frame_parms = &phy_vars_ue->lte_frame_parms;
-  uint32_t u,v,alpha_ind;
-  uint32_t u0=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.grouphop[subframe<<1];
-  uint32_t u1=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.grouphop[1+(subframe<<1)];
-  uint32_t v0=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.seqhop[subframe<<1];
-  uint32_t v1=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.seqhop[1+(subframe<<1)];
-  
-  int32_t ref_re,ref_im;
-  uint8_t harq_pid = subframe2harq_pid(frame_parms,phy_vars_ue->frame_tx,subframe);
-  //int16_t output[(1<<log2fftSizeFixed)<<3];//1024 complex samples(1024*2 real value)*2(#prb)*2(#slot per frame)  
-
-  cyclic_shift0 = (frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift +
-                   phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->n_DMRS2 +
-                   phy_vars_ue->lte_frame_parms.pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[subframe<<1]+
-                   ((phy_vars_ue->ulsch_ue[0]->cooperation_flag==2)?10:0)+
-                   ant*6) % 12;
-  //  printf("PUSCH.cyclicShift %d, n_DMRS2 %d, nPRS %d\n",frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift,phy_vars_ue->ulsch_ue[eNB_id]->n_DMRS2,phy_vars_ue->lte_frame_parms.pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[subframe<<1]);
-  cyclic_shift1 = (frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift +
-                   phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->n_DMRS2 +
-                   phy_vars_ue->lte_frame_parms.pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[(subframe<<1)+1]+
-                   ((phy_vars_ue->ulsch_ue[0]->cooperation_flag==2)?10:0)+
-                   ant*6) % 12;
-		   
-
-  //       cyclic_shift0 = 0;
-  //        cyclic_shift1 = 0;
-  Msc_RS = 12*nb_rb;
-
-#ifdef USER_MODE
-  Msc_idx_ptr = (uint16_t*) bsearch(&Msc_RS, dftsizes, 33, sizeof(uint16_t), compareints);
-
-  if (Msc_idx_ptr)
-    Msc_RS_idx = Msc_idx_ptr - dftsizes;
-  else {
-    msg("generate_drs_pusch: index for Msc_RS=%d not found\n",Msc_RS);
-    return(-1);
-  }
-
-#else
-  uint8_t b;
-
-  for (b=0; b<33; b++)
-    if (Msc_RS==dftsizes[b])
-      Msc_RS_idx = b;
-
-#endif
-#ifdef DEBUG_DRS
-  msg("[PHY] drs_modulation: Msc_RS = %d, Msc_RS_idx = %d,cyclic_shift %d, u0 %d, v0 %d, u1 %d, v1 %d,cshift0 %d,cshift1 %d\n",Msc_RS, Msc_RS_idx,cyclic_shift,u0,v0,u1,v1,cyclic_shift0,cyclic_shift1);
-
-#endif
-
-  subframe_offset=0;
-  for (l = (3 - frame_parms->Ncp),u=u0,v=v0,cyclic_shift=cyclic_shift0;
-       l<frame_parms->symbols_per_tti;
-       l += (7 - frame_parms->Ncp),u=u1,v=v1,cyclic_shift=cyclic_shift1) {
-
-    drs_offset = 0;    
-    re_offset = 0;
-    symbol_offset = 0+subframe_offset;
-    alpha_ind = 0;
-
-    for (rb=0; rb<nb_rb; rb++) { //only 0 and 1 are rb imvolved in drs process
-        for (k=0; k<12; k++) {
-          ref_re = (int32_t) ul_ref_sigs[u][v][Msc_RS_idx][drs_offset<<1];// the same of ul_ref_sigs-->change with lte_ue_ref_sigs_ufmc
-          ref_im = (int32_t) ul_ref_sigs[u][v][Msc_RS_idx][(drs_offset<<1)+1];
-	  //printf("IFFT_FPGA_UE rb=%d cyclic_shift=%d k=%d %d\n",rb,cyclic_shift,k,2*(symbol_offset + re_offset));
-          ((int16_t*) drs_array)[2*(symbol_offset + re_offset)]   = (int16_t) (((ref_re*alpha_re[alpha_ind]) -
-              (ref_im*alpha_im[alpha_ind]))>>15);
-          ((int16_t*) drs_array)[2*(symbol_offset + re_offset)+1] = (int16_t) (((ref_re*alpha_im[alpha_ind]) +
-              (ref_im*alpha_re[alpha_ind]))>>15);
-          ((short*) drs_array)[2*(symbol_offset + re_offset)]   = (short) ((((short*) drs_array)[2*(symbol_offset + re_offset)]*(int32_t)amp)>>15);
-          ((short*) drs_array)[2*(symbol_offset + re_offset)+1] = (short) ((((short*) drs_array)[2*(symbol_offset + re_offset)+1]*(int32_t)amp)>>15);
-
-
-          alpha_ind = (alpha_ind + cyclic_shift);
-
-          if (alpha_ind > 11)
-            alpha_ind-=12;
-          re_offset++;
-          drs_offset++;
-        }
-	re_offset=0;
-	symbol_offset+=12;
-    }
-    subframe_offset+=nb_rb*12;
-  }
-  return(0);
-}
-
 int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
                        uint8_t eNB_id,
                        short amp,
@@ -258,14 +138,13 @@ int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
   return 0;
 }
 
-
-int generate_drs_pdsch_Rx(PHY_VARS_eNB *phy_vars_eNB,
-                       uint8_t eNB_id,
-                       short amp,
-                       unsigned int subframe,
-                       uint8_t ant,
-		       uint32_t nsymb
- 			)
+int generate_drs_ufmc_Rx(PHY_VARS_eNB *phy_vars_eNB,
+			 uint8_t eNB_id,
+			 short amp,
+			 unsigned int subframe,
+			 uint8_t ant,
+			 uint32_t nsymb
+			 )
 {
   uint16_t k,l,aa,Msc_RS,Msc_RS_idx,rb,drs_offset;
   uint16_t * Msc_idx_ptr;
@@ -288,8 +167,8 @@ int generate_drs_pdsch_Rx(PHY_VARS_eNB *phy_vars_eNB,
   int16_t mod_vec[1<<(log2fftSize+1)];
   uint32_t offset,offset0,offset1;
   int drs_array[12*2*nb_rb*1];//mux with another variable in order to consider the frame number
-  static short temp[2048*4] __attribute__((aligned(16))),temp1[2048*4] __attribute__((aligned(16))),
-  Rxdft[2048*4] __attribute__((aligned(16))),output[2048*4] __attribute__((aligned(16)));
+  static short temp[2048*4] __attribute__((aligned(32))),temp1[2048*4] __attribute__((aligned(32))),
+  Rxdft[2048*4] __attribute__((aligned(32))),output[2048*4] __attribute__((aligned(32)));
 
   
   cyclic_shift0 = (frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift +
@@ -392,7 +271,7 @@ Rxdft
   return(0);
 }
 
-void rx_pdsch_ufmc_sync(PHY_VARS_eNB *phy_vars_eNB,
+void rx_pusch_ufmc_sync(PHY_VARS_eNB *phy_vars_eNB,
                        uint8_t eNB_id,
                        short amp,
                        unsigned int subframe,
@@ -414,7 +293,7 @@ void rx_pdsch_ufmc_sync(PHY_VARS_eNB *phy_vars_eNB,
   uint16_t nb_rb=phy_vars_eNB->ulsch_eNB[eNB_id]->harq_processes[harq_pid]->nb_rb;
   int16_t log2fftSize2=11;
   uint32_t offset,offset0,offset1;
-  static short temp[2048*4] __attribute__((aligned(16))),Rxdft[2048*4] __attribute__((aligned(16))),output[2048*4] __attribute__((aligned(16)));
+  static short temp[2048*4] __attribute__((aligned(32))),Rxdft[2048*4] __attribute__((aligned(32))),output[2048*4] __attribute__((aligned(32)));
   
   cyclic_shift[0] = (frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift +
                   phy_vars_eNB->ulsch_eNB[eNB_id]->harq_processes[harq_pid]->n_DMRS2 +
