@@ -362,12 +362,33 @@ void phy_config_sib2_ue(uint8_t Mod_id,int CC_id,
           mbsfn_SubframeConfigList->list.array[i]->subframeAllocation.choice.oneFrame.buf[0]|
           (mbsfn_SubframeConfigList->list.array[i]->subframeAllocation.choice.oneFrame.buf[1]<<8)|
           (mbsfn_SubframeConfigList->list.array[i]->subframeAllocation.choice.oneFrame.buf[2]<<16);
-
         LOG_I(PHY, "[CONFIG] MBSFN_SubframeConfig[%d] pattern is  %ld\n", i,
               lte_frame_parms->MBSFN_config[i].mbsfn_SubframeConfig);
       }
     }
   }
+  
+  switch(lte_frame_parms->N_RB_UL) {
+  case 6:
+    ufmc_init(lte_frame_parms->nb_prefix_samples,16,128,lte_frame_parms->N_RB_UL,lte_frame_parms->first_carrier_offset);
+    break;
+  case 15:
+    ufmc_init(lte_frame_parms->nb_prefix_samples,16,256,lte_frame_parms->N_RB_UL,lte_frame_parms->first_carrier_offset);
+    break;
+  case 25:
+    ufmc_init(lte_frame_parms->nb_prefix_samples,32,512,lte_frame_parms->N_RB_UL,lte_frame_parms->first_carrier_offset);
+    break;
+  case 50:
+    ufmc_init(lte_frame_parms->nb_prefix_samples,64,1024,lte_frame_parms->N_RB_UL,lte_frame_parms->first_carrier_offset);
+    break;
+  case 75:
+    ufmc_init(lte_frame_parms->nb_prefix_samples,96,1536,lte_frame_parms->N_RB_UL,lte_frame_parms->first_carrier_offset);
+    break;
+  case 100:
+    ufmc_init(lte_frame_parms->nb_prefix_samples,128,2048,lte_frame_parms->N_RB_UL,lte_frame_parms->first_carrier_offset);
+    break;
+  }
+
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_UE_CONFIG_SIB2, VCD_FUNCTION_OUT);
 

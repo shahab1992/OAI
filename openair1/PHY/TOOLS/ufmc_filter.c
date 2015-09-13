@@ -280,14 +280,15 @@ The function implemented is : \f$\mathbf{out} = out + (\mathbf{fact1} * \mathbf{
 int max_vec(int16_t *in,uint16_t lin){
   uint16_t i,index_v;
   int32_t a,b,abs_v,max_v;
-  int32_t value[lin>>1];
+  //  int32_t value[lin>>1];
+
   max_v=in[0]*in[0]+in[1]*in[1];
   index_v=0;
   for(i=0;i<lin>>1;i++){
     a=in[(i<<1)];
     b=in[(i<<1)+1];
     abs_v=a*a+b*b;
-    value[i]=abs_v;
+    //    value[i]=abs_v;
     max_v = (max_v>abs_v) ? max_v : abs_v; 
     index_v = (max_v>abs_v) ? index_v : i;
   }
@@ -374,6 +375,8 @@ void CreateModvec(uint16_t n_rb,// number of resource block
   }
 }
 
+int16_t mod_vec[100][2560]  __attribute__((aligned(32)));
+
 void ii_CreateModvec(uint16_t n_rb,// current resource block index
 		  uint16_t first_carrier,// first subcarrier offset
 		  uint32_t FFTsize, //FFTsize
@@ -392,9 +395,44 @@ void ii_CreateModvec(uint16_t n_rb,// current resource block index
   }
 }
 
+
 /***************************************************************************
 UFMC Modulation - Upsampling+Dolph-Chebyshev+FrequencyShilfting
 ***************************************************************************/
+
+int16_t hFIR[152]  __attribute__((aligned(32))); // 152 is closest multiple of 8 to 145
+
+void ufmc_init(uint32_t lFIR,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
+	       int size, // input dimension(only real part) -> FFT dimension
+	       int FFT_size,
+	       int n_rb_max,
+	       int first_carrier) {// dimensione of standard FFT
+
+  float atten=60;
+  uint16_t lOUT, 
+	   lFIR_padded,
+           quotient;
+
+  int n_rb;
+
+  lOUT=(FFT_size+lFIR)<<1; //output length(complex);
+  if ((lFIR%0x0A)>0){ //lFIR!=10 || lFIR!=20 || lFIR!=40 || lFIR!=80 || lFIR!=120 || lFIR!=160 longer prefix from 1st symbol
+    lFIR+=1;                   // 37 for 25 PRB, 73 for 50 PRB, 145 for 10 PRB
+  }else{
+    lFIR=(0x09*(lFIR/0x0A))+1; // bring down to : 37 for 25 PRB, 73 for 50 PRB, 145 for 10 PRB
+  }
+  quotient=lFIR/8;
+  lFIR_padded = (lFIR%8)>0 ? (quotient+1)<<3 : quotient<<3;
+
+  // Filter Impulse Response creation
+  memset(hFIR,0,lFIR_padded*sizeof(int16_t));
+  i_cheby_win(hFIR, lFIR, atten);
+  //write_output("h_filter.m","h_filter",hFIR,lFIR_padded,1,0);
+  for (n_rb=1;n_rb<n_rb_max;n_rb++) {
+    ii_CreateModvec(n_rb,first_carrier,(1<<10),lOUT>>1,&mod_vec[n_rb-1][0]);
+    //write_output("mod_vec.m","mod_vec",mod_vec, lOUT>>1,1,1);
+  }
+}
 
 void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
 		int16_t *out, // output array-->length=(FFT_size+lFIR)*2
@@ -411,7 +449,9 @@ void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
 	   lFIR_padded,
 	   quotient,
 	   lOUT2;
-  float atten=60;
+
+
+
   lOUT=(FFT_size+lFIR)<<1; //output length(complex);
   if ((lFIR%0x0A)>0){ //lFIR!=10 || lFIR!=20 || lFIR!=40 || lFIR!=80 || lFIR!=120 || lFIR!=160 EXTENDED cyclic prefix
     lFIR+=1;
@@ -421,21 +461,15 @@ void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
   quotient=lFIR/8;
   lFIR_padded = (lFIR%8)>0 ? (quotient+1)<<3 : quotient<<3;
   lOUT2=(FFT_size+lFIR_padded)<<1; //filter output length (complex);
-  int16_t hFIR[lFIR_padded],
-	  mod_vec[lOUT],
-	  out2[lOUT2];
-  // Filter Impulse Response creation
-  memset(hFIR,0,lFIR_padded*sizeof(int16_t));
-  i_cheby_win(hFIR, lFIR, atten);
-  //write_output("h_filter.m","h_filter",hFIR,lFIR_padded,1,0);
+
+  int16_t out2[lOUT2] __attribute__((aligned(32)));
+
   memset(out2,0,lOUT2*sizeof(int16_t));
   // Upsampling and Filtering
   ii_complx_UpFilter(&in[0],&out2[0], size, &hFIR[0] , lFIR_padded, Up_factor);
   //write_output("FIR_out.m","FIR_out",out2, lOUT2>>1,1,1);
   // Modulation
-  ii_CreateModvec(n_rb,first_carrier,(1<<10),lOUT>>1,&mod_vec[0]);
-  //write_output("mod_vec.m","mod_vec",mod_vec, lOUT>>1,1,1);
-  multcmplx_add(&out[0],&out2[0],&mod_vec[0],lOUT>>1);
+  multcmplx_add(&out[0],&out2[0],&mod_vec[n_rb][0],lOUT>>1);
 }
 
 #ifdef MAIN
