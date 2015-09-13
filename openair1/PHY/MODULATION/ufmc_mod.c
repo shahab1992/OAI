@@ -140,7 +140,7 @@ void (*idft)(int16_t *,int16_t *, int);
     idft = idft2048;
     break;
   }
-  printf("nb_symbols = %d, nb_rb = %d dim=%d prefix=%d dim_fft=%d\n",nb_symbols,ulsch->nb_rb,log2fftsize,nb_prefix_samples,log2fftSizeFixed);
+  //printf("nb_symbols = %d, nb_rb = %d dim=%d prefix=%d dim_fft=%d\n",nb_symbols,ulsch->nb_rb,log2fftsize,nb_prefix_samples,log2fftSizeFixed);
   for (i=0; i<nb_symbols; i++) {
     //printf("nb = %d, nb_rb = %d dim=%d prefix=%d\n",i,ulsch->nb_rb,log2fftsize,nb_prefix_samples);
     //printf("index = %d\n",i<<log2fftsize);
