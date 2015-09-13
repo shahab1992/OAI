@@ -1,8 +1,0 @@
-<map id="openair1" name="openair1">
-<area shape="rect" id="node2" href="dir_30d35e1821a44da7d20a1b45d098c8d5.html" title="MAC_INTERFACE" alt="" coords="357,63,492,111"/>
-<area shape="rect" id="node3" href="dir_bb77ffaa5e27c5d58b327e6ab89e1cc2.html" title="PHY" alt="" coords="261,63,333,111"/>
-<area shape="rect" id="node4" href="dir_1c388ce118b8ee3b510b9e2135bbf311.html" title="SCHED" alt="" coords="165,63,237,111"/>
-<area shape="rect" id="node5" href="dir_cb96222b2fc614d949e2087385ee5fa9.html" title="SIMULATION" alt="" coords="37,63,141,111"/>
-<area shape="rect" id="clust2" href="dir_eb0e2f192fd64334a2b5d27ffd80cfb8.html" alt="" coords="27,52,600,121"/>
-<area shape="rect" id="clust1" href="dir_40f29d5575aaa3dab86fecd018c7e6ec.html" title="openairinterface5g" alt="" coords="16,16,611,132"/>
-</map>
