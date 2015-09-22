@@ -381,15 +381,24 @@ int openair0_device_init(openair0_device* device, openair0_config_t *openair0_cf
     // set master clock rate and sample rate for tx & rx for streaming
     //s->usrp->set_master_clock_rate(usrp_master_clock);
   } else {
-    printf("Found USRP B200");
+    printf("Found USRP B200\n");
     s->usrp = uhd::usrp::multi_usrp::make(args);
 
     //  s->usrp->set_rx_subdev_spec(rx_subdev);
     //  s->usrp->set_tx_subdev_spec(tx_subdev);
 
-// do not explicitly set the clock to "internal", because this will disable the gpsdo
-//    // lock mboard clocks
-//    s->usrp->set_clock_source("internal");
+    // since UHD-3.9.0, the GPSDO has do be enabled explicitly
+    std::vector<std::string> sources = s->usrp->get_clock_sources(0);
+    for (std::vector<std::string>::const_iterator it = sources.begin(); it != sources.end(); ++it) {
+        if (*it == "gpsdo") {
+          // gpsdo is available, use it
+          s->usrp->set_clock_source(*it);
+          s->usrp->set_time_source(*it);
+        }
+    }
+
+    printf( "B200: selected clock: %s\n", s->usrp->get_clock_source(0).c_str() );
+
     // set master clock rate and sample rate for tx & rx for streaming
     s->usrp->set_master_clock_rate(30.72e6);
   }
