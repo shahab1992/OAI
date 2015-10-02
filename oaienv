@@ -8,6 +8,8 @@ export OPENAIRCN_DIR=$OPENAIR_HOME/openair-cn
 export OPENAIR_TARGETS=$OPENAIR_HOME/targets
 export OPENAIRITS_DIR=$OPENAIR_HOME/openairITS
 
+export PATH=$PATH:$OPENAIR_TARGETS/bin
+
 alias  oai='cd $OPENAIR_HOME'
 alias oai0='cd $OPENAIR0_DIR'
 alias oai1='cd $OPENAIR1_DIR'

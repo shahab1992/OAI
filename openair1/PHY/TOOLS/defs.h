@@ -555,6 +555,16 @@ void idft1024(int16_t *x,int16_t *y,int scale);
 void idft2048(int16_t *x,int16_t *y,int scale);
 void idft4096(int16_t *x,int16_t *y,int scale);
 void idft8192(int16_t *x,int16_t *y,int scale);
+
+void dolph_cheb(int16_t *in, /// input array-->length=(size+lFIR)*2
+		int16_t *out, /// output array-->length=(FFT_size+lFIR)*2
+		uint32_t lFIR,  /// (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
+		int size, /// input dimension(only real part) -> FFT dimension
+		int FFT_size, /// dimensione of standard FFT
+		int n_rb, ///current resource block index 
+		int first_carrier ///first subcarrier offset
+		); 
+
 /** @} */
 
 

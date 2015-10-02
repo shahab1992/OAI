@@ -818,7 +818,7 @@ void schedule_ulsch_rnti(module_id_t   module_idP,
             UE_list->eNB_UE_stats[CC_id][UE_id].ulsch_mcs2=mcs;
             buffer_occupancy = UE_template->ul_total_buffer;
 
-            while ((rb_table[rb_table_index]>(frame_parms->N_RB_UL-1-first_rb[CC_id])) &&
+            while ((rb_table[rb_table_index]>(frame_parms->N_RB_UL-29-first_rb[CC_id])) && 
                    (rb_table_index>0)) {
               rb_table_index--;
             }

@@ -117,12 +117,12 @@ int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
 	      idft64((int16_t *)temp1,(int16_t *)temp,1);
 	      ii_CreateModvec(rb+1,0,(1<<log2fftSize),(1<<log2fftSize),&mod_vec[0]);
 	      dolph_cheb((int16_t *)temp, // input
-		(int16_t *)&Rxdft,
-		72,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
-		1<<6, // input dimension(only real part) -> FFT dimension
-		1<<log2fftSize,
-		rb+1 //nPRB for filter frequency shifting
-		  );
+			 (int16_t *)&Rxdft,
+			 72,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
+			 1<<6, // input dimension(only real part) -> FFT dimension
+			 1<<log2fftSize,
+			 rb+1, //nPRB for filter frequency shifting
+			 frame_parms->first_carrier_offset);
 	  }
 	  if(u==22 && v==0 && Msc_RS==1 && l==0){
 	    write_output("drs_emplRx1.m","drs_emplRx1",(int16_t *)&Rxdft,(1<<log2fftSize2),1,1);//12 symbols*2 slot eachsubframe*nPRBs*/

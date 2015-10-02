@@ -903,7 +903,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
 #endif
 #endif
 	  }
-	  else {
+	  else { 
           // the following lines were necessary for the calibration in CROWN
           /*
           if (phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid]->calibration_flag == 0) {
@@ -1226,9 +1226,10 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
 #endif // end CBA
     }
 
-    if (phy_vars_ue->UE_mode[eNB_id] >= PRACH) {
+    if ((phy_vars_ue->UE_mode[eNB_id] >= PRACH) &&
+	(mac_UE_get_rrc_lite_status(0,0)>=2)) {
 
-      if ((ufmc_flag==1)) {// && (subframe_tx>=4) && (subframe_tx<=7)) {
+      if ((ufmc_flag==1)) {// && (subframe_tx==8)) { // && (subframe_tx<=7)) {
 
 	harq_pid = subframe2harq_pid(&phy_vars_ue->lte_frame_parms,
 				     frame_tx,
@@ -1321,7 +1322,9 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
 
           for (aa=0; aa<frame_parms->nb_antennas_tx; aa++) {
 	    if (ufmc_flag==1) {
+#ifdef DEBUG_PHY_PROC
 	      LOG_I(PHY,"Frame %d, subframe %d: Generating UFMC signal part 2\n", frame_tx, subframe_tx);
+#endif
 	      if (frame_parms->Ncp == 1)
               PHY_UFMC_mod(&phy_vars_ue->lte_ue_common_vars.txdataF[aa][subframe_tx*nsymb*frame_parms->ofdm_symbol_size],
 #if defined(EXMIMO) || defined(OAI_USRP)
@@ -1348,26 +1351,25 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
 
 	    } else {
 	      if (frame_parms->Ncp == 1)
-              PHY_ofdm_mod(&phy_vars_ue->lte_ue_common_vars.txdataF[aa][subframe_tx*nsymb*frame_parms->ofdm_symbol_size],
+		PHY_ofdm_mod(&phy_vars_ue->lte_ue_common_vars.txdataF[aa][subframe_tx*nsymb*frame_parms->ofdm_symbol_size],
 #if defined(EXMIMO) || defined(OAI_USRP)
-                           dummy_tx_buffer,
+			     dummy_tx_buffer,
 #else
-                           &phy_vars_ue->lte_ue_common_vars.txdata[aa][ulsch_start],
+			     &phy_vars_ue->lte_ue_common_vars.txdata[aa][ulsch_start],
 #endif
-                           frame_parms->log2_symbol_size,
-                           nsymb,
-                           frame_parms->nb_prefix_samples,
-                           CYCLIC_PREFIX);
-            else
-              normal_prefix_mod(&phy_vars_ue->lte_ue_common_vars.txdataF[aa][subframe_tx*nsymb*frame_parms->ofdm_symbol_size],
+			     frame_parms->log2_symbol_size,
+			     nsymb,
+			     frame_parms->nb_prefix_samples,
+			     CYCLIC_PREFIX);
+	      else
+		normal_prefix_mod(&phy_vars_ue->lte_ue_common_vars.txdataF[aa][subframe_tx*nsymb*frame_parms->ofdm_symbol_size],
 #if defined(EXMIMO) || defined(OAI_USRP)
-                                dummy_tx_buffer,
+				  dummy_tx_buffer,
 #else
-                                &phy_vars_ue->lte_ue_common_vars.txdata[aa][ulsch_start],
+				  &phy_vars_ue->lte_ue_common_vars.txdata[aa][ulsch_start],
 #endif
-                                nsymb,
-                                &phy_vars_ue->lte_frame_parms);
-	    }
+				  nsymb,
+				  &phy_vars_ue->lte_frame_parms);
 
             /*
               if (subframe_tx == 8) {
