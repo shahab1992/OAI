@@ -419,15 +419,13 @@ void ulsch_modulation(mod_sym_t **txdataF,
   nb_rb = ulsch->harq_processes[harq_pid]->nb_rb;
 
   if (nb_rb == 0) {
-    msg("ulsch_modulation.c: Frame %d, Subframe %d Illegal nb_rb %d\n",frame,subframe,nb_rb);
+    LOG_E(PHY,"ulsch_modulation.c: Frame %d, Subframe %d Illegal nb_rb %d\n",frame,subframe,nb_rb);
     return;
   }
-
-  if (first_rb >25 ) {
-    msg("ulsch_modulation.c: Frame %d, Subframe %d Illegal first_rb %d\n",frame,subframe,first_rb);
+  if (first_rb > frame_parms->N_RB_UL ) {
+    LOG_E(PHY,"ulsch_modulation.c: Frame %d, Subframe %d Illegal first_rb %d\n",frame,subframe,first_rb);
     return;
   }
-
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_UE_ULSCH_MODULATION, VCD_FUNCTION_IN);
 
   Q_m = get_Qm_ul(ulsch->harq_processes[harq_pid]->mcs);

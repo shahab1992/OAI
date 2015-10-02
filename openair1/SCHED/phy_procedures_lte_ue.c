@@ -1398,7 +1398,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
               }
             */
 #endif
-
+	    }
 #if defined(EXMIMO) || defined(OAI_USRP)
             overflow = ulsch_start - 9*frame_parms->samples_per_tti;
 

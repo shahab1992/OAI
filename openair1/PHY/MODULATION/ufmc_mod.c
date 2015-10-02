@@ -159,10 +159,10 @@ void (*idft)(int16_t *,int16_t *, int);
 
       //write_output("fft_out.m","fft_out",temp,(1<<log2fftSizeFixed),1,1);
       dolph_cheb((int16_t *)temp, // input
-		(int16_t *)&output[(i<<log2fftsize) + (i*nb_prefix_samples)],
-		nb_prefix_samples,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
-		1<<log2fftSizeFixed, // input dimension(only real part) -> FFT dimension
-		1<<log2fftsize,
+		 (int16_t *)&output[(i<<log2fftsize) + (i*nb_prefix_samples)],
+		 nb_prefix_samples,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
+		 1<<log2fftSizeFixed, // input dimension(only real part) -> FFT dimension
+		 1<<log2fftsize,
 		 j, //current PRB index for filter frequency shifting
 		 first_carrier );  
       /*if (j==0){

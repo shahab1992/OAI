@@ -388,8 +388,8 @@ void ii_CreateModvec(uint16_t n_rb,// current resource block index
 		  int16_t *mod_vec) //output array
 {
   int16_t i;
-  //float carrierind = (first_carrier+12*n_rb)+(float)(12+1)/2; //band are more or less superimposed if I put 6 instead of 12 
-  int16_t carrierind = (first_carrier+12*n_rb)+1; //FK: hack for lab
+  int16_t carrierind = (first_carrier+12*n_rb)+7; //band are more or less superimposed if I put 6 instead of 12 
+  //int16_t carrierind = (first_carrier+12*n_rb)+1; //FK: for 25PRB config this seems to give correct results
 
   if (FFTsize!=1024) {
     LOG_E(PHY,"UFMC modulation only supported for FFT size 1024 for the moment\n");
