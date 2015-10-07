@@ -163,7 +163,7 @@ void (*idft)(int16_t *,int16_t *, int);
 		 nb_prefix_samples,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
 		 1<<log2fftSizeFixed, // input dimension(only real part) -> FFT dimension
 		 1<<log2fftsize,
-		 j, //current PRB index for filter frequency shifting
+		 j+20, //current PRB index for filter frequency shifting
 		 first_carrier );  
       /*if (j==0){
 	write_output("fft_out1.m","fft_out1",&output[(i<<log2fftsize) + (i*nb_prefix_samples)],(1<<log2fftsize) + nb_prefix_samples,1,1);

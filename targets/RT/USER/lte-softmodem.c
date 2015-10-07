@@ -3104,7 +3104,7 @@ openair0_cfg[card].num_rb_dl=frame_parms[0]->N_RB_DL;
   // connect the TX/RX buffers
   if (UE_flag==1) {
 #ifdef OAI_USRP
-    openair_daq_vars.timing_advance = 160;
+    openair_daq_vars.timing_advance = 0;
 #else
     openair_daq_vars.timing_advance = 160;
 #endif

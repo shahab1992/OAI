@@ -1,5 +1,5 @@
-fc  = 1907600000;
 %fc  = 1907600000;
+fc  = 2560000000;
 %fc = 859.5e6;
 
 rxgain=0;
@@ -8,7 +8,7 @@ eNB_flag = 0;
 card = 0;
 active_rf = [1 0 0 0];
 autocal = [1 1 1 1];
-resampling_factor = [2 2 2 2];
+resampling_factor = [1 1 1 1];
 limeparms;
 rf_mode   = (RXEN+TXEN+TXLPFNORM+TXLPFEN+TXLPF25+RXLPFNORM+RXLPFEN+RXLPF25+LNA1ON+LNAMax+RFBBNORM) * active_rf;
 rf_mode = rf_mode + (DMAMODE_RX + DMAMODE_TX)*active_rf;
@@ -26,7 +26,7 @@ rf_vcocal = rf_vcocal_19G * active_rf;
 rxgain = rxgain*active_rf;
 txgain = txgain*active_rf;
 freq_tx = fc.*active_rf;
-freq_rx = freq_tx;
+freq_rx = (fc+120000000).*active_rf;
 %freq_rx = freq_tx-120000000*chan_sel;
 %freq_tx = freq_rx+1920000;
 %tdd_config = DUPLEXMODE_FDD + TXRXSWITCH_LSB;
@@ -45,7 +45,7 @@ length = 307200/pow2(resampling_factor(1));
 
 s = zeros(length,4);
 
-select = 1;
+select = 7;
 
 switch(select)
 
@@ -99,7 +99,7 @@ case 5
 
 case 6
 
-  nb_rb = 100; %this can be 25, 50, or 100
+  nb_rb = 50; %this can be 25, 50, or 100
   num_carriers = 2048/100*nb_rb;
   num_zeros = num_carriers-(12*nb_rb+1);
   prefix_length = num_carriers/4; %this is extended CP
@@ -109,6 +109,10 @@ case 6
   s(:,1) = OFDM_TX_FRAME(num_carriers,num_zeros,prefix_length,num_symbols_frame,preamble_length);
   s(:,1) = floor(amp*(s(:,1)./max([real(s(:,1)); imag(s(:,1))])));
   
+case 7
+
+txsig8_mod
+s(:,1) = repmat(txs8_mod,10,1);
 
 otherwise 
   error('unknown case')

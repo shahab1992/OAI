@@ -641,7 +641,7 @@ void phy_procedures_emos_UE_TX(uint8_t next_slot,uint8_t eNB_id) {
 */
 #endif
 
-int dummy_tx_buffer[3840*4] __attribute__((aligned(16)));
+int dummy_tx_buffer[3840*8] __attribute__((aligned(16)));
 #ifndef OPENAIR2
 PRACH_RESOURCES_t prach_resources_local;
 #endif
@@ -1229,7 +1229,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
     if ((phy_vars_ue->UE_mode[eNB_id] >= PRACH) &&
 	(mac_UE_get_rrc_lite_status(0,0)>=2)) {
 
-      if ((ufmc_flag==1)) {// && (subframe_tx==8)) { // && (subframe_tx<=7)) {
+      if ((ufmc_flag==1)) { // && (subframe_tx==8)) { // && (subframe_tx<=7)) {
 
 	harq_pid = subframe2harq_pid(&phy_vars_ue->lte_frame_parms,
 				     frame_tx,
@@ -1321,6 +1321,8 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
           start_meas(&phy_vars_ue->ofdm_mod_stats);
 
           for (aa=0; aa<frame_parms->nb_antennas_tx; aa++) {
+	    memset(dummy_tx_buffer,0,3840*8*sizeof(int));
+
 	    if (ufmc_flag==1) {
 #ifdef DEBUG_PHY_PROC
 	      LOG_I(PHY,"Frame %d, subframe %d: Generating UFMC signal part 2\n", frame_tx, subframe_tx);
@@ -1391,26 +1393,25 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
             apply_7_5_kHz(phy_vars_ue,&phy_vars_ue->lte_ue_common_vars.txdata[aa][ulsch_start],0);
             apply_7_5_kHz(phy_vars_ue,&phy_vars_ue->lte_ue_common_vars.txdata[aa][ulsch_start],1);
 #endif
-            /*
-              if (subframe_tx == 8) {
-              write_output("txsig8_mod.m","txs8_mod", &phy_vars_ue->lte_ue_common_vars.txdata[0][phy_vars_ue->lte_frame_parms.samples_per_tti*subframe],
-              phy_vars_ue->lte_frame_parms.samples_per_tti,1,1);
-              }
-            */
 #endif
 	    }
+	    /*
+	    if (subframe_tx == 8) {
+              write_output("txsig8_mod.m","txs8_mod", dummy_tx_buffer,
+              phy_vars_ue->lte_frame_parms.samples_per_tti,1,1);
+	    }
+	    */
 #if defined(EXMIMO) || defined(OAI_USRP)
             overflow = ulsch_start - 9*frame_parms->samples_per_tti;
-
             //if ((slot_tx==4) && (aa==0)) printf("ulsch_start %d, overflow %d\n",ulsch_start,overflow);
             for (k=ulsch_start,l=0; k<cmin(frame_parms->samples_per_tti*LTE_NUMBER_OF_SUBFRAMES_PER_FRAME,ulsch_start+frame_parms->samples_per_tti); k++,l++) {
-              ((short*)phy_vars_ue->lte_ue_common_vars.txdata[aa])[2*k] = ((short*)dummy_tx_buffer)[2*l]<<4;
-              ((short*)phy_vars_ue->lte_ue_common_vars.txdata[aa])[2*k+1] = ((short*)dummy_tx_buffer)[2*l+1]<<4;
+              ((short*)phy_vars_ue->lte_ue_common_vars.txdata[aa])[2*k] = ((short*)dummy_tx_buffer)[2*l];//<<4;
+              ((short*)phy_vars_ue->lte_ue_common_vars.txdata[aa])[2*k+1] = ((short*)dummy_tx_buffer)[2*l+1];//<<4;
             }
 
             for (k=0; k<overflow; k++,l++) {
-              ((short*)phy_vars_ue->lte_ue_common_vars.txdata[aa])[2*k] = ((short*)dummy_tx_buffer)[2*l]<<4;
-              ((short*)phy_vars_ue->lte_ue_common_vars.txdata[aa])[2*k+1] = ((short*)dummy_tx_buffer)[2*l+1]<<4;
+              ((short*)phy_vars_ue->lte_ue_common_vars.txdata[aa])[2*k] = ((short*)dummy_tx_buffer)[2*l];//<<4;
+              ((short*)phy_vars_ue->lte_ue_common_vars.txdata[aa])[2*k+1] = ((short*)dummy_tx_buffer)[2*l+1];//<<4;
             }
 #if defined(EXMIMO)
 	    // handle switch before 1st TX subframe, guarantee that the slot prior to transmission is switch on
@@ -1424,7 +1425,6 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
 	    }
 #endif
 #endif
-
           } //nb_antennas_tx
 
           stop_meas(&phy_vars_ue->ofdm_mod_stats);
