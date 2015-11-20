@@ -4,6 +4,7 @@ card1=1;
 limeparms;
 active_rf = zeros(1,4);
 active_rf = [1 1 1 1];
+RF_ACTIVE = ((active_rf(1)*1) + (active_rf(2)*2) + (active_rf(3)*4) + (active_rf(4)*8)) * (2^5);
 autocal = [1 1 1 1];
 resampling_factor = [2 2 2 2];
 
@@ -23,7 +24,7 @@ rf_rxdc = rf_rxdc*active_rf; %[1 1 1 1];
 %rf_vcocal=rf_vcocal_859*[1 1 1 1];
 rf_vcocal=rf_vcocal_19G*active_rf; %1 1 1 1];
 eNBflag = 0;
-tdd_config = DUPLEXMODE_FDD + TXRXSWITCH_TESTRX; 
+tdd_config = DUPLEXMODE_FDD + TXRXSWITCH_TESTRX + RF_ACTIVE; 
 %tdd_config = DUPLEXMODE_FDD + TXRXSWITCH_LSB;
 syncmode0 = SYNCMODE_MASTER;
 syncmode1 = SYNCMODE_SLAVE;
