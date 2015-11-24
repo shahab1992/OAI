@@ -47,7 +47,7 @@
 #include <mcheck.h>
 #include <sys/timerfd.h>
 #include <UTIL/OCG/OCG.h>
-#include <ENB_APP/enb_config.h>
+#include "ENB_APP/enb_config.h"
 
 #include "assertions.h"
 #include "oaisim_functions.h"

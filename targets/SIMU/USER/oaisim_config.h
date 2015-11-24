@@ -62,6 +62,7 @@ The current sturcture of oaisim is shown by the figure.
 #include "PHY/extern.h"
 #include "SIMULATION/ETH_TRANSPORT/defs.h"
 #include "PHY/defs.h"
+#include "ENB_APP/enb_config.h"
 
 /** @defgroup _init_oai Initial oaisim
  *  @ingroup _fn

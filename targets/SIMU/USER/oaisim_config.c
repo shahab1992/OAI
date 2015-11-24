@@ -54,6 +54,7 @@
 #include "UTIL/OTG/otg_tx.h"
 #include "UTIL/OTG/otg.h"
 #include "UTIL/OTG/otg_externs.h"
+#include "ENB_APP/enb_config.h"
 #include "oml.h"
 #include "msc.h"
 #if ENABLE_RAL
