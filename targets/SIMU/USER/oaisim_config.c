@@ -404,10 +404,6 @@ void set_log_from_enb_properties(Enb_properties_array_t *enb_properties)
   set_comp_log(PHY, enb_properties->properties[0]->phy_log_level,
                enb_properties->properties[0]->phy_log_verbosity, 1);
 
-  if (opt_enabled == 1 )
-    set_comp_log(OPT, enb_properties->properties[0]->opt_log_level,
-               enb_properties->properties[0]->opt_log_verbosity, 1);
-
 #else
   set_comp_log(PHY, LOG_INFO,   LOG_HIGH, 1);
 #endif
