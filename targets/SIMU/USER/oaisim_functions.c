@@ -733,10 +733,10 @@ Enb_properties_array_t *get_simulation_options(int argc, char *argv[])
     //info: global values need to be set here to have command line options context
     //  i.e. know whether to overwrite config file with command line options
     if(!glog_set){
-        oai_emulation.info.g_log_level = enb_properties->properties->glog_level;
+        oai_emulation.info.g_log_level = enb_properties->properties[0]->glog_level;
     }
     if(!glog_verbosity_set) {
-        oai_emulation.info.g_log_verbosity = enb_properties->properties->glog_verbosity;
+        oai_emulation.info.g_log_verbosity = enb_properties->properties[0]->glog_verbosity;
     }
 
     AssertFatal (oai_emulation.info.nb_enb_local <= enb_properties->number,

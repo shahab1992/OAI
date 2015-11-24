@@ -328,7 +328,7 @@ void init_oai_emulation(void)
 }
 
 
-void oaisim_config(Enb_properties_array_t *enb_properties)
+void oaisim_config(void)
 {
 
   // init log gen first
@@ -398,40 +398,40 @@ void set_log_from_enb_properties(Enb_properties_array_t *enb_properties)
   }
   printf("configuring for eNB\n");
 
-  set_comp_log(HW, enb_properties->properties->hw_log_level,
-               enb_properties->properties-> hw_log_verbosity, 1);
+  set_comp_log(HW, enb_properties->properties[0]->hw_log_level,
+               enb_properties->properties[0]->hw_log_verbosity, 1);
 #ifdef OPENAIR2
-  set_comp_log(PHY, enb_properties->properties->phy_log_level,
-               enb_properties->properties->phy_log_verbosity, 1);
+  set_comp_log(PHY, enb_properties->properties[0]->phy_log_level,
+               enb_properties->properties[0]->phy_log_verbosity, 1);
 
   if (opt_enabled == 1 )
-    set_comp_log(OPT, enb_properties->properties->opt_log_level,
-               enb_properties->properties->opt_log_verbosity, 1);
+    set_comp_log(OPT, enb_properties->properties[0]->opt_log_level,
+               enb_properties->properties[0]->opt_log_verbosity, 1);
 
 #else
   set_comp_log(PHY, LOG_INFO,   LOG_HIGH, 1);
 #endif
-  set_comp_log(MAC, enb_properties->properties->mac_log_level,
-               enb_properties->properties->mac_log_verbosity, 1);
-  set_comp_log(RLC, enb_properties->properties->rlc_log_level,
-               enb_properties->properties->rlc_log_verbosity, 1);
-  set_comp_log(PDCP, enb_properties->properties->pdcp_log_level,
-               enb_properties->properties->pdcp_log_verbosity, 1);
-  set_comp_log(RRC, enb_properties->properties->rrc_log_level,
-               enb_properties->properties->rrc_log_verbosity, 1);
+  set_comp_log(MAC, enb_properties->properties[0]->mac_log_level,
+               enb_properties->properties[0]->mac_log_verbosity, 1);
+  set_comp_log(RLC, enb_properties->properties[0]->rlc_log_level,
+               enb_properties->properties[0]->rlc_log_verbosity, 1);
+  set_comp_log(PDCP, enb_properties->properties[0]->pdcp_log_level,
+               enb_properties->properties[0]->pdcp_log_verbosity, 1);
+  set_comp_log(RRC, enb_properties->properties[0]->rrc_log_level,
+               enb_properties->properties[0]->rrc_log_verbosity, 1);
 #if defined(ENABLE_ITTI)
   set_comp_log(EMU,     LOG_INFO,   LOG_MED, 1);
 #if defined(ENABLE_USE_MME)
-    set_comp_log(UDP_, enb_properties->properties->udp_log_level,
-              enb_properties->properties->udp_log_verbosity, 1);
-    set_comp_log(GTPU, enb_properties->properties->gtpu_log_level,
-              enb_properties->properties->gtpu_log_verbosity, 1);
+    set_comp_log(UDP_, enb_properties->properties[0]->udp_log_level,
+              enb_properties->properties[0]->udp_log_verbosity, 1);
+    set_comp_log(GTPU, enb_properties->properties[0]->gtpu_log_level,
+              enb_properties->properties[0]->gtpu_log_verbosity, 1);
     set_comp_log(S1AP,    LOG_DEBUG,   LOG_HIGH, 1);
     set_comp_log(SCTP,    LOG_INFO,   LOG_HIGH, 1);
 # endif
 #if defined(ENABLE_SECURITY)
-    set_comp_log(OSA, enb_properties->properties->osa_log_level,
-                      enb_properties->properties->osa_log_verbosity, 1);
+    set_comp_log(OSA, enb_properties->properties[0]->osa_log_level,
+                      enb_properties->properties[0]->osa_log_verbosity, 1);
 #endif
 #endif
 #ifdef LOCALIZATION
