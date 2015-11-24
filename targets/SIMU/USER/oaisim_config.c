@@ -44,6 +44,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
+#include <ENB_APP/enb_config.h>
 
 #include "oaisim_config.h"
 #include "OCG.h"
@@ -326,7 +327,7 @@ void init_oai_emulation(void)
 }
 
 
-void oaisim_config(void)
+void oaisim_config(Enb_properties_array_t *enb_properties)
 {
 
   // init log gen first
@@ -381,6 +382,63 @@ void oaisim_config(void)
   set_component_filelog(OMG);
   LOG_I(OMG,"setting OMG file log \n");
 
+}
+
+/**
+ * Temporary description: updates log levels using enb_properties
+ *   assumes that logInit has been previously called
+ *   (done in oaisim_config)
+ *   Configuration options are copied from lte-softmodem main function
+ */
+void set_log_from_enb_properties(Enb_properties_array_t *enb_properties)
+{
+  if(enb_properties==NULL){
+    return;
+  }
+  printf("configuring for eNB\n");
+
+  set_comp_log(HW, enb_properties->properties->hw_log_level,
+               enb_properties->properties-> hw_log_verbosity, 1);
+#ifdef OPENAIR2
+  set_comp_log(PHY, enb_properties->properties->phy_log_level,
+               enb_properties->properties->phy_log_verbosity, 1);
+
+  if (opt_enabled == 1 )
+    set_comp_log(OPT, enb_properties->properties->opt_log_level,
+               enb_properties->properties->opt_log_verbosity, 1);
+
+#else
+  set_comp_log(PHY, LOG_INFO,   LOG_HIGH, 1);
+#endif
+  set_comp_log(MAC, enb_properties->properties->mac_log_level,
+               enb_properties->properties->mac_log_verbosity, 1);
+  set_comp_log(RLC, enb_properties->properties->rlc_log_level,
+               enb_properties->properties->rlc_log_verbosity, 1);
+  set_comp_log(PDCP, enb_properties->properties->pdcp_log_level,
+               enb_properties->properties->pdcp_log_verbosity, 1);
+  set_comp_log(RRC, enb_properties->properties->rrc_log_level,
+               enb_properties->properties->rrc_log_verbosity, 1);
+#if defined(ENABLE_ITTI)
+  set_comp_log(EMU,     LOG_INFO,   LOG_MED, 1);
+#if defined(ENABLE_USE_MME)
+    set_comp_log(UDP_, enb_properties->properties->udp_log_level,
+              enb_properties->properties->udp_log_verbosity, 1);
+    set_comp_log(GTPU, enb_properties->properties->gtpu_log_level,
+              enb_properties->properties->gtpu_log_verbosity, 1);
+    set_comp_log(S1AP,    LOG_DEBUG,   LOG_HIGH, 1);
+    set_comp_log(SCTP,    LOG_INFO,   LOG_HIGH, 1);
+# endif
+#if defined(ENABLE_SECURITY)
+    set_comp_log(OSA, enb_properties->properties->osa_log_level,
+                      enb_properties->properties->osa_log_verbosity, 1);
+#endif
+#endif
+#ifdef LOCALIZATION
+  set_comp_log(LOCALIZE, LOG_DEBUG, LOG_LOW, 1);
+    set_component_filelog(LOCALIZE);
+#endif
+  set_comp_log(ENB_APP, LOG_INFO, LOG_HIGH, 1);
+  set_comp_log(OTG,     LOG_INFO,   LOG_HIGH, 1);
 }
 
 int olg_config(void)

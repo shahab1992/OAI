@@ -99,6 +99,7 @@ char smbv_ip[16];
 #include "UTIL/OMG/omg_constants.h"
 #include "UTIL/FIFO/pad_list.h"
 #include "enb_app.h"
+#include "ENB_APP/enb_config.h"
 
 #include "../PROC/interface.h"
 #include "../PROC/channel_sim_proc.h"
@@ -1246,6 +1247,7 @@ main (int argc, char **argv)
 {
 
   clock_t t;
+  Enb_properties_array_t *enb_properties;
 
 #ifdef SMBV
   // Rohde&Schwarz SMBV100A vector signal generator
@@ -1270,7 +1272,8 @@ main (int argc, char **argv)
   init_oai_emulation (); // to initialize everything !!!
 
   // get command-line options
-  get_simulation_options (argc, argv); //Command-line options
+  // return enb properties to obtain log values. This is due to location of initialization of log variables
+  enb_properties = get_simulation_options (argc, argv); //Command-line options
 
   // Initialize VCD LOG module
   VCD_SIGNAL_DUMPER_INIT (oai_emulation.info.vcd_file);
@@ -1301,6 +1304,9 @@ main (int argc, char **argv)
 #endif
   // configure oaisim with OCG
   oaisim_config (); // config OMG and OCG, OPT, OTG, OLG
+  if (enb_properties!=NULL){
+      set_log_from_enb_properties(enb_properties);
+  }
 
   if (ue_connection_test == 1) {
     snr_direction = -snr_step;

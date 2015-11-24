@@ -46,6 +46,8 @@
 #include <time.h>
 #include <mcheck.h>
 #include <sys/timerfd.h>
+#include <UTIL/OCG/OCG.h>
+#include <ENB_APP/enb_config.h>
 
 #include "assertions.h"
 #include "oaisim_functions.h"
@@ -170,10 +172,10 @@ extern pdcp_mbms_t pdcp_mbms_array_eNB[NUMBER_OF_eNB_MAX][maxServiceCount][maxSe
 extern time_stats_t dl_chan_stats;
 extern time_stats_t ul_chan_stats;
 
-void get_simulation_options(int argc, char *argv[])
+Enb_properties_array_t *get_simulation_options(int argc, char *argv[])
 {
-  int                           option;
-  const Enb_properties_array_t *enb_properties;
+  int                           option, glog_set = 0, glog_verbosity_set = 0;
+  const Enb_properties_array_t *enb_properties = NULL;
   char  *conf_config_file_name = NULL;
 
   enum long_option_e {
@@ -508,6 +510,7 @@ void get_simulation_options(int argc, char *argv[])
       break;
 
     case 'l':
+      glog_set = 1;
       oai_emulation.info.g_log_level = atoi(optarg);
       break;
 
@@ -705,6 +708,7 @@ void get_simulation_options(int argc, char *argv[])
       break;
 
     case 'Y':
+      glog_verbosity_set = 1;
       oai_emulation.info.g_log_verbosity_option = strdup(optarg);
       break;
 
@@ -726,6 +730,14 @@ void get_simulation_options(int argc, char *argv[])
   if ((oai_emulation.info.nb_enb_local > 0) && (conf_config_file_name != NULL)) {
     /* Read eNB configuration file */
     enb_properties = enb_config_init(conf_config_file_name);
+    //info: global values need to be set here to have command line options context
+    //  i.e. know whether to overwrite config file with command line options
+    if(!glog_set){
+        oai_emulation.info.g_log_level = enb_properties->properties->glog_level;
+    }
+    if(!glog_verbosity_set) {
+        oai_emulation.info.g_log_verbosity = enb_properties->properties->glog_verbosity;
+    }
 
     AssertFatal (oai_emulation.info.nb_enb_local <= enb_properties->number,
                  "Number of eNB is greater than eNB defined in configuration file %s (%d/%d)!",
@@ -740,6 +752,7 @@ void get_simulation_options(int argc, char *argv[])
 
   free(conf_config_file_name);
   conf_config_file_name = 0;
+  return enb_properties;
 }
 
 void check_and_adjust_params(void)

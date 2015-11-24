@@ -77,6 +77,11 @@ void init_oai_emulation(void);
 void oaisim_config(void);
 /* @}*/
 
+/**
+ * temp description: update log level values from Enb_properties_array_t *
+ */
+void set_log_from_enb_properties(Enb_properties_array_t *enb_properties);
+
 
 /** @defgroup _config_module Configuration functions for various modules
  *  @ingroup _fn

@@ -37,7 +37,7 @@
 #ifndef OAISIM_FUNCTIONS_H_
 #define OAISIM_FUNCTIONS_H_
 
-void get_simulation_options(int argc, char *argv[]);
+Enb_properties_array_t *get_simulation_options(int argc, char *argv[]);
 
 void check_and_adjust_params(void);
 
