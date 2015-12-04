@@ -369,6 +369,7 @@ void phy_config_sib2_ue(uint8_t Mod_id,int CC_id,
   }
   
   switch(lte_frame_parms->N_RB_UL) {
+    printf("***** performed %d ***********\n",lte_frame_parms->N_RB_UL);
   case 6:
     ufmc_init(lte_frame_parms->nb_prefix_samples,16,128,lte_frame_parms->N_RB_UL,lte_frame_parms->first_carrier_offset);
     break;

@@ -106,7 +106,7 @@ void PHY_UFMC_mod(int *input,                       /// pointer to complex input
 
   static short temp[2048*4] __attribute__((aligned(16))),temp1[2048*4] __attribute__((aligned(16)));
   unsigned short i,j;
-  uint16_t log2fftSizeFixed=6;
+  uint16_t log2fftSizeFixed=6; //CV:We decided to work with singulat PRB: each subband is composed by 12 subcarrier and nb_rb is also the number of UFMC total subbands 
 
 #ifdef DEBUG_OFDM_MOD
   msg("[PHY] OFDM mod (size %d,prefix %d) Symbols %d, input %p, output %p\n",
@@ -163,7 +163,7 @@ void (*idft)(int16_t *,int16_t *, int);
 		 nb_prefix_samples,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
 		 1<<log2fftSizeFixed, // input dimension(only real part) -> FFT dimension
 		 1<<log2fftsize,
-		 j+20, //current PRB index for filter frequency shifting
+		 j+1, //current PRB index for filter frequency shifting
 		 first_carrier );  
       /*if (j==0){
 	write_output("fft_out1.m","fft_out1",&output[(i<<log2fftsize) + (i*nb_prefix_samples)],(1<<log2fftsize) + nb_prefix_samples,1,1);

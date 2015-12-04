@@ -36,6 +36,13 @@ This section deals with basic functions for OFDM Modulation.
 
 */
 
+/*! \brief
+//  UFMC demodulator
+//  Carmine Vitiello , 06/2015
+//  mail: carmine.vitiello@for.unipi.it
+//  
+*/
+
 #include "PHY/defs.h"
 #include "PHY/extern.h"
 #include "defs.h"
@@ -170,8 +177,35 @@ int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
                        unsigned int subframe,
                        uint8_t ant)
 {
-  uint16_t k,l,rb,drs_offset;
+  uint16_t k,l,rb,drs_offset,fftSize,lCP;
   int re_offset,symbol_offset;
+
+  switch(phy_vars_eNB->lte_frame_parms.N_RB_UL){
+    case 6:
+      lCP=9;
+      fftSize=128;
+      break;
+    case 15:
+      lCP=18;
+      fftSize=256;
+      break;
+    case 25:
+      lCP=36;
+      fftSize=512;
+      break;
+    case 50:
+      lCP=72;
+      fftSize=1024;
+      break;
+    case 75:
+      lCP=108;
+      fftSize=1536;
+      break;
+    case 100:
+      lCP=144;
+      fftSize=2048;
+      break;
+  }
 
   int16_t alpha_re[12] = {32767, 28377, 16383,     0,-16384,  -28378,-32768,-28378,-16384,    -1, 16383, 28377};
   int16_t alpha_im[12] = {0,     16383, 28377, 32767, 28377,   16383,     0,-16384,-28378,-32768,-28378,-16384};
@@ -182,12 +216,10 @@ int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
   int32_t ref_re,ref_im;
   uint8_t harq_pid = subframe2harq_pid(frame_parms,phy_vars_eNB->proc[subframe].frame_rx,subframe);
   uint16_t nb_rb=phy_vars_eNB->ulsch_eNB[eNB_id]->harq_processes[harq_pid]->nb_rb;
-  int16_t log2fftSize2=11,
-	  log2fftSize=10;
+  uint16_t fftSize2=2*fftSize;
   int drs_array[12*2*nb_rb];//mux with another variable in order to consider the frame number
   static short temp[2048*4] __attribute__((aligned(16))),temp1[2048*4] __attribute__((aligned(16))),
   Rxdft[2048*4] __attribute__((aligned(16)));
-  int16_t mod_vec[1<<(log2fftSize+1)];
   cyclic_shift[0] = (frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift +
                   phy_vars_eNB->ulsch_eNB[eNB_id]->harq_processes[harq_pid]->n_DMRS2 +
                   frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[(subframe<<1)]+((phy_vars_eNB->cooperation_flag==2)?10:0)+
@@ -206,7 +238,7 @@ int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
 	  drs_offset = 0;    
 	  re_offset = 0;
 	  alpha_ind = 0;
-	  memset(Rxdft,0,(1<<log2fftSize2)*sizeof(int));
+	  memset(Rxdft,0,fftSize2*sizeof(int));
 	  for (rb=0; rb<nb_rb; rb++) { //only 0 and 1 are rb imvolved in drs process
 	      for (k=0; k<12; k++) {
 		ref_re = (int32_t) ul_ref_sigs[u][v][Msc_RS][drs_offset<<1];// the same of ul_ref_sigs-->change with lte_ue_ref_sigs_ufmc
@@ -228,27 +260,28 @@ int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
 	      }
 	      re_offset=0;
 	      symbol_offset+=12;
-	      memset(temp1,0,(1<<log2fftSize)*sizeof(int));
-	      memset(temp,0,(1<<log2fftSize2)*sizeof(int)); memcpy(temp1,&drs_array[(12*rb)+(l*12*nb_rb)],6*sizeof(int)); /*memcpy(&temp1[(1<<(log2fftSize+1))-12],&drs_array[(12*rb)+(l*12*nb_rb)+6],6*sizeof(int));//temp is int16_t
+	      memset(temp1,0,2fftSize*sizeof(int));
+	      memset(temp,0,fftSize2*sizeof(int)); memcpy(temp1,&drs_array[(12*rb)+(l*12*nb_rb)],6*sizeof(int)); /*memcpy(&temp1[(1<<(log2fftSize+1))-12],&drs_array[(12*rb)+(l*12*nb_rb)+6],6*sizeof(int));//temp is int16_t
 	      idft1024((int16_t *)temp1,(int16_t *)temp,1);
 	      ii_CreateModvec(rb+1,0,(1<<log2fftSize),(1<<log2fftSize),&mod_vec[0]);
 	      multcmplx_add((int16_t *)Rxdft,(int16_t *)temp,mod_vec,(1<<log2fftSize));*/
 	      memcpy(&temp1[(1<<(6+1))-12],&drs_array[(12*rb)+(l*12*nb_rb)+6],6*sizeof(int));//temp is int16_t
+	      // I can change arg of temp1 in order to be flexible for IDFF-size changing 
 	      idft64((int16_t *)temp1,(int16_t *)temp,1);
-	      ii_CreateModvec(rb+1,0,(1<<log2fftSize),(1<<log2fftSize),&mod_vec[0]);
+	      //ii_CreateModvec(rb+1,0,(1<<log2fftSize),(1<<log2fftSize),&mod_vec[0]);
 	      dolph_cheb((int16_t *)temp, // input
 		(int16_t *)&Rxdft,
-		72,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
+		lCP,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
 		1<<6, // input dimension(only real part) -> FFT dimension
-		1<<log2fftSize,
+		fftSize,
 		rb+1 //nPRB for filter frequency shifting
 		  );
 	  }
 	  if(u==22 && v==0 && Msc_RS==1 && l==0){
-	    write_output("drs_emplRx1.m","drs_emplRx1",(int16_t *)&Rxdft,(1<<log2fftSize2),1,1);//12 symbols*2 slot eachsubframe*nPRBs*/
+	    write_output("drs_emplRx1.m","drs_emplRx1",(int16_t *)&Rxdft,fftSize2,1,1);//12 symbols*2 slot eachsubframe*nPRBs*/
 	  }
 	  if(u==26 && v==0 && Msc_RS==1 && l==1){
-	    write_output("drs_emplRx2.m","drs_emplRx2",(int16_t *)&Rxdft,(1<<log2fftSize2),1,1);//12 symbols*2 slot eachsubframe*nPRBs*/
+	    write_output("drs_emplRx2.m","drs_emplRx2",(int16_t *)&Rxdft,fftSize,1,1);//12 symbols*2 slot eachsubframe*nPRBs*/
 	  }
 	  dft2048((int16_t *)Rxdft,(int16_t *)&ul_ref_sigs_ufmc[u][v][Msc_RS][l][0],1);  
 	}
@@ -392,7 +425,7 @@ Rxdft
   return(0);
 }
 
-void rx_pdsch_ufmc_sync(PHY_VARS_eNB *phy_vars_eNB,
+int rx_pdsch_ufmc_sync(PHY_VARS_eNB *phy_vars_eNB,
                        uint8_t eNB_id,
                        short amp,
                        unsigned int subframe,
@@ -405,7 +438,7 @@ void rx_pdsch_ufmc_sync(PHY_VARS_eNB *phy_vars_eNB,
 
   uint8_t cyclic_shift[2];
   LTE_DL_FRAME_PARMS *frame_parms = &phy_vars_eNB->lte_frame_parms;
-  uint32_t u,v,index;
+  uint32_t u,v,index=0;
   uint32_t u0=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.grouphop[subframe<<1];
   uint32_t u1=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.grouphop[1+(subframe<<1)];
   uint32_t v0=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.seqhop[subframe<<1];
@@ -474,5 +507,6 @@ void rx_pdsch_ufmc_sync(PHY_VARS_eNB *phy_vars_eNB,
     index=max_vec((int16_t *)output,(1<<(log2fftSize2+1)));//defined in ufmc_filter.c 
       printf("index=%d\n",index);
   }
+  return index;
 }
 

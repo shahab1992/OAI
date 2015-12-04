@@ -51,13 +51,12 @@ void multipath_channel(channel_desc_t *desc,
                        uint32_t length,
                        uint8_t keep_channel)
 {
-
   int i,ii,j,l;
   int length1, length2, tail;
   __m128d rx_tmp128_re_f,rx_tmp128_im_f,rx_tmp128_re,rx_tmp128_im, rx_tmp128_1,rx_tmp128_2,rx_tmp128_3,rx_tmp128_4,tx128_re,tx128_im,ch128_x,ch128_y,pathloss128;
 
   double path_loss = pow(10,desc->path_loss_dB/20);
-  int dd = abs(desc->channel_offset);
+  int dd = abs(desc->channel_offset);//delay
 
   pathloss128 = _mm_set1_pd(path_loss);
 
@@ -183,7 +182,6 @@ void multipath_channel(channel_desc_t *desc,
 
   printf("\n");
 #endif
-
   for (i=0; i<((int)length-dd); i++) {
     for (ii=0; ii<desc->nb_rx; ii++) {
       rx_tmp.x = 0;
@@ -220,3 +218,72 @@ void multipath_channel(channel_desc_t *desc,
 #endif
 
 
+void multipath_ufmc_channel(channel_desc_t *desc,
+                       double **tx_sig_re,
+                       double **tx_sig_im,
+                       double **rx_sig_re,
+                       double **rx_sig_im,
+                       uint32_t length,
+                       uint8_t keep_channel)
+{
+
+  int i,ii,j,l;
+  struct complex rx_tmp,tx;
+
+  double path_loss = pow(10,desc->path_loss_dB/20);
+  int dd;
+  dd = abs(desc->channel_offset);
+
+#ifdef DEBUG_CH
+  printf("[CHANNEL] keep = %d : path_loss = %g (%f), nb_rx %d, nb_tx %d, dd %d, len %d \n",keep_channel,path_loss,desc->path_loss_dB,desc->nb_rx,desc->nb_tx,dd,desc->channel_length);
+#endif
+
+  if (keep_channel) {
+    // do nothing - keep channel
+  } else {
+    random_channel(desc,0);
+  }
+
+#ifdef DEBUG_CH
+
+  for (l = 0; l<(int)desc->channel_length; l++) {
+    printf("%p (%f,%f) ",desc->ch[0],desc->ch[0][l].x,desc->ch[0][l].y);
+  }
+
+  printf("\n");
+#endif
+  memset(&rx_sig_re[0][0],0.0,((int)length+dd+(int)desc->channel_length)*sizeof(double));
+  for (i=0; i<((int)length); i++) {
+    for (ii=0; ii<desc->nb_rx; ii++) {
+      rx_tmp.x = 0;
+      rx_tmp.y = 0;
+
+      for (j=0; j<desc->nb_tx; j++) {
+        for (l = 0; l<(int)desc->channel_length; l++) {
+          if ((i>=0) && (i-l)>=0) {
+            tx.x = tx_sig_re[j][i-l];
+            tx.y = tx_sig_im[j][i-l];
+          } else {
+            tx.x =0;
+            tx.y =0;
+          }
+
+          rx_tmp.x += (tx.x * desc->ch[ii+(j*desc->nb_rx)][l].x) - (tx.y * desc->ch[ii+(j*desc->nb_rx)][l].y);
+          rx_tmp.y += (tx.y * desc->ch[ii+(j*desc->nb_rx)][l].x) + (tx.x * desc->ch[ii+(j*desc->nb_rx)][l].y);
+        } //l
+      }  // j
+
+      rx_sig_re[ii][i+dd] = rx_tmp.x*path_loss;
+      rx_sig_im[ii][i+dd] = rx_tmp.y*path_loss;
+      /*
+      if ((ii==0)&&((i%32)==0)) {
+      printf("%p %p %f,%f => %e,%e\n",rx_sig_re[ii],rx_sig_im[ii],rx_tmp.x,rx_tmp.y,rx_sig_re[ii][i-dd],rx_sig_im[ii][i-dd]);
+      }
+      */
+      //rx_sig_re[ii][i] = sqrt(.5)*(tx_sig_re[0][i] + tx_sig_re[1][i]);
+      //rx_sig_im[ii][i] = sqrt(.5)*(tx_sig_im[0][i] + tx_sig_im[1][i]);
+
+    } // ii
+  } // i 
+  
+}
