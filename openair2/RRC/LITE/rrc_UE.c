@@ -2163,6 +2163,10 @@ const char SIBType[12][6] = {"SIB3","SIB4","SIB5","SIB6","SIB7","SIB8","SIB9","S
 const char SIBPeriod[8][6]= {"rf8","rf16","rf32","rf64","rf128","rf256","rf512","ERR"};
 int siPeriod_int[7] = {80,160,320,640,1280,2560,5120};
 
+const char MCCH_Repetion_Period[4][6] = {"rf32","rf64","rf128","rf256"};
+const char MCCH_Modification_Period[2][6] = {"rf512","rf1024"};
+const char MCCH_signallingMCS[4][6]={"n2","n7","n13","n19"};
+
 static const char* SIBreserved( long value )
 {
   if (value < 0 || value > 1)
@@ -2683,6 +2687,7 @@ static int decode_SIB1( const protocol_ctxt_t* const ctxt_pP, const uint8_t eNB_
 //-----------------------------------------------------------------------------
 static void dump_sib2( SystemInformationBlockType2_t *sib2 )
 {
+  int i;
   // ac_BarringInfo
   if (sib2->ac_BarringInfo) {
     LOG_I( RRC, "ac_BarringInfo->ac_BarringForEmergency : %d\n",
@@ -2871,6 +2876,16 @@ static void dump_sib2( SystemInformationBlockType2_t *sib2 )
   if (sib2->mbsfn_SubframeConfigList) {
     LOG_I( RRC, "mbsfn_SubframeConfigList : %p\n", sib2->mbsfn_SubframeConfigList );
     // FIXME
+    for (i=0; i<sib2->mbsfn_SubframeConfigList->list.count; i++) {
+       LOG_I( RRC, "mbsfn_SubframeConfig.radioframeAllocationPeriod : %dn (%d)\n", sib2->mbsfn_SubframeConfigList->list.array[i]->radioframeAllocationPeriod<<1,sib2->mbsfn_SubframeConfigList->list.array[i]->radioframeAllocationPeriod);
+       LOG_I( RRC, "mbsfn_SubframeConfig.radioframeAllocationOffset : %d\n", sib2->mbsfn_SubframeConfigList->list.array[i]->radioframeAllocationOffset );
+       if( sib2->mbsfn_SubframeConfigList->list.array[i]->subframeAllocation.present == MBSFN_SubframeConfig__subframeAllocation_PR_oneFrame )
+               LOG_I( RRC, "mbsfn_SubframeConfig.subframeAllocation.oneFrame : %d\n", sib2->mbsfn_SubframeConfigList->list.array[i]->subframeAllocation.choice.oneFrame );
+       else{
+               LOG_I( RRC, "[TOCHECK] mbsfn_SubframeConfig.subframeAllocation.fourFrames \n" );
+               
+       }
+    } 
   } else
     LOG_I( RRC, "mbsfn_SubframeConfigList : not defined\n" );
 
@@ -3159,11 +3174,33 @@ static void dump_sib5( SystemInformationBlockType5_t *sib5 )
 #ifdef Rel10
 static void dump_sib13( SystemInformationBlockType13_r9_t *sib13 )
 {
+  int i;
   LOG_I( RRC, "[UE] Dumping SIB13\n" );
   LOG_I( RRC, "[UE] dumping sib13 second time\n" );
+  MBSFN_AreaInfoList_r9_t * MBSFNArea_list= &sib13->mbsfn_AreaInfoList_r9;
+  if( MBSFNArea_list ){
+   LOG_I(RRC,"[UE] mbsfn_AreaInfoList_r9\n"); 
+  for( i=0; i<MBSFNArea_list->list.count; i++ ){
+   LOG_I(RRC, "[UE] mbsfn_AreaId_r9 : %d\n", MBSFNArea_list->list.array[i]->mbsfn_AreaId_r9);
+   LOG_I(RRC, "[UE] non_MBSFNregionLength : %s\n ",MBSFNArea_list->list.array[i]->non_MBSFNregionLength == 0 ? "s1":"s2");
+   LOG_I(RRC, "[UE] notificationIndicator_r9 : %d\n",MBSFNArea_list->list.array[i]->notificationIndicator_r9);
+   LOG_I(RRC,"[UE]  mcch_Config_r9\n"); 
+   LOG_I(RRC, "[UE] mcch_Config_r9.mcch_RepetitionPeriod_r9 : %s (%d)\n",MCCH_Repetion_Period[MBSFNArea_list->list.array[i]->mcch_Config_r9.mcch_RepetitionPeriod_r9],MBSFNArea_list->list.array[i]->mcch_Config_r9.mcch_RepetitionPeriod_r9);
+   LOG_I(RRC, "[UE] mcch_Config_r9.mcch_Offset_r9 : %d\n",MBSFNArea_list->list.array[i]->mcch_Config_r9.mcch_Offset_r9); // in accordance with mbsfn subframe configuration in sib2
+   LOG_I(RRC, "[UE] mcch_Config_r9.mcch_ModificationPeriod_r9 : %s\n",MCCH_Modification_Period[MBSFNArea_list->list.array[i]->mcch_Config_r9.mcch_ModificationPeriod_r9]);
+   LOG_I(RRC, "[UE] mcch_Config_r9.sf_AllocInfo_r9 : (%x,%x,%x)\n",MBSFNArea_list->list.array[i]->mcch_Config_r9.sf_AllocInfo_r9.buf[0],MBSFNArea_list->list.array[i]->mcch_Config_r9.sf_AllocInfo_r9.buf[1],MBSFNArea_list->list.array[i]->mcch_Config_r9.sf_AllocInfo_r9.buf[2]);
+   LOG_I(RRC, "[UE] mcch_Config_r9.signallingMCS_r9 : %s\n",MCCH_signallingMCS[MBSFNArea_list->list.array[i]->mcch_Config_r9.signallingMCS_r9]);
+  }
+  }
+  LOG_I(RRC,"[UE] notificationConfig_r9\n"); 
   LOG_I( RRC, "[UE] NotificationRepetitionCoeff-r9 : %ld\n", sib13->notificationConfig_r9.notificationRepetitionCoeff_r9 );
   LOG_I( RRC, "[UE] NotificationOffset-r9 : %d\n", (int)sib13->notificationConfig_r9.notificationOffset_r9 );
   LOG_I( RRC, "[UE] NotificationSF-Index-r9 : %d\n", (int)sib13->notificationConfig_r9.notificationSF_Index_r9 );
+
+  LOG_I( RRC, "[UE] NotificationRepetitionCoeff-r9 : %ld\n", sib13->notificationConfig_r9.notificationRepetitionCoeff_r9 );
+  LOG_I( RRC, "[UE] NotificationOffset-r9 : %d\n", (int)sib13->notificationConfig_r9.notificationOffset_r9 );
+  LOG_I( RRC, "[UE] NotificationSF-Index-r9 : %d\n", (int)sib13->notificationConfig_r9.notificationSF_Index_r9 );
+  
 }
 #endif
 

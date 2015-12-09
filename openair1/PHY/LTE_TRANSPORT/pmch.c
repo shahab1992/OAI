@@ -182,7 +182,84 @@ int is_pmch_subframe(uint32_t frame, int subframe, LTE_DL_FRAME_PARMS *frame_par
         }
 
       } else { // handle 4 frames case
+	       //LOG_W(PHY, "[TODO] subframe %d  MBSFN_config:%d  handle 4 frames case: %x\n",subframe,i,frame_parms->MBSFN_config[i].mbsfn_SubframeConfig);
+      //return 0;
+       //printf("frame_parms->MBSFN_config[%d].radioframeAllocationPeriod:%d\n",i,frame_parms->MBSFN_config[i].radioframeAllocationPeriod);
+       //printf("frame_parms->MBSFN_config[%d].radioframeAllocationOffset:%d\n",i,frame_parms->MBSFN_config[i].radioframeAllocationOffset);
+       //return(0);
+if (frame_parms->frame_type == FDD) {
+         
+          switch (subframe) {
 
+          case 1:
+            if ((frame_parms->MBSFN_config[i].mbsfn_SubframeConfig & MBSFN_FDD_SF1) > 0)
+              return(1);
+
+            break;
+
+          case 2:
+            if ((frame_parms->MBSFN_config[i].mbsfn_SubframeConfig & MBSFN_FDD_SF2) > 0)
+              return(1);
+
+            break;
+
+          case 3:
+            if ((frame_parms->MBSFN_config[i].mbsfn_SubframeConfig & MBSFN_FDD_SF3) > 0)
+              return(1);
+
+            break;
+
+          case 6:
+            if ((frame_parms->MBSFN_config[i].mbsfn_SubframeConfig & MBSFN_FDD_SF6) > 0)
+              return(1);
+
+            break;
+
+          case 7:
+            if ((frame_parms->MBSFN_config[i].mbsfn_SubframeConfig & MBSFN_FDD_SF7) > 0)
+              return(1);
+
+            break;
+
+          case 8:
+            if ((frame_parms->MBSFN_config[i].mbsfn_SubframeConfig & MBSFN_FDD_SF8) > 0)
+              return(1);
+
+            break;
+          }
+        } else  {
+          switch (subframe) {
+          case 3:
+            if ((frame_parms->MBSFN_config[i].mbsfn_SubframeConfig & MBSFN_TDD_SF3) > 0)
+              return(1);
+
+            break;
+
+          case 4:
+            if ((frame_parms->MBSFN_config[i].mbsfn_SubframeConfig & MBSFN_TDD_SF4) > 0)
+              return(1);
+
+            break;
+
+          case 7:
+           if ((frame_parms->MBSFN_config[i].mbsfn_SubframeConfig & MBSFN_TDD_SF7) > 0)
+              return(1);
+
+            break;
+
+          case 8:
+            if ((frame_parms->MBSFN_config[i].mbsfn_SubframeConfig & MBSFN_TDD_SF8) > 0)
+              return(1);
+
+            break;
+
+          case 9:
+            if ((frame_parms->MBSFN_config[i].mbsfn_SubframeConfig & MBSFN_TDD_SF9) > 0)
+              return(1);
+
+            break;
+          }
+        } 
       }
     }
   }

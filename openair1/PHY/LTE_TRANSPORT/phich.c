@@ -1345,7 +1345,7 @@ void rx_phich(PHY_VARS_UE *phy_vars_ue,
 
   if (HI16>0) {   //NACK
     if (phy_vars_ue->ulsch_ue_Msg3_active[eNB_id] == 1) {
-      LOG_D(PHY,"[UE  %d][PUSCH %d][RAPROC] Frame %d subframe %d Msg3 PHICH, received NAK (%d) nseq %d, ngroup %d\n",
+      LOG_I(PHY,"[UE  %d][PUSCH %d][RAPROC] Frame %d subframe %d Msg3 PHICH, received NAK (%d) nseq %d, ngroup %d\n",
             phy_vars_ue->Mod_id,harq_pid,
             phy_vars_ue->frame_rx,
             subframe,
@@ -1370,7 +1370,7 @@ void rx_phich(PHY_VARS_UE *phy_vars_ue,
       }
     } else {
       //#ifdef DEBUG_PHICH
-      LOG_D(PHY,"[UE  %d][PUSCH %d] Frame %d subframe %d PHICH, received NAK (%d) nseq %d, ngroup %d\n",
+      LOG_I(PHY,"[UE  %d][PUSCH %d] Frame %d subframe %d PHICH, received NAK (%d) nseq %d, ngroup %d\n",
             phy_vars_ue->Mod_id,harq_pid,
             phy_vars_ue->frame_rx,
             subframe,
@@ -1390,7 +1390,7 @@ void rx_phich(PHY_VARS_UE *phy_vars_ue,
 
   } else {  //ACK
     if (phy_vars_ue->ulsch_ue_Msg3_active[eNB_id] == 1) {
-      LOG_D(PHY,"[UE  %d][PUSCH %d][RAPROC] Frame %d subframe %d Msg3 PHICH, received ACK (%d) nseq %d, ngroup %d\n\n",
+      LOG_I(PHY,"[UE  %d][PUSCH %d][RAPROC] Frame %d subframe %d Msg3 PHICH, received ACK (%d) nseq %d, ngroup %d\n\n",
             phy_vars_ue->Mod_id,harq_pid,
             phy_vars_ue->frame_rx,
             subframe,
@@ -1398,7 +1398,7 @@ void rx_phich(PHY_VARS_UE *phy_vars_ue,
             nseq_PHICH,ngroup_PHICH);
     } else {
       //#ifdef PHICH_DEBUG
-      LOG_D(PHY,"[UE  %d][PUSCH %d] Frame %d subframe %d PHICH, received ACK (%d) nseq %d, ngroup %d\n\n",
+      LOG_I(PHY,"[UE  %d][PUSCH %d] Frame %d subframe %d PHICH, received ACK (%d) nseq %d, ngroup %d\n\n",
             phy_vars_ue->Mod_id,harq_pid,
             phy_vars_ue->frame_rx,
             subframe, HI16,
