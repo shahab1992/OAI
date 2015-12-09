@@ -595,6 +595,10 @@ void phy_scope_UE(FD_lte_phy_scope_ue *form,
   chest_f_abs = (float*) calloc(nsymb_ce*nb_antennas_rx*nb_antennas_tx,sizeof(float));
   llr = (float*) calloc(coded_bits_per_codeword,sizeof(float)); // init to zero
   bit = malloc(coded_bits_per_codeword*sizeof(float));
+  //PMCH
+  llr_pmch = (float*) calloc(coded_bits_per_codeword_MCH,sizeof(float));
+  bit_pmch = malloc(coded_bits_per_codeword_MCH*sizeof(float));
+
   llr_pdcch = (float*) calloc(12*frame_parms->N_RB_DL*num_pdcch_symbols*2,sizeof(float)); // init to zero
   bit_pdcch = (float*) calloc(12*frame_parms->N_RB_DL*num_pdcch_symbols*2,sizeof(float));
 
