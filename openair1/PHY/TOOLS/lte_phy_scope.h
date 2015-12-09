@@ -66,6 +66,9 @@ typedef struct {
   FL_OBJECT * pdsch_llr;
   FL_OBJECT * pdsch_tput;
   FL_OBJECT * button_0;
+  //PMCH 
+  FL_OBJECT * ppmch_comp;
+  FL_OBJECT * ppmch_llr;
 } FD_lte_phy_scope_ue;
 
 FD_lte_phy_scope_enb * create_lte_phy_scope_enb( void );

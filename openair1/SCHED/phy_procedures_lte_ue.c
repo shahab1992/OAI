@@ -3282,10 +3282,10 @@ int phy_procedures_UE_RX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstrac
   }
 
   if (is_pmch_subframe((subframe_rx==9?-1:0)+frame_rx,subframe_rx,&phy_vars_ue->lte_frame_parms)) {
-    LOG_I(PHY,"ue calling pmch subframe ..\n ");
+    //LOG_I(PHY,"ue calling pmch subframe ..\n ");
 
     if ((slot_rx%2)==1) {
-      LOG_D(PHY,"[UE %d] Frame %d, subframe %d: Querying for PMCH demodulation(%d)\n",
+      LOG_I(PHY,"[UE %d] Frame %d, subframe %d: Querying for PMCH demodulation(%d)\n",
             phy_vars_ue->Mod_id,(subframe_rx==9?-1:0)+frame_rx,subframe_rx,slot_rx);
 #ifdef Rel10
       pmch_mcs = mac_xface->ue_query_mch(phy_vars_ue->Mod_id,
@@ -3313,7 +3313,8 @@ int phy_procedures_UE_RX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstrac
             slot_fep_mbsfn(phy_vars_ue,
                            l,
                            subframe_rx,
-                           0,0);//phy_vars_ue->rx_offset,0);
+                           //0,0);//phy_vars_ue->rx_offset,0);
+                           phy_vars_ue->rx_offset,0);
           }
 
           for (l=2; l<12; l++) {
@@ -3371,15 +3372,15 @@ int phy_procedures_UE_RX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstrac
           else
             phy_vars_ue->dlsch_mtch_errors[sync_area][0]++;
 
-          LOG_D(PHY,"[%s %d] Frame %d, subframe %d: PMCH in error (%d,%d), not passing to L2 (TBS %d, iter %d,G %d)\n",
+          LOG_E(PHY,"[%s %d] Frame %d, subframe %d: PMCH in error (%d,%d), not passing to L2 (TBS %d, iter %d,G %d, Qm %d)\n",
                 (r_type == no_relay)? "UE": "RN/UE", phy_vars_ue->Mod_id,
                 (subframe_rx==9?-1:0)+frame_rx,subframe_rx,
                 phy_vars_ue->dlsch_mcch_errors[sync_area][0],
                 phy_vars_ue->dlsch_mtch_errors[sync_area][0],
                 phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->TBS>>3,
                 phy_vars_ue->dlsch_ue_MCH[0]->max_turbo_iterations,
-                phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->G);
-          dump_mch(phy_vars_ue,0,phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->G,subframe_rx);
+                phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->G,phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->Qm);
+          //dump_mch(phy_vars_ue,0,phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->G,subframe_rx);
 #ifdef DEBUG_DLSCH
 
           for (int i=0; i<phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->TBS>>3; i++) {
@@ -3393,6 +3394,15 @@ int phy_procedures_UE_RX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstrac
             mac_xface->macphy_exit("Why are we exiting here?");
         } else {
 #ifdef Rel10
+	LOG_I(PHY,"[%s %d] Frame %d, subframe %d: PMCH OK (%d,%d), passing to L2 (TBS %d, iter %d,G %d, Qm %d)\n",
+                (r_type == no_relay)? "UE": "RN/UE", phy_vars_ue->Mod_id,
+                (subframe_rx==9?-1:0)+frame_rx,subframe_rx,
+                phy_vars_ue->dlsch_mcch_errors[sync_area][0],
+                phy_vars_ue->dlsch_mtch_errors[sync_area][0],
+                phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->TBS>>3,
+                phy_vars_ue->dlsch_ue_MCH[0]->max_turbo_iterations,
+                phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->G,phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->Qm);
+
 
           if ((r_type == no_relay) || (mcch_active == 1)) {
             mac_xface->ue_send_mch_sdu(phy_vars_ue->Mod_id,
