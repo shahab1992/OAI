@@ -3103,7 +3103,7 @@ openair0_cfg[card].num_rb_dl=frame_parms[0]->N_RB_DL;
 #ifdef OAI_USRP
     openair_daq_vars.timing_advance = timing_advance;
 #else
-    openair_daq_vars.timing_advance = 160;
+    openair_daq_vars.timing_advance = timing_advance;
 #endif
     if (setup_ue_buffers(UE,&openair0_cfg[0],rf_map)!=0) {
       printf("Error setting up eNB buffer\n");

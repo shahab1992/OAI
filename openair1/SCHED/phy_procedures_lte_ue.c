@@ -2234,13 +2234,13 @@ int lte_ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *phy_vars_ue,uint8_t abst
              (dci_alloc_rx[i].rnti == phy_vars_ue->prach_resources[eNB_id]->ra_RNTI) &&
              (dci_alloc_rx[i].format == format1A || dci_alloc_rx[i].format == format1C)) {
 
-#ifdef DEBUG_PHY_PROC
-      LOG_D(PHY,"[UE  %d][RAPROC] subframe %d: Found RA rnti %x, format 1%s, dci_cnt %d\n",phy_vars_ue->Mod_id,subframe_rx,dci_alloc_rx[i].rnti,dci_alloc_rx[i].format==format1A?"A":"C",i);
+//#ifdef DEBUG_PHY_PROC
+      LOG_I(PHY,"[UE  %d][RAPROC] subframe %d: Found RA rnti %x, format 1%s, dci_cnt %d\n",phy_vars_ue->Mod_id,subframe_rx,dci_alloc_rx[i].rnti,dci_alloc_rx[i].format==format1A?"A":"C",i);
 
       //if (((frame_rx%100) == 0) || (frame_rx < 20))
       //dump_dci(&phy_vars_ue->lte_frame_parms, &dci_alloc_rx[i]);
       //mac_xface->macphy_exit("so far so good...\n");
-#endif
+//#endif
 #ifdef DIAG_PHY
 
       if (subframe_rx != 9) {
@@ -2471,7 +2471,6 @@ int phy_procedures_UE_RX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstrac
     else
       n_symb = 0;
   } else {
-   /* 
     if (is_pmch_subframe(frame_rx,subframe_rx,&phy_vars_ue->lte_frame_parms)) {
       if ((slot_rx%2)==0) {
     n_symb=2;
@@ -2480,7 +2479,7 @@ int phy_procedures_UE_RX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstrac
       else
     n_symb=0;
     }
-    else*/
+    else
     	n_symb = phy_vars_ue->lte_frame_parms.symbols_per_tti/2;
 	
   }
@@ -3331,6 +3330,7 @@ int phy_procedures_UE_RX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstrac
                subframe_rx,
                phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->G);
           */
+	  phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->Qm = get_Qm(pmch_mcs);
           phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->G = get_G(&phy_vars_ue->lte_frame_parms,
               phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->nb_rb,
               phy_vars_ue->dlsch_ue_MCH[0]->harq_processes[0]->rb_alloc_even,

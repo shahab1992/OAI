@@ -162,6 +162,7 @@ ue_process_rar(
   }
 
 #ifdef DEBUG_RAR
+  LOG_I(MAC,"preamble_index %d\n",preamble_index);
   for( i=0; i < 8; i++ ){
 	if( ((dlsch_buffer[i]&0x80)>>7) ){
 		if( i==0 && ((dlsch_buffer[i]&0x40)>>6)==0 ){ //BI sub-header
@@ -214,9 +215,9 @@ ue_process_rar(
 	dlsch_buffer[i+j_rapdi_index*6+3]&1,
 	(uint16_t)dlsch_buffer[i+j_rapdi_index*6+5]+(dlsch_buffer[i+j_rapdi_index*6+4]<<8));
 
-  LOG_I(MAC,"[eNB %d][RAPROC] Frame %d Received RAR (%02x|%02x.%02x.%02x.%02x.%02x.%02x) for preamble %d/%d\n",module_idP,frameP,
-        *(uint8_t*)rarh,rar[0],rar[1],rar[2],rar[3],rar[4],rar[5],
-        rarh->RAPID,preamble_index);
+  //LOG_I(MAC,"[eNB %d][RAPROC] Frame %d Received RAR (%02x|%02x.%02x.%02x.%02x.%02x.%02x) for preamble %d/%d\n",module_idP,frameP,
+        //*(uint8_t*)rarh,rar[0],rar[1],rar[2],rar[3],rar[4],rar[5],
+        //rarh->RAPID,preamble_index);
 
 
   //if (preamble_index == rarh->RAPID) {

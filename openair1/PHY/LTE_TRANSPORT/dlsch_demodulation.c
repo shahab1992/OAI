@@ -606,7 +606,7 @@ int rx_pdsch(PHY_VARS_UE *phy_vars_ue,
                        lte_ue_pdsch_vars[eNB_id]->rxdataF_comp0,
                        lte_ue_pdsch_vars[eNB_id]->llr[0],
                        symbol,first_symbol_flag,nb_rb,
-                       adjust_G2(frame_parms,dlsch0_harq->rb_alloc_even,2,subframe,symbol),
+                       adjust_G2(frame_parms,/*dlsch0_harq->rb_alloc_even*/rballoc,2,subframe,symbol),
                        lte_ue_pdsch_vars[eNB_id]->llr128);
       else if (i_mod == 2) {
         dlsch_qpsk_qpsk_llr(frame_parms,
