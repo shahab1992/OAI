@@ -942,7 +942,7 @@ int ue_query_mch(module_id_t module_idP, uint8_t CC_id, uint32_t frameP, uint32_
               if ( (frameP % mcch_period == UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.mcch_Offset_r9) &&
                    ((UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.sf_AllocInfo_r9.buf[0] & MBSFN_FDD_SF1) == MBSFN_FDD_SF1) ) {
                 mcch_flag = 1;
-	  	LOG_W(MAC,"frameP %d, mcch_period %d mcch_Offset_r9 %d ,  mbsfn_period %d mbsfn_SubframeConfig[j]->radioframeAllocationOffset %d -->  mcch_flag set: MBSFN_FDD_SF1(%x), AllocInfo_r9 (%x) (%x,%x,%x)\n",frameP,mcch_period,UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.mcch_Offset_r9,mbsfn_period,UE_mac_inst[module_idP].mbsfn_SubframeConfig[j]->radioframeAllocationOffset,MBSFN_FDD_SF1,UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.sf_AllocInfo_r9,UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.sf_AllocInfo_r9.buf[0],UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.sf_AllocInfo_r9.buf[1],UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.sf_AllocInfo_r9.buf[2]);
+	  	LOG_W(MAC,"frameP %d,subframe %d, mcch_period %d mcch_Offset_r9 %d ,  mbsfn_period %d mbsfn_SubframeConfig[j]->radioframeAllocationOffset %d -->  mcch_flag set: MBSFN_FDD_SF1(%x), AllocInfo_r9 (%x) (%x,%x,%x)\n",frameP,subframe,mcch_period,UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.mcch_Offset_r9,mbsfn_period,UE_mac_inst[module_idP].mbsfn_SubframeConfig[j]->radioframeAllocationOffset,MBSFN_FDD_SF1,UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.sf_AllocInfo_r9,UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.sf_AllocInfo_r9.buf[0],UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.sf_AllocInfo_r9.buf[1],UE_mac_inst[module_idP].mbsfn_AreaInfo[i]->mcch_Config_r9.sf_AllocInfo_r9.buf[2]);
               }
 
               mtch_flag = 1;
@@ -1122,7 +1122,7 @@ case 2:
 	}
 	 // sf allocation is non-overlapping
         if ((msi_flag==1) || (mcch_flag==1) || (mtch_flag==1)) {
-          LOG_I(MAC,"[UE %d] Frame %d Subframe %d: sync area %d SF alloc %d: msi flag %d, mcch flag %d, mtch flag %d\n",
+          LOG_D(MAC,"[UE %d] Frame %d Subframe %d: sync area %d SF alloc %d: msi flag %d, mcch flag %d, mtch flag %d\n",
                 module_idP, frameP, subframe,i,j,msi_flag,mcch_flag,mtch_flag);
 
           *sync_area=i;

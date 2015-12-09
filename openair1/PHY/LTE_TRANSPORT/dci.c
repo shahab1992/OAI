@@ -2685,7 +2685,7 @@ void dci_decoding_procedure0(LTE_UE_PDCCH **lte_ue_pdcch_vars,
       printf("crc =>%x\n",crc);
 #endif
 
-      if (((L>1) && ((crc == si_rnti)||
+      if (((L>1) && ((crc == si_rnti || crc == M_RNTI)|| 
                      (crc == ra_rnti)))||
           (crc == lte_ue_pdcch_vars[eNB_id]->crnti))   {
         dci_alloc[*dci_cnt].dci_length = sizeof_bits;
@@ -2717,7 +2717,7 @@ void dci_decoding_procedure0(LTE_UE_PDCCH **lte_ue_pdcch_vars,
 #endif
         }
 
-        if (crc==si_rnti) {
+        if (crc==si_rnti || crc == M_RNTI) {
           dci_alloc[*dci_cnt].format     = format_si;
           *dci_cnt = *dci_cnt+1;
         } else if (crc==ra_rnti) {

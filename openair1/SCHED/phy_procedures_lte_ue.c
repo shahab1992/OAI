@@ -2361,8 +2361,11 @@ int lte_ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *phy_vars_ue,uint8_t abst
 #endif
         phy_vars_ue->ulsch_ue[eNB_id]->num_cba_dci[(subframe_rx+4)%10]++;
       }
-    }
+    }else if( dci_alloc_rx[i].rnti == M_RNTI && dci_alloc_rx[i].format == format1C ){
+        LOG_W(PHY,"[UE  %d] TODO: frame %d, subframe %d: received DCI %d with RNTI=%x and format %d!\n",phy_vars_ue->Mod_id,frame_rx,subframe_rx,i,dci_alloc_rx[i].rnti, dci_alloc_rx[i].format);
 
+        //dump_dci(&phy_vars_ue->lte_frame_parms,&dci_alloc_rx[i]);
+    }
     else {
 #ifdef DEBUG_PHY_PROC
       LOG_D(PHY,"[UE  %d] frame %d, subframe %d: received DCI %d with RNTI=%x (C-RNTI:%x, CBA_RNTI %x) and format %d!\n",phy_vars_ue->Mod_id,frame_rx,subframe_rx,i,dci_alloc_rx[i].rnti,
@@ -3285,7 +3288,7 @@ int phy_procedures_UE_RX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstrac
     //LOG_I(PHY,"ue calling pmch subframe ..\n ");
 
     if ((slot_rx%2)==1) {
-      LOG_I(PHY,"[UE %d] Frame %d, subframe %d: Querying for PMCH demodulation(%d)\n",
+      LOG_D(PHY,"[UE %d] Frame %d, subframe %d: Querying for PMCH demodulation(%d)\n",
             phy_vars_ue->Mod_id,(subframe_rx==9?-1:0)+frame_rx,subframe_rx,slot_rx);
 #ifdef Rel10
       pmch_mcs = mac_xface->ue_query_mch(phy_vars_ue->Mod_id,
