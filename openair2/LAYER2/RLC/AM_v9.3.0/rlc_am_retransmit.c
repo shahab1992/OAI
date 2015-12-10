@@ -114,7 +114,12 @@ void rlc_am_nack_pdu (
 #if TEST_RLC_AM
           rlc_am_v9_3_0_test_data_conf (rlc_pP->module_id, rlc_pP->rb_id, rlc_pP->input_sdus[sdu_index].mui, RLC_SDU_CONFIRM_NO);
 #else
-          rlc_data_conf(ctxt_pP, rlc_pP->rb_id, rlc_pP->input_sdus[sdu_index].mui, RLC_SDU_CONFIRM_NO, rlc_pP->is_data_plane);
+          rlc_data_conf(
+            ctxt_pP,
+            BOOL_NOT(rlc_pP->is_data_plane),
+            rlc_pP->rb_id,
+            rlc_pP->input_sdus[sdu_index].mui,
+            RLC_SDU_CONFIRM_NO);
 #endif
           rlc_pP->stat_tx_pdcp_sdu_discarded   += 1;
           rlc_pP->stat_tx_pdcp_bytes_discarded += rlc_pP->input_sdus[sdu_index].sdu_size;
@@ -150,7 +155,7 @@ void rlc_am_ack_pdu (
 
   if ((rlc_pP->pdu_retrans_buffer[snP].flags.ack == 0) && (mb_p != NULL)) {
     //if (mb_pP != NULL) {
-    free_mem_block(mb_p);
+    free_mem_block(mb_p);mb_p = NULL;
     rlc_pP->pdu_retrans_buffer[snP].mem_block = NULL;
     LOG_D(RLC, PROTOCOL_RLC_AM_CTXT_FMT"[ACK-PDU] ACK PDU SN %05d previous retx_count %d \n",
           PROTOCOL_RLC_AM_CTXT_ARGS(ctxt_pP,rlc_pP),
@@ -188,10 +193,10 @@ void rlc_am_ack_pdu (
 #else
         rlc_data_conf(
           ctxt_pP,
+          BOOL_NOT(rlc_pP->is_data_plane),
           rlc_pP->rb_id,
           rlc_pP->input_sdus[sdu_index].mui,
-          RLC_SDU_CONFIRM_YES,
-          rlc_pP->is_data_plane);
+          RLC_SDU_CONFIRM_YES);
 #endif
         rlc_am_free_in_sdu(ctxt_pP, rlc_pP, sdu_index);
       }
@@ -250,7 +255,7 @@ void rlc_am_ack_pdu (
           snP);
 
     if (mb_p != NULL) {
-      free_mem_block(mb_p);
+      free_mem_block(mb_p); mb_p = NULL;
       rlc_pP->pdu_retrans_buffer[snP].mem_block = NULL;
     }
 

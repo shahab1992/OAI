@@ -40,7 +40,6 @@
 #include "LAYER2/MAC/extern.h"
 #include "UTIL/LOG/log.h"
 
-#define TRACE_RLC_AM_FREE_SDU 0
 //-----------------------------------------------------------------------------
 void rlc_am_free_in_sdu(
   const protocol_ctxt_t* const  ctxt_pP,
