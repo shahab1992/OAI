@@ -87,12 +87,21 @@ rlc_am_free_in_sdu_data(
   rlc_am_entity_t* const       rlcP,
   const unsigned int           index_in_bufferP)
 {
-  if (index_in_bufferP <= RLC_AM_SDU_CONTROL_BUFFER_SIZE) {
+  if (index_in_bufferP < RLC_AM_SDU_CONTROL_BUFFER_SIZE) {
     if (rlcP->input_sdus[index_in_bufferP].mem_block != NULL) {
       free_mem_block(rlcP->input_sdus[index_in_bufferP].mem_block);
       rlcP->input_sdus[index_in_bufferP].mem_block = NULL;
       rlcP->input_sdus[index_in_bufferP].sdu_remaining_size = 0;
       rlcP->nb_sdu_no_segmented -= 1;
+#if TRACE_RLC_AM_FREE_SDU
+      LOG_D(RLC, PROTOCOL_RLC_AM_CTXT_FMT"[FREE SDU DATA] SDU INDEX %03u current_sdu_index=%u next_sdu_index=%u nb_sdu_no_segmented=%u nb_sdu=%u\n",
+        PROTOCOL_RLC_AM_CTXT_ARGS(ctxt_pP,rlcP),
+        index_in_bufferP,
+        rlcP->current_sdu_index,
+        rlcP->next_sdu_index,
+        rlcP->nb_sdu_no_segmented,
+        rlcP->nb_sdu);
+#endif
     }
   }
 }
