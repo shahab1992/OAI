@@ -724,8 +724,8 @@ rlc_am_mac_data_request (
                                          pdu_info.fi);
 
           if (pdu_info.rf) {
-            message_string_size += sprintf(&message_string[message_string_size], " LSF %u\n", pdu_info.lsf);
-            message_string_size += sprintf(&message_string[message_string_size], " SO %u\n", pdu_info.so);
+            message_string_size += sprintf(&message_string[message_string_size], " LSF %u", pdu_info.lsf);
+            message_string_size += sprintf(&message_string[message_string_size], " SO %u", pdu_info.so);
           }
 
           if (pdu_info.e) {
@@ -943,8 +943,8 @@ rlc_am_mac_data_indication (
                                          pdu_info.fi);
 
           if (pdu_info.rf) {
-            message_string_size += sprintf(&message_string[message_string_size], " LSF %u\n", pdu_info.lsf);
-            message_string_size += sprintf(&message_string[message_string_size], " SO %u\n", pdu_info.so);
+            message_string_size += sprintf(&message_string[message_string_size], " LSF %u", pdu_info.lsf);
+            message_string_size += sprintf(&message_string[message_string_size], " SO %u", pdu_info.so);
           }
 
           if (pdu_info.e) {
