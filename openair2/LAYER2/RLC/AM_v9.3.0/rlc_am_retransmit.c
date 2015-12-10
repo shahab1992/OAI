@@ -169,10 +169,12 @@ void rlc_am_ack_pdu (
       assert(sdu_index < RLC_AM_SDU_CONTROL_BUFFER_SIZE);
       rlc_pP->input_sdus[sdu_index].nb_pdus_ack += 1;
 #if TRACE_RLC_AM_FREE_SDU
-      LOG_D(RLC, PROTOCOL_RLC_AM_CTXT_FMT"[FREE SDU] SDU INDEX %03u nb_pdus_ack=%u\n",
-        PROTOCOL_RLC_AM_CTXT_ARGS(ctxt_pP,rlcP),
-        index_in_bufferP,
-        rlc_pP->input_sdus[sdu_index].nb_pdus_ac);
+      LOG_D(RLC, PROTOCOL_RLC_AM_CTXT_FMT"[FREE SDU] SDU INDEX %03u nb_pdus_ack=%u nb_pdus=%u sdu_remaining_size=%u\n",
+        PROTOCOL_RLC_AM_CTXT_ARGS(ctxt_pP,rlc_pP),
+        sdu_index,
+        rlc_pP->input_sdus[sdu_index].nb_pdus_ack,
+        rlc_pP->input_sdus[sdu_index].nb_pdus,
+        rlc_pP->input_sdus[sdu_index].sdu_remaining_size);
 #endif
 
       if ((rlc_pP->input_sdus[sdu_index].nb_pdus_ack == rlc_pP->input_sdus[sdu_index].nb_pdus) &&
