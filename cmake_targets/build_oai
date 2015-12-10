@@ -90,6 +90,8 @@ Options
 -w | --hardware
    EXMIMO (Default), USRP, BLADERF, ETHERNET, None
    Adds this RF board support (in external packages installation and in compilation)
+--enable-mscgen
+   Enable mscgen dump in executables.
 --oaisim
    Makes the oaisim simulator. Hardware will be defaulted to "NONE".
 --phy_simulators
@@ -178,6 +180,10 @@ function main() {
 	    fi 
             echo_info "setting hardware to: $HW"
             shift 2;;
+       --enable-mscgen)
+            MSC_GEN="True"
+            echo_info "Will compile with mscgen output, ..."
+            shift;;
        --oaisim)
             oaisim=1
             echo_info "Will compile oaisim and drivers nasmesh, ..."
@@ -320,7 +326,8 @@ function main() {
     echo "set ( RRC_ASN1_VERSION \"${REL}\")"      >>  $cmake_file
     echo "set ( ENABLE_VCD_FIFO $VCD_TIMING )"     >>  $cmake_file
     echo "set ( RF_BOARD \"${HW}\")"               >>  $cmake_file
-    echo "set(PACKAGE_NAME \"${lte_exec}\")"     >>  $cmake_file
+    echo "set ( PACKAGE_NAME \"${lte_exec}\")"     >>  $cmake_file
+    echo "set ( MESSAGE_CHART_GENERATOR \"${MSC_GEN}\")" >>  $cmake_file
     echo 'include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeLists.txt)' >> $cmake_file
     cd  $DIR/$lte_build_dir/build
     cmake ..

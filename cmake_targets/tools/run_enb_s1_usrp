@@ -74,17 +74,15 @@ function help()
 function do_msc_gen()
 {
   cd $g_msc_dir
-  last_created_file=`ls -t mscgen* | head -1 | tr -d ':'`
-  $OPENAIR_DIR/targets/SCRIPTS/msc_gen.py
-  sync
-  last_created_file2=`ls -t mscgen* | head -1 | tr -d ':'`
-        
-  if [ x"$last_created_file" != x"$last_created_file2" ]; then
-    if [ -f ./$last_created_file2/oai_mscgen_page_0.png ]; then 
-      command -v eog 2>/dev/null &&  eog ./$last_created_file2/oai_mscgen_page_0.png
-    fi
-  fi 
-
+  #last_created_file=`ls -t mscgen* | head -1 | tr -d ':'`
+  $OPENAIR_DIR/targets/SCRIPTS/msc_gen.py --profile E_UTRAN
+  #sync
+  #last_created_file2=`ls -t mscgen* | head -1 | tr -d ':'`
+  #if [ x"$last_created_file" != x"$last_created_file2" ]; then
+  #  if [ -f ./$last_created_file2/oai_mscgen_page_0.png ]; then 
+  #    command -v eog 2>/dev/null &&  eog ./$last_created_file2/oai_mscgen_page_0.png
+  #  fi
+  #fi 
 }
 
 
