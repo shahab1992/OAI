@@ -89,8 +89,9 @@ rlc_am_free_in_sdu_data(
   if (index_in_bufferP < RLC_AM_SDU_CONTROL_BUFFER_SIZE) {
     if (rlcP->input_sdus[index_in_bufferP].mem_block != NULL) {
       free_mem_block(rlcP->input_sdus[index_in_bufferP].mem_block);
-      rlcP->input_sdus[index_in_bufferP].mem_block = NULL;
+      rlcP->input_sdus[index_in_bufferP].mem_block          = NULL;
       rlcP->input_sdus[index_in_bufferP].sdu_remaining_size = 0;
+      rlcP->input_sdus[index_in_bufferP].flags.segmented    = 1;
       rlcP->nb_sdu_no_segmented -= 1;
 #if TRACE_RLC_AM_FREE_SDU
       LOG_D(RLC, PROTOCOL_RLC_AM_CTXT_FMT"[FREE SDU DATA] SDU INDEX %03u current_sdu_index=%u next_sdu_index=%u nb_sdu_no_segmented=%u nb_sdu=%u\n",
