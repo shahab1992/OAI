@@ -459,7 +459,6 @@ add_boolean_option(ENABLE_SECURITY         True  "Enable LTE integrity and ciphe
 add_boolean_option(ENABLE_USE_MME          True  "eNB connected to MME (INTERFACE S1-C), not standalone eNB")
 add_boolean_option(NO_RRM                  True  "DO WE HAVE A RADIO RESSOURCE MANAGER: NO")
 add_boolean_option(USER_MODE True "????")
-add_boolean_option(RRC_DEFAULT_RAB_IS_AM False "set the RLC mode to AM for the default bearer")
 
 add_boolean_option(OAI_NW_DRIVER_TYPE_ETHERNET False "????")
 add_boolean_option(DISABLE_USE_NAS False "???")
@@ -553,16 +552,16 @@ add_boolean_option(OPENAIR2                True  "Access Stratum layer 2 built i
 add_boolean_option(TRACE_RLC_PAYLOAD       False "Fatal assert in this case")
 add_boolean_option(RLC_STOP_ON_LOST_PDU    False "Fatal assert in this case")
 
-add_boolean_option(TRACE_RLC_MUTEX         True  "TRACE for RLC, possible problem in thread scheduling")
-add_boolean_option(TRACE_RLC_AM_BO         False "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
-add_boolean_option(TRACE_RLC_AM_FREE_SDU   False "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
-add_boolean_option(TRACE_RLC_AM_HOLE       False "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
-add_boolean_option(TRACE_RLC_AM_PDU        False "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
-add_boolean_option(TRACE_RLC_AM_RESEGMENT  False "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
-add_boolean_option(TRACE_RLC_AM_RX         False "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
-add_boolean_option(TRACE_RLC_AM_RX_DECODE  False "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
-add_boolean_option(TRACE_RLC_AM_TX         False "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
-add_boolean_option(TRACE_RLC_AM_TX_STATUS  False "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
+add_boolean_option(TRACE_RLC_MUTEX         False  "TRACE for RLC, possible problem in thread scheduling")
+add_boolean_option(TRACE_RLC_AM_BO         False  "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
+add_boolean_option(TRACE_RLC_AM_FREE_SDU   False  "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
+add_boolean_option(TRACE_RLC_AM_HOLE       False  "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
+add_boolean_option(TRACE_RLC_AM_PDU        False  "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
+add_boolean_option(TRACE_RLC_AM_RESEGMENT  False  "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
+add_boolean_option(TRACE_RLC_AM_RX         False  "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
+add_boolean_option(TRACE_RLC_AM_RX_DECODE  False  "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
+add_boolean_option(TRACE_RLC_AM_TX         False  "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
+add_boolean_option(TRACE_RLC_AM_TX_STATUS  False  "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
 add_boolean_option(TRACE_RLC_AM_STATUS_CREATION   False "TRACE for RLC AM, TO BE CHANGED IN A MORE GENERAL FLAG")
 
 add_boolean_option(STOP_ON_IP_TRAFFIC_OVERLOAD      False "")
@@ -585,7 +584,7 @@ add_boolean_option(LINK_ENB_PDCP_TO_GTPV1U     True  "For eNB, PDCP communicate 
 ##########################
 # RRC LAYER OPTIONS
 ##########################
-add_boolean_option(RRC_DEFAULT_RAB_IS_AM       False  "Otherwise it is UM, configure params are actually set in rrc_eNB.c:rrc_eNB_generate_defaultRRCConnectionReconfiguration(...)")
+add_boolean_option(RRC_DEFAULT_RAB_IS_AM       True  "Otherwise it is UM, configure params are actually set in rrc_eNB.c:rrc_eNB_generate_defaultRRCConnectionReconfiguration(...)")
 
 
 ##########################
