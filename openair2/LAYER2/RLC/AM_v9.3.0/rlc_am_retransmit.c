@@ -107,7 +107,7 @@ void rlc_am_nack_pdu (
       for (pdu_sdu_index = 0; pdu_sdu_index < rlc_pP->pdu_retrans_buffer[snP].nb_sdus; pdu_sdu_index++) {
         sdu_index = rlc_pP->pdu_retrans_buffer[snP].sdus_index[pdu_sdu_index];
         assert(pdu_sdu_index < RLC_AM_MAX_SDU_IN_PDU);
-        assert(sdu_index < RLC_AM_SDU_CONTROL_BUFFER_SIZE);
+        assert(sdu_index < RLC_AM_SDU_DATA_BUFFER_SIZE);
         rlc_pP->input_sdus[sdu_index].nb_pdus_ack += 1;
 
         if (rlc_pP->input_sdus[sdu_index].nb_pdus_ack == rlc_pP->input_sdus[sdu_index].nb_pdus) {
@@ -171,7 +171,7 @@ void rlc_am_ack_pdu (
     for (pdu_sdu_index = 0; pdu_sdu_index < rlc_pP->pdu_retrans_buffer[snP].nb_sdus; pdu_sdu_index++) {
       sdu_index = rlc_pP->pdu_retrans_buffer[snP].sdus_index[pdu_sdu_index];
       assert(sdu_index >= 0);
-      assert(sdu_index < RLC_AM_SDU_CONTROL_BUFFER_SIZE);
+      assert(sdu_index < RLC_AM_SDU_DATA_BUFFER_SIZE);
       rlc_pP->input_sdus[sdu_index].nb_pdus_ack += 1;
 #if TRACE_RLC_AM_FREE_SDU
       LOG_D(RLC, PROTOCOL_RLC_AM_CTXT_FMT"[FREE SDU] SDU INDEX %03u nb_pdus_ack=%u nb_pdus=%u sdu_remaining_size=%u\n",

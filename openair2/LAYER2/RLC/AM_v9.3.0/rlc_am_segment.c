@@ -296,7 +296,7 @@ void rlc_am_segment_10 (
       pdu_mngt_p->sdus_index[pdu_mngt_p->nb_sdus++] = sdu_buffer_index;
       sdu_mngt_p->pdus_index[sdu_mngt_p->nb_pdus++] = rlc_pP->vt_s % RLC_AM_PDU_RETRANSMISSION_BUFFER_SIZE;
       assert(sdu_mngt_p->nb_pdus < RLC_AM_MAX_SDU_FRAGMENTS);
-      sdu_buffer_index = (sdu_buffer_index + 1) % RLC_AM_SDU_CONTROL_BUFFER_SIZE;
+      sdu_buffer_index = (sdu_buffer_index + 1) % RLC_AM_SDU_DATA_BUFFER_SIZE;
     }
 
     if (test_remaining_num_li_to_substract > 0) {
@@ -376,7 +376,7 @@ void rlc_am_segment_10 (
         //free_mem_block (rlc_pP->input_sdus[rlc_pP->current_sdu_index]);
         //rlc_pP->input_sdus[rlc_pP->current_sdu_index] = NULL;
         //rlc_pP->nb_sdu -= 1;
-        rlc_pP->current_sdu_index = (rlc_pP->current_sdu_index + 1) % RLC_AM_SDU_CONTROL_BUFFER_SIZE;
+        rlc_pP->current_sdu_index = (rlc_pP->current_sdu_index + 1) % RLC_AM_SDU_DATA_BUFFER_SIZE;
 
         fi_last_byte_pdu_is_last_byte_sdu = 1;
         // fi will indicate end of PDU is end of SDU, no need for LI
@@ -395,7 +395,7 @@ void rlc_am_segment_10 (
           rlc_am_free_in_sdu_data(ctxt_pP, rlc_pP, rlc_pP->current_sdu_index);
           //rlc_pP->input_sdus[rlc_pP->current_sdu_index] = NULL;
           //rlc_pP->nb_sdu -= 1;
-          rlc_pP->current_sdu_index = (rlc_pP->current_sdu_index + 1) % RLC_AM_SDU_CONTROL_BUFFER_SIZE;
+          rlc_pP->current_sdu_index = (rlc_pP->current_sdu_index + 1) % RLC_AM_SDU_DATA_BUFFER_SIZE;
 
           // reduce the size of the PDU
           continue_fill_pdu_with_sdu = 0;
@@ -455,7 +455,7 @@ void rlc_am_segment_10 (
           //free_mem_block (rlc_pP->input_sdus[rlc_pP->current_sdu_index]);
           //rlc_pP->input_sdus[rlc_pP->current_sdu_index] = NULL;
           //rlc_pP->nb_sdu -= 1;
-          rlc_pP->current_sdu_index = (rlc_pP->current_sdu_index + 1) % RLC_AM_SDU_CONTROL_BUFFER_SIZE;
+          rlc_pP->current_sdu_index = (rlc_pP->current_sdu_index + 1) % RLC_AM_SDU_DATA_BUFFER_SIZE;
         }
       } else {
         LOG_T(RLC, PROTOCOL_RLC_AM_CTXT_FMT"[SEGMENT] Filling  PDU with %d all remaining bytes of SDU and reduce TB size by %d bytes\n",
@@ -473,7 +473,7 @@ void rlc_am_segment_10 (
         rlc_am_free_in_sdu_data(ctxt_pP, rlc_pP, rlc_pP->current_sdu_index);
         //rlc_pP->input_sdus[rlc_pP->current_sdu_index] = NULL;
         //rlc_pP->nb_sdu -= 1;
-        rlc_pP->current_sdu_index = (rlc_pP->current_sdu_index + 1) % RLC_AM_SDU_CONTROL_BUFFER_SIZE;
+        rlc_pP->current_sdu_index = (rlc_pP->current_sdu_index + 1) % RLC_AM_SDU_DATA_BUFFER_SIZE;
 
         // reduce the size of the PDU
         continue_fill_pdu_with_sdu = 0;

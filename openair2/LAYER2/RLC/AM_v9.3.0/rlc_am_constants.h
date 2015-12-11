@@ -51,10 +51,10 @@
 /** FROM Spec: This constant is used by both the transmitting side and the receiving side of each AM RLC entity to calculate VT(MS) from VT(A), and VR(MR) from VR(R). AM_Window_Size = 512.. */
 #    define RLC_AM_WINDOW_SIZE                    512
 
-/** Max number of bytes of incoming SDUs from upper layer that can be buffered in a RLC AM protocol instance. */
-#    define RLC_AM_SDU_DATA_BUFFER_SIZE           64*1024
+/** Max number of incoming SDUs from upper layer that can be buffered in a DRB RLC AM protocol instance. */
+#    define RLC_AM_SDU_DATA_BUFFER_SIZE           1024
 
-/** Max number of incoming SDUs from upper layer that can be buffered in a RLC AM protocol instance. */
+/** Max number of incoming SDUs from upper layer that can be buffered in a SRB RLC AM protocol instance. */
 #    define RLC_AM_SDU_CONTROL_BUFFER_SIZE        128
 
 /** Size of the retransmission buffer (number of PDUs). */

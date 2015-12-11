@@ -1023,7 +1023,7 @@ void rlc_am_v9_3_0_test_tx_rx()
     //for (i = 0; g_send_id_write_index < 434; i++) {
     printf("AM.TX SDU %d\n", g_am_tx.nb_sdu);
 
-    if (g_am_tx.nb_sdu < (RLC_AM_SDU_CONTROL_BUFFER_SIZE - 16)) {
+    if (g_am_tx.nb_sdu < (RLC_AM_SDU_DATA_BUFFER_SIZE - 16)) {
       g_random_sdu = rand() % 37;
       rlc_am_v9_3_0_test_send_sdu(&g_am_tx, g_random_sdu);
     }
@@ -1070,7 +1070,7 @@ void rlc_am_v9_3_0_test_tx_rx()
         for (i = g_send_id_write_index[0]; g_send_id_write_index[0] < TEST_MAX_SEND_SDU-1; i++) {
           printf("AM.TX SDU %d\n", g_am_tx.nb_sdu);
 
-          if (g_am_tx.nb_sdu < (RLC_AM_SDU_CONTROL_BUFFER_SIZE - 2)) {
+          if (g_am_tx.nb_sdu < (RLC_AM_SDU_DATA_BUFFER_SIZE - 2)) {
             g_random_sdu = rand() % 37;
             rlc_am_v9_3_0_test_send_sdu(&g_am_tx, g_random_sdu);
           }
@@ -1127,18 +1127,18 @@ void rlc_am_v9_3_0_test_tx_rx()
         rlc_am_v9_3_0_test_reset_sdus();
 
         for (i = g_send_id_write_index[0]; g_send_id_write_index[0] < TEST_MAX_SEND_SDU-1; i++) {
-          if (g_am_tx.nb_sdu < (RLC_AM_SDU_CONTROL_BUFFER_SIZE - 2)) {
+          if (g_am_tx.nb_sdu < (RLC_AM_SDU_DATA_BUFFER_SIZE - 2)) {
             g_random_sdu = rand() % 37;
             rlc_am_v9_3_0_test_send_sdu(&g_am_tx, g_random_sdu);
 
-            if (g_am_rx.nb_sdu < (RLC_AM_SDU_CONTROL_BUFFER_SIZE - 2)) {
+            if (g_am_rx.nb_sdu < (RLC_AM_SDU_DATA_BUFFER_SIZE - 2)) {
               g_random_sdu = rand() % 37;
               rlc_am_v9_3_0_test_send_sdu(&g_am_rx, g_random_sdu);
             } else {
               i = i-1;
             }
           } else {
-            if (g_am_rx.nb_sdu < (RLC_AM_SDU_CONTROL_BUFFER_SIZE - 2)) {
+            if (g_am_rx.nb_sdu < (RLC_AM_SDU_DATA_BUFFER_SIZE - 2)) {
               g_random_sdu = rand() % 37;
               rlc_am_v9_3_0_test_send_sdu(&g_am_rx, g_random_sdu);
             } else {

@@ -46,7 +46,7 @@ void rlc_am_free_in_sdu(
   rlc_am_entity_t *const        rlcP,
   const unsigned int            index_in_bufferP)
 {
-  if (index_in_bufferP < RLC_AM_SDU_CONTROL_BUFFER_SIZE) {
+  if (index_in_bufferP < RLC_AM_SDU_DATA_BUFFER_SIZE) {
     if (rlcP->input_sdus[index_in_bufferP].mem_block != NULL) {
       free_mem_block(rlcP->input_sdus[index_in_bufferP].mem_block);
       rlcP->input_sdus[index_in_bufferP].mem_block = NULL;
@@ -59,12 +59,12 @@ void rlc_am_free_in_sdu(
     rlcP->input_sdus[index_in_bufferP].flags.transmitted_successfully = 1;
 
     if (rlcP->current_sdu_index == index_in_bufferP) {
-      rlcP->current_sdu_index = (rlcP->current_sdu_index + 1) % RLC_AM_SDU_CONTROL_BUFFER_SIZE;
+      rlcP->current_sdu_index = (rlcP->current_sdu_index + 1) % RLC_AM_SDU_DATA_BUFFER_SIZE;
     }
 
     while ((rlcP->current_sdu_index != rlcP->next_sdu_index) &&
            (rlcP->input_sdus[rlcP->current_sdu_index].flags.transmitted_successfully == 1)) {
-      rlcP->current_sdu_index = (rlcP->current_sdu_index + 1) % RLC_AM_SDU_CONTROL_BUFFER_SIZE;
+      rlcP->current_sdu_index = (rlcP->current_sdu_index + 1) % RLC_AM_SDU_DATA_BUFFER_SIZE;
     }
   }
 
@@ -86,7 +86,7 @@ rlc_am_free_in_sdu_data(
   rlc_am_entity_t* const       rlcP,
   const unsigned int           index_in_bufferP)
 {
-  if (index_in_bufferP < RLC_AM_SDU_CONTROL_BUFFER_SIZE) {
+  if (index_in_bufferP < RLC_AM_SDU_DATA_BUFFER_SIZE) {
     if (rlcP->input_sdus[index_in_bufferP].mem_block != NULL) {
       free_mem_block(rlcP->input_sdus[index_in_bufferP].mem_block);
       rlcP->input_sdus[index_in_bufferP].mem_block          = NULL;
