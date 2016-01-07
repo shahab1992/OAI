@@ -63,11 +63,11 @@ void normal_prefix_UFMC_mod(int32_t *txdataF,int32_t *txdata,uint8_t nsymb,LTE_D
   //printf("invocation %d\n",((short_offset)+2*nsymb/frame_parms->symbols_per_tti));
   for (i=0; i<((short_offset)+2*nsymb/frame_parms->symbols_per_tti); i++) {
 
-#ifdef DEBUG_OFDM_MOD
+/*#ifdef DEBUG_OFDM_MOD
     printf("slot i %d (txdata offset %d, txoutput %p)\n",i,(i*(frame_parms->samples_per_tti>>1)),
            txdata+(i*(frame_parms->samples_per_tti>>1)));
 #endif
-    //printf("\nCiao 3 index = %d\n",i*NUMBER_OF_OFDM_CARRIERS*frame_parms->symbols_per_tti>>1);
+    printf("Parameters normal_prefix_UFMC_mod first:\n -index input= %d\n -index output= %d\n - 4arg=%d\n -prefix_samples=%d\n -carr_offset=%d\n",i*NUMBER_OF_OFDM_CARRIERS*frame_parms->symbols_per_tti>>1,(i*frame_parms->samples_per_tti>>1),1,frame_parms->nb_prefix_samples0,frame_parms->first_carrier_offset);*/
     PHY_UFMC_mod(txdataF+(i*NUMBER_OF_OFDM_CARRIERS*frame_parms->symbols_per_tti>>1),        // input
                  txdata+(i*frame_parms->samples_per_tti>>1),         // output
                  frame_parms->log2_symbol_size,                // log2_fft_size
@@ -76,10 +76,10 @@ void normal_prefix_UFMC_mod(int32_t *txdataF,int32_t *txdata,uint8_t nsymb,LTE_D
 		 frame_parms->first_carrier_offset,		// first resource block
 		 ulsch,	   /// ulsch structure
                  CYCLIC_PREFIX);
-#ifdef DEBUG_OFDM_MOD
+/*#ifdef DEBUG_OFDM_MOD
     printf("slot i %d (txdata offset %d)\n",i,OFDM_SYMBOL_SIZE_COMPLEX_SAMPLES0+(i*frame_parms->samples_per_tti>>1));
 #endif
-    //printf("\nCiao 4 index = %d\n",NUMBER_OF_OFDM_CARRIERS+(i*NUMBER_OF_OFDM_CARRIERS*(frame_parms->symbols_per_tti>>1)));
+    printf("Parameters normal_prefix_UFMC_mod others:\n -index input= %d\n -index output= %d\n- 4arg=%d\n -prefix_samples=%d\n -carr_offset=%d\n",NUMBER_OF_OFDM_CARRIERS+(i*NUMBER_OF_OFDM_CARRIERS*(frame_parms->symbols_per_tti>>1)),OFDM_SYMBOL_SIZE_COMPLEX_SAMPLES0+(i*(frame_parms->samples_per_tti>>1)),(short_offset==1) ? 1 :(frame_parms->symbols_per_tti>>1)-1,frame_parms->nb_prefix_samples,frame_parms->first_carrier_offset);*/
     PHY_UFMC_mod(txdataF+NUMBER_OF_OFDM_CARRIERS+(i*NUMBER_OF_OFDM_CARRIERS*(frame_parms->symbols_per_tti>>1)),        // input
                  txdata+OFDM_SYMBOL_SIZE_COMPLEX_SAMPLES0+(i*(frame_parms->samples_per_tti>>1)),         // output
                  frame_parms->log2_symbol_size,                // log2_fft_size
@@ -93,14 +93,14 @@ void normal_prefix_UFMC_mod(int32_t *txdataF,int32_t *txdata,uint8_t nsymb,LTE_D
   }
 }
 
-void PHY_UFMC_mod(int *input,                       /// pointer to complex input
-                  int *output,                      /// pointer to complex output
-                  unsigned char log2fftsize,        /// log2(FFT_SIZE)
-                  unsigned char nb_symbols,         /// number of OFDM symbols
-                  unsigned short nb_prefix_samples,  /// cyclic prefix length
-		  unsigned short first_carrier,	   /// first subcarrier offset
-		  LTE_UL_UE_HARQ_t *ulsch,	   /// ulsch structure
-                  Extension_t etype                /// type of extension
+void PHY_UFMC_mod(int *input,                       // pointer to complex input
+                  int *output,                      // pointer to complex output
+                  unsigned char log2fftsize,        // log2(FFT_SIZE)
+                  unsigned char nb_symbols,         // number of OFDM symbols
+                  unsigned short nb_prefix_samples,  // cyclic prefix length
+		  unsigned short first_carrier,	   // first subcarrier offset
+		  LTE_UL_UE_HARQ_t *ulsch,	   // ulsch structure
+                  Extension_t etype                // type of extension
                  )
 {
 
@@ -147,31 +147,21 @@ void (*idft)(int16_t *,int16_t *, int);
 #ifdef DEBUG_OFDM_MOD
     msg("[PHY] symbol %d/%d (%p,%p -> %p)\n",i,nb_symbols,input,&input[i<<log2fftsize],&output[(i<<log2fftsize) + ((i)*nb_prefix_samples)]);
 #endif
-    //write_output("fft_in.m","fft_in",&input[(i<<log2fftsize)],(1<<log2fftsize),1,1);
     memset(temp,0,(1<<log2fftSizeFixed)*sizeof(int));
     for (j=0;j<ulsch->nb_rb;j++){
       memcpy(temp1,&input[(i<<log2fftsize)+first_carrier+(12*(j+ulsch->first_rb))],6*sizeof(int)); 
       memcpy(&temp1[(1<<(log2fftSizeFixed+1))-12],&input[(i<<log2fftsize)+first_carrier+6+(12*(j+ulsch->first_rb))],6*sizeof(int));//temp is int16_t
-
-      //write_output("fft_in_mod.m","fft_in_mod",temp1,(1<<log2fftSizeFixed),1,1);
       
       idft((int16_t *)temp1,(int16_t *)temp,1); //ask where the input will be in input
 
-      //write_output("fft_out.m","fft_out",temp,(1<<log2fftSizeFixed),1,1);
       dolph_cheb((int16_t *)temp, // input
 		 (int16_t *)&output[(i<<log2fftsize) + (i*nb_prefix_samples)],
 		 nb_prefix_samples,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
 		 1<<log2fftSizeFixed, // input dimension(only real part) -> FFT dimension
 		 1<<log2fftsize,
-		 j+1, //current PRB index for filter frequency shifting
+		 j, //current PRB index for filter frequency shifting
 		 first_carrier );  
-      /*if (j==0){
-	write_output("fft_out1.m","fft_out1",&output[(i<<log2fftsize) + (i*nb_prefix_samples)],(1<<log2fftsize) + nb_prefix_samples,1,1);
-      }else if(j==1){
-	write_output("fft_out2.m","fft_out2",&output[(i<<log2fftsize) + (i*nb_prefix_samples)],(1<<log2fftsize) + nb_prefix_samples,1,1);
-      }*/
     }
-    //write_output("filter_out.m","filter_out",&output[(i<<log2fftsize) + (i*nb_prefix_samples)],(1<<log2fftsize) + nb_prefix_samples,1,1); 
   }
 }
 

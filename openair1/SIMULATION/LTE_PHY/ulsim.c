@@ -1102,6 +1102,7 @@ int main(int argc, char **argv)
             if (n_frames==1) {
               write_output("txsigF0UL.m","txsF0", &PHY_vars_UE->lte_ue_common_vars.txdataF[0][PHY_vars_eNB->lte_frame_parms.ofdm_symbol_size*nsymb*subframe],PHY_vars_eNB->lte_frame_parms.ofdm_symbol_size*nsymb,1,
                            1);
+	      write_output("/tmp/txsF0.m","txsF0", &PHY_vars_UE->lte_ue_common_vars.txdataF[0][PHY_vars_eNB->lte_frame_parms.ofdm_symbol_size*nsymb*subframe],PHY_vars_eNB->lte_frame_parms.ofdm_symbol_size*nsymb,1,1);
               //write_output("txsigF1.m","txsF1", PHY_vars_UE->lte_ue_common_vars.txdataF[0],FRAME_LENGTH_COMPLEX_SAMPLES_NO_PREFIX,1,1);
             }
 
@@ -1121,6 +1122,8 @@ int main(int argc, char **argv)
                                   &txdata[aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],
                                   nsymb,
                                   frame_parms);
+	      
+	      // write_output("txsigOUT.m","txsOUT", &txdata[0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],2*frame_parms->samples_per_tti,1,1);
 
 #ifndef OFDMA_ULSCH
               apply_7_5_kHz(PHY_vars_UE,PHY_vars_UE->lte_ue_common_vars.txdata[aa],subframe<<1);
@@ -1218,8 +1221,7 @@ int main(int argc, char **argv)
           for (i=0; i<PHY_vars_eNB->lte_frame_parms.samples_per_tti; i++) {
             for (aa=0; aa<PHY_vars_eNB->lte_frame_parms.nb_antennas_rx; aa++) {
               ((short*) &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe])[2*i] = (short) ((tx_gain*r_re[aa][i]) + sqrt(sigma2/2)*gaussdouble(0.0,1.0));
-              ((short*) &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe])[2*i+1] = (short) ((tx_gain*r_im[aa][i]) + (iqim*tx_gain*r_re[aa][i]) + sqrt(
-                    sigma2/2)*gaussdouble(0.0,1.0));
+              ((short*) &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe])[2*i+1] = (short) ((tx_gain*r_im[aa][i]) + (iqim*tx_gain*r_re[aa][i]) + sqrt(sigma2/2)*gaussdouble(0.0,1.0));
             }
           }
 
@@ -1275,6 +1277,8 @@ int main(int argc, char **argv)
             namepointer_chMag = &fmageren_name;
             //namepointer_txlev = &ftxlev;
           }
+          
+          write_output("rxdataF_m.m","rxdataF", &PHY_vars_eNB->lte_eNB_common_vars.rxdataF[0][0][0],PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe*2,1,1);
 
           start_meas(&PHY_vars_eNB->ulsch_demodulation_stats);
           rx_ulsch(PHY_vars_eNB,

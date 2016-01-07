@@ -37,9 +37,9 @@ int slot_fep_ul_ufmc(LTE_DL_FRAME_PARMS *frame_parms,
                 unsigned char Ns,
                 unsigned char eNB_id,
                 int no_prefix,
-		int delay_estimation)
+		unsigned int delay_estimation)
 {
-  printf("\n slot_fep_ul_ufmc args:\n l=%d,Ns=%d,eNB_id=%d,no_prefix=%d,delay_estimation=%d\n",l,Ns,eNB_id,no_prefix,delay_estimation);
+  // printf("\n slot_fep_ul_ufmc args:\n l=%d,Ns=%d,eNB_id=%d,delay_estimation=%d,offset=%d\n",l,Ns,eNB_id,delay_estimation,((frame_parms->samples_per_tti>>1)*Ns));
 #ifdef DEBUG_FEP
   char fname[40], vname[40];
 #endif
@@ -48,44 +48,45 @@ int slot_fep_ul_ufmc(LTE_DL_FRAME_PARMS *frame_parms,
   unsigned int nb_prefix_samples = (no_prefix ? 0 : frame_parms->nb_prefix_samples);
   unsigned int nb_prefix_samples0 = (no_prefix ? 0 : frame_parms->nb_prefix_samples0);
   //  unsigned int subframe_offset;
-  unsigned int slot_offset;
+  unsigned int slot_offset= (delay_estimation%8)==0 ? delay_estimation : delay_estimation+8-(delay_estimation%8);
 
   void (*dft)(int16_t *,int16_t *, int);
 
-  switch (frame_parms->log2_symbol_size) { //CV:double DFT compared to normal tx IDFT size
+  switch (frame_parms->log2_symbol_size) { 
   case 7:
     //size of MultiCarrier Symbol=128+
-    dft = dft256; 
+    dft = dft128; 
     break;
 
   case 8:
-    dft = dft512;
+    dft = dft256;
     break;
 
   case 9:
-    dft = dft1024;
+    dft = dft512;
     break;
 
   case 10:
-    dft = dft2048;
+    dft = dft1024;
     break;
 
   case 11:
-    dft = dft4096;
+    dft = dft2048;
     break;
 
   default:
-    dft = dft2048;
+    dft = dft1024;
     break;
   }
 
   if (no_prefix) {
     //    subframe_offset = frame_parms->ofdm_symbol_size * frame_parms->symbols_per_tti * (Ns>>1);
-    slot_offset = frame_parms->ofdm_symbol_size * (frame_parms->symbols_per_tti>>1) * (Ns%2);
+    slot_offset += (frame_parms->ofdm_symbol_size * (frame_parms->symbols_per_tti>>1) * (Ns%2));
   } else {
     //    subframe_offset = frame_parms->samples_per_tti * (Ns>>1);
-    slot_offset = (frame_parms->samples_per_tti>>1) * (Ns%2);
+    slot_offset += ((frame_parms->samples_per_tti>>1) * (Ns%2));
   }
+  
 
   if (l<0 || l>=7-frame_parms->Ncp) {
     LOG_E(PHY,"slot_fep: l must be between 0 and %d\n",7-frame_parms->Ncp);
@@ -98,37 +99,35 @@ int slot_fep_ul_ufmc(LTE_DL_FRAME_PARMS *frame_parms,
   }
 
 #ifdef DEBUG_FEP
-  LOG_D(PHY,"slot_fep: Ns %d offset %d, symbol %d, nb_prefix_samples %d\n",Ns,slot_offset,symbol, nb_prefix_samples);
+  LOG_D(PHY,"slot_fep: Ns %d offset %d, symbol %d, nb_prefix_samples %d filter offset=%d\n",Ns,slot_offset,symbol, nb_prefix_samples,(nb_prefix_samples>>1));
 #endif
-
+  
+  /*printf("index1 in=%d\n",slot_offset +(nb_prefix_samples0>>1));
+  printf("index2 in=%d\n",slot_offset +(frame_parms->ofdm_symbol_size+nb_prefix_samples0) +(frame_parms->ofdm_symbol_size+nb_prefix_samples)*(l-1)+(nb_prefix_samples>>1));
+  printf("index out=%d\n",frame_parms->ofdm_symbol_size*symbol);*/
+  
   for (aa=0; aa<frame_parms->nb_antennas_rx; aa++) {
-    //I should copy the normal input of dft in an input array composed by all zeros with dimension dft
-    //
-
     if (l==0) {
-
       dft(
 #ifndef OFDMA_ULSCH
-        (int16_t *)&eNB_common_vars->rxdata_7_5kHz[eNB_id][aa][delay_estimation+slot_offset +
-            nb_prefix_samples0],
+        (int16_t *)&eNB_common_vars->rxdata_7_5kHz[eNB_id][aa][slot_offset +(nb_prefix_samples0>>1)],//+(nb_prefix_samples0>>1)
 #else
-        (int16_t *)&eNB_common_vars->rxdata[eNB_id][aa][delay_estimation+((frame_parms->samples_per_tti>>1)*Ns) +
-            nb_prefix_samples0],
+        (int16_t *)&eNB_common_vars->rxdata[eNB_id][aa][delay_estimation+((frame_parms->samples_per_tti>>1)*Ns)+(nb_prefix_samples0>>1)],//+(nb_prefix_samples0>>1)
 #endif
         (int16_t *)&eNB_common_vars->rxdataF[eNB_id][aa][frame_parms->ofdm_symbol_size*symbol],1);
     } else {
       dft(
 #ifndef OFDMA_ULSCH
-        (short *)&eNB_common_vars->rxdata_7_5kHz[eNB_id][aa][slot_offset +
+        (int16_t *)&eNB_common_vars->rxdata_7_5kHz[eNB_id][aa][slot_offset +
 #else
-        (short *)&eNB_common_vars->rxdata[eNB_id][aa][((frame_parms->samples_per_tti>>1)*Ns) +
+        (int16_t *)&eNB_common_vars->rxdata[eNB_id][aa][((frame_parms->samples_per_tti>>1)*Ns) +
 #endif
-            (frame_parms->ofdm_symbol_size+nb_prefix_samples0+nb_prefix_samples) +
-            (frame_parms->ofdm_symbol_size+nb_prefix_samples)*(l-1)+delay_estimation],
-        (short*)&eNB_common_vars->rxdataF[eNB_id][aa][frame_parms->ofdm_symbol_size*symbol],1);
+            (frame_parms->ofdm_symbol_size+nb_prefix_samples0) +
+            (frame_parms->ofdm_symbol_size+nb_prefix_samples)*(l-1)+(nb_prefix_samples0>>1)],//+(nb_prefix_samples>>1)
+        (int16_t *)&eNB_common_vars->rxdataF[eNB_id][aa][frame_parms->ofdm_symbol_size*symbol],1);
     }
   }
-
+  
 #ifdef DEBUG_FEP
   LOG_D(PHY,"slot_fep: done\n");
 #endif

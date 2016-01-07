@@ -321,7 +321,7 @@ The function implemented is : \f$\mathbf{out} = out + (abs(\mathbf{fact1}) ^ 2 )
   } 
 }
 
-int32_t sum_square_abs_cmplx(int16_t *fact1,int16_t lIN){
+int32_t sum_square_abs_cmplx_SIMD(int16_t *fact1,int16_t lIN){
   /*!\fn square_abs_cmplx_add(int32_t *out,int16_t *fact1,int16_t *fact2,int16_t lIN)
 This function performs square absolute value of complex vector fact1(int16), summing elements and returning the result in int_32
 @param fact1 Factor 1 vector (Q1.15) in the format  |Re0  Im0|, |Re1 Im1|,......,|Re(N-1) Im(N-1)|
@@ -333,7 +333,7 @@ The function implemented is : \f$\mathbf{out} = out + (abs(\mathbf{fact1}) ^ 2 )
   int32_t *temps;
   __m128i mmtmpD0;
   __m128i *inX;
-  inX=(__m128i *)&fact1[0];
+  inX=(__m128i *)fact1;
   int32_t counter=0;
   for(i=0;i<lIN>>2;i++){
     // mmtmpD0 contains 4 consecutive outputs (32-bit) of square absolute value
@@ -343,7 +343,24 @@ The function implemented is : \f$\mathbf{out} = out + (abs(\mathbf{fact1}) ^ 2 )
     // Increase the pointers
     inX+=1;
   } 
-  return counter;
+  return (int32_t)counter/lIN;
+}
+
+int32_t sum_square_abs_cmplx(int16_t *fact,int16_t lIN){
+  /*!\fn square_abs_cmplx_add(int32_t *out,int16_t *fact1,int16_t *fact2,int16_t lIN)
+This function performs square absolute value of complex vector fact1(int16), summing elements and returning the result in int_32
+@param fact1 Factor 1 vector (Q1.15) in the format  |Re0  Im0|, |Re1 Im1|,......,|Re(N-1) Im(N-1)|
+@param N Length of x WARNING: N>=8
+
+The function implemented is : \f$\mathbf{out} = out + (abs(\mathbf{fact1}) ^ 2 )\f$
+*/
+  int16_t i;
+  int32_t counter=0;
+  for(i=0;i<lIN;i++){
+    counter+=((int32_t)(fact[i<<1]*fact[i<<1])+(int32_t)(fact[(i<<1)+1]*fact[(i<<1)+1]));
+    // Increase the pointers
+  } 
+  return (int32_t)counter/lIN;
 }
 
 int max_vec(int32_t *in,uint16_t lin){
@@ -453,7 +470,7 @@ void ii_CreateModvec(uint16_t n_rb,// current resource block index
 {
   int16_t i,M=FFTsize/4;
   int16_t *cos_tab;
-  int16_t carrierind = (first_carrier+12*n_rb)+7; //band are more or less superimposed if I put 6 instead of 12 
+  int16_t carrierind = (first_carrier+12*(n_rb-1))+7; //band are more or less superimposed if I put 6 instead of 12 
   //int16_t carrierind = (first_carrier+12*n_rb)+1; //FK: for 25PRB config this seems to give correct results
 
   /*if (FFTsize!=1024) {
@@ -524,9 +541,10 @@ void ufmc_init(uint32_t lFIR,  // (nb_prefix_samples)cyclic prefix length -> it 
     lFIR=(0x09*(lFIR/0x0A))+1; // bring down to : 37 for 25 PRB, 73 for 50 PRB, 145 for 10 PRB
   }
   quotient=lFIR/8;
-  lFIR_padded = (lFIR%8)>0 ? (quotient+1)<<3 : quotient<<3;
+  lFIR_padded = (lFIR%8)>0 ? (quotient+2)<<3 : quotient<<3; //CV: extended padded length by 16 samples more
 
   // Filter Impulse Response creation
+  // printf("length fir=%d\n,length fir padded=%d\n",lFIR,lFIR_padded);
   memset(hFIR,0,lFIR_padded*sizeof(int16_t));
   i_cheby_win(hFIR, lFIR, atten);
   //write_output("h_filter.m","h_filter",hFIR,lFIR_padded,1,0);
@@ -553,25 +571,20 @@ void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
 	   lOUT2;
 
 
-
-  lOUT=(FFT_size+lFIR)<<1; //output length(complex);
-  if ((lFIR%0x0A)>0){ //lFIR!=10 || lFIR!=20 || lFIR!=40 || lFIR!=80 || lFIR!=120 || lFIR!=160 EXTENDED cyclic prefix
-    lFIR+=1;
-  }else{
-    lFIR=(0x09*(lFIR/0x0A))+1;
-  }
-  quotient=lFIR/8;
-  lFIR_padded = (lFIR%8)>0 ? (quotient+1)<<3 : quotient<<3;
+  // printf("lFIR=%d\n",lFIR);
+  lOUT=FFT_size+lFIR; //output length(complex);
+  lFIR++;
+  quotient=(int)lFIR/8;
+  lFIR_padded = (quotient+1)<<3;
   lOUT2=(FFT_size+lFIR_padded)<<1; //filter output length (complex);
-
+  // printf("lOUT=%d,lFIR=%d,quotient=%d,lFIR_padded=%d,lOUT2=%d\n",lOUT,lFIR,quotient,lFIR_padded,lOUT2);
   int16_t out2[lOUT2] __attribute__((aligned(32)));
-
   memset(out2,0,lOUT2*sizeof(int16_t));
   // Upsampling and Filtering
   ii_complx_UpFilter(&in[0],&out2[0], size, &hFIR[0] , lFIR_padded, Up_factor);
   //write_output("FIR_out.m","FIR_out",out2, lOUT2>>1,1,1);
   // Modulation
-  multcmplx_add(&out[0],&out2[0],&mod_vec[n_rb][0],lOUT>>1);
+  multcmplx_add(&out[0],&out2[0],&mod_vec[n_rb][0],lOUT);
 }
 
 #ifdef MAIN

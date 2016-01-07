@@ -743,7 +743,6 @@ void ulsch_extract_rbs_single(int32_t **rxdataF,
 #ifdef DEBUG_ULSCH
     msg("ulsch_extract_rbs_single: 2*nb_rb1 = %d, 2*nb_rb2 = %d\n",nb_rb1,nb_rb2);
 #endif
-
     rxF_ext   = &rxdataF_ext[aarx][(symbol*frame_parms->N_RB_UL*12)];
 
     if (nb_rb1) {
@@ -1112,7 +1111,10 @@ void ulsch_channel_compensation(int32_t **rxdataF_ext,
         rxdataF_comp128[2] = vcombine_s16(vmovn_s32(mmtmpU0),vmovn_s32(mmtmpU1));
               
               // Add a jitter to compensate for the saturation in "packs" resulting in a bias on the DC after IDFT
-        rxdataF_comp128[0] = vqaddq_s16(rxdataF_comp128[0],(*(int16x8_t*)&jitter[0]));
+        rxdataF_comp128[0] = vqaddq_s16(rxdataF_comp128[0],(    
+    printf("rx_ulsch : symbol %d (first_rb %d,nb_rb %d)\n",l,
+        ulsch[UE_id]->harq_processes[harq_pid]->first_rb,
+        ulsch[UE_id]->harq_processes[harq_pid]->nb_rb);*(int16x8_t*)&jitter[0]));
         rxdataF_comp128[1] = vqaddq_s16(rxdataF_comp128[1],(*(int16x8_t*)&jitter[0]));
         rxdataF_comp128[2] = vqaddq_s16(rxdataF_comp128[2],(*(int16x8_t*)&jitter[0]));
 
@@ -1667,8 +1669,8 @@ void rx_ulsch(PHY_VARS_eNB *phy_vars_eNB,
     }
   }
 
-  //write_output("rxdataF_ext.m","rxF_ext",eNB_pusch_vars->rxdataF_ext[eNB_id][0],300*(frame_parms->symbols_per_tti-ulsch[UE_id]->srs_active),1,1);
-  //write_output("ulsch_chest.m","drs_est",eNB_pusch_vars->drs_ch_estimates[eNB_id][0],300*(frame_parms->symbols_per_tti-ulsch[UE_id]->srs_active),1,1);
+  // write_output("rxdataF_ext.m","rxF_ext",eNB_pusch_vars->rxdataF_ext[eNB_id][0],300*(frame_parms->symbols_per_tti-ulsch[UE_id]->srs_active),1,1);
+  // write_output("ulsch_chest.m","drs_est",eNB_pusch_vars->drs_ch_estimates[eNB_id][0],300*(frame_parms->symbols_per_tti-ulsch[UE_id]->srs_active),1,1);
 
 
   if(cooperation_flag == 2) {
@@ -1831,7 +1833,6 @@ void rx_ulsch(PHY_VARS_eNB *phy_vars_eNB,
   //#endif //DEBUG_ULSCH
 
 #endif
-
 
   llrp = (int16_t*)&eNB_pusch_vars->llr[0];
 
