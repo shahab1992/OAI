@@ -93,7 +93,7 @@ rf_vcocal_26G_eNB  = ((0x26)*(2^6)) + (0x0);
 % register values and masks for tdd_config
 DUPLEXMODE_MASK   = 1*(2^0);
 DUPLEXMODE_FDD    =  0;
-DUPLEXMODE_TDD    = 2*(2^0);
+DUPLEXMODE_TDD    = 1*(2^0);
 TXRXSWITCH_MASK   = 3*(2^1);
 TXRXSWITCH_LSB    =  0;
 TXRXSWITCH_FPGA   = 1*(2^1);

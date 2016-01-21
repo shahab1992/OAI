@@ -30,15 +30,22 @@ freq_rx = freq_tx;
 %freq_rx = freq_tx-120000000*chan_sel;
 %freq_tx = freq_rx+1920000;
 tdd_config = DUPLEXMODE_FDD + TXRXSWITCH_TESTTX + RF_ACTIVE;
+%tdd_config = DUPLEXMODE_TDD + TXRXSWITCH_TESTTX;
 syncmode0 = SYNCMODE_MASTER;
 syncmode1 = SYNCMODE_SLAVE;
 rffe_rxg_low = 61*[1 1 1 1];
 rffe_rxg_final = 61*[1 1 1 1];
 rffe_band = B19G_TDD*[1 1 1 1];
 
+n_cards = oarf_get_num_detected_cards;
+
 oarf_config_exmimo(0, freq_rx,freq_tx,tdd_config,syncmode0,rxgain,txgain,eNB_flag,rf_mode,rf_rxdc,rf_local,rf_vcocal,rffe_rxg_low,rffe_rxg_final,rffe_band,autocal,resampling_factor);
 sleep(1);
-oarf_config_exmimo(1, freq_rx,freq_tx,tdd_config,syncmode1,rxgain,txgain,eNB_flag,rf_mode,rf_rxdc,rf_local,rf_vcocal,rffe_rxg_low,rffe_rxg_final,rffe_band,autocal,resampling_factor);
+for card=1:n_cards-1
+   oarf_config_exmimo(card, freq_rx,freq_tx,tdd_config,syncmode1,rxgain,txgain,eNB_flag,rf_mode,rf_rxdc,rf_local,rf_vcocal,rffe_rxg_low,rffe_rxg_final,rffe_band,autocal,resampling_factor);
+   sleep(1)
+end
+
 amp = pow2(14)-1;
 n_bit = 16;
 
@@ -49,10 +56,10 @@ select = 1;
 switch(select)
 
 case 1
-  s(:,1) = floor(amp * (exp(1i*2*pi*(0:((76800*4)-1))/7680)));
-  s(:,2) = floor(amp * (exp(1i*2*pi*(0:((76800*4)-1))/7680)));
-  s(:,3) = floor(amp * (exp(1i*2*pi*(0:((76800*4)-1))/7680)));
-  s(:,4) = floor(amp * (exp(1i*2*pi*(0:((76800*4)-1))/7680)));
+  s(:,1) = floor(amp * (exp(1i*2*pi*(0:((76800*4)-1))/4)));
+  s(:,2) = floor(amp * (exp(1i*2*pi*(0:((76800*4)-1))/4)));
+  s(:,3) = floor(amp * (exp(1i*2*pi*(0:((76800*4)-1))/4)));
+  s(:,4) = floor(amp * (exp(1i*2*pi*(0:((76800*4)-1))/4)));
 
 case 2
   s(38400+128,1)= 80-1j*40;
@@ -81,6 +88,7 @@ case 4
   s(38400+(1:length(pss0_t_fp_re)),2) = 2*floor(pss0_t_fp_re) + 2*sqrt(-1)*floor(pss0_t_fp_im);
   s(38400+(1:length(pss0_t_fp_re)),3) = 2*floor(pss0_t_fp_re) + 2*sqrt(-1)*floor(pss0_t_fp_im);
   s(38400+(1:length(pss0_t_fp_re)),4) = 2*floor(pss0_t_fp_re) + 2*sqrt(-1)*floor(pss0_t_fp_im);
+
 case 5
   x=1:76800;
 
@@ -89,7 +97,6 @@ case 5
   s(:,3) = 8*(mod(x-1,4096)) + 1i*(8*(mod(x-1,4096)));
   s(:,4) = 8*(mod(x-1,4096)) + 1i*(8*(mod(x-1,4096)));
 %  s(:,4) = 8*(rem(x-1,2048))-2**15 + 1i*(8*(rem(x-1,2048))-2**15);
-
 %  s(:,4) = 8*(mod(x-1,4096)) + 1i*8*(mod(x-1,4096));
 
   %s(:,1) = 8*floor(mod(x-1,76800)/75) + 1i*8*floor(mod(x-1,76800)/75);
@@ -108,12 +115,11 @@ s = s*2;
 %s(38400:end,1) = (1+1j);
 %s(38400:end,2) = (1+1j);
 
-sleep (1)
-%keyboard
-
-oarf_send_frame(0,s,n_bit);
+for card=n_cards-1:-1:0
+oarf_send_frame(card,s,n_bit);
 sleep(1);
-oarf_send_frame(1,s,n_bit);
+end
+
 %r = oarf_get_frame(card);
 figure(1)
 hold off
