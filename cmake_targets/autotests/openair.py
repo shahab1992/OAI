@@ -43,6 +43,7 @@ import shutil
 import subprocess 
 import sys
 import traceback
+import time
 # import call
 
 from core import *
@@ -82,9 +83,13 @@ class openair(core):
         return (stdout, stderr)
 
     def connect(self, username, password, prompt='PEXPECT_OAI'):
+     max_retries=100
+     i=0
+     while i <= max_retries:  
         self.prompt1 = prompt
         self.prompt2 = prompt
         self.password = '' 
+        i=i+1
         # WE do not store the password when sending commands for secuirity reasons. The password might be accidentally logged in such cases.
         #The password is used only to make ssh connections. In case user wants to run programs with sudo, then he/she needs to add following line in /etc/sudoers
         # your_user_name  ALL=(ALL:ALL) NOPASSWD: ALL
@@ -103,13 +108,18 @@ class openair(core):
             self.oai.sendline('uptime')
             self.oai.prompt()
             print self.oai.before
-                              
+            break
         except Exception, e:
             error=''
             error = error + ' In function: ' + sys._getframe().f_code.co_name + ': *** Caught exception: '  + str(e.__class__) + " : " + str( e)
+            error = error + 'address = "'+ self.address +' username = ' + username
             error = error + traceback.format_exc()
             print error
-            sys.exit(1)
+            print "Retrying again in 1  seconds"
+            time.sleep(1)
+            if i==max_retries:
+              print "Fatal Error: Terminating the program now..."
+              sys.exit(1)
                 
     def connect2(self, username, password, prompt='$'):
         self.prompt1 = prompt
@@ -190,7 +200,7 @@ class openair(core):
                error = error + ' In function: ' + sys._getframe().f_code.co_name + ': *** Caught exception: '  + str(e.__class__) + " : " + str( e)
                error = error + traceback.format_exc()
                print error
-               sys.exit(1)
+               #sys.exit(1)
             
     def rm_driver(self,oai,user, pw):
         try:
@@ -205,7 +215,7 @@ class openair(core):
                error = error + ' In function: ' + sys._getframe().f_code.co_name + ': *** Caught exception: '  + str(e.__class__) + " : " + str( e)
                error = error + traceback.format_exc()
                print error
-               sys.exit(1)
+               #sys.exit(1)
    
     def driver(self,oai,user,pw):
         #pwd = oai.send_recv('pwd') 
@@ -222,7 +232,7 @@ class openair(core):
                error = error + ' In function: ' + sys._getframe().f_code.co_name + ': *** Caught exception: '  + str(e.__class__) + " : " + str( e)
                error = error + traceback.format_exc()
                print error
-               sys.exit(1)
+               #sys.exit(1)
     
     def cleandir (self, logdir,debug) :
         
@@ -238,8 +248,8 @@ class openair(core):
                error = error + ' In function: ' + sys._getframe().f_code.co_name + ': *** Caught exception: '  + str(e.__class__) + " : " + str( e)
                error = error + traceback.format_exc()
                print error
-               sys.exit(1)
-                #print 'Could not remove the filepath'+ filepath + ' with error ' + OSError
+               #sys.exit(1)
+               #print 'Could not remove the filepath'+ filepath + ' with error ' + OSError
     
     def create_dir(self,dirname,debug) :
         if not os.path.exists(dirname) :
