@@ -409,13 +409,20 @@ int openair0_dev_init_usrp(openair0_device* device, openair0_config_t *openair0_
   
   if(device_adds.size() == 0)
   {
+
+    uhd::device_addr_t dev_addr;
+    dev_addr["addr0"] = openair0_cfg[0].remote_ip;
+    uhd::usrp::multi_usrp::sptr dev = uhd::usrp::multi_usrp::make(dev_addr);
+
     double usrp_master_clock = 184.32e6;
 
     std::string args = "type=x300";
-    
+
     // workaround for an api problem, master clock has to be set with the constructor not via set_master_clock_rate
     args += boost::str(boost::format(",master_clock_rate=%f") % usrp_master_clock);
     
+    args += boost::str(boost::format(",addr=%s") % openair0_cfg[0].remote_ip);
+
     uhd::device_addrs_t device_adds = uhd::device::find(args);
 
     if(device_adds.size() == 0)

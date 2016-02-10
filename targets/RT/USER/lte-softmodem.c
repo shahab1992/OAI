@@ -360,12 +360,11 @@ int16_t           osa_log_verbosity  = LOG_MED;
 #endif
 
 
-#ifdef ETHERNET
 char rrh_eNB_ip[20] = "127.0.0.1";
 int rrh_eNB_port = 50000;
 char *rrh_UE_ip = "127.0.0.1";
 int rrh_UE_port = 51000;
-#endif
+char rrh_usrp_ip[20] = "192.168.10.2";
 
 char uecap_xer[1024],uecap_xer_in=0;
 extern void *UE_thread(void *arg);
@@ -2153,9 +2152,7 @@ static void get_options (int argc, char **argv)
      break;
 
     case 'M':
-#ifdef ETHERNET
       strcpy(rrh_eNB_ip,optarg);
-#endif
       break;
 
     case 'A':
@@ -2552,6 +2549,11 @@ int main( int argc, char **argv )
   }
   logInit();
  
+#ifdef OAI_USRP
+  strcpy(rrh_eNB_ip, rrh_usrp_ip);
+#endif 
+
+
   get_options (argc, argv); //Command-line options
  
   
@@ -2938,7 +2940,6 @@ int main( int argc, char **argv )
     else //FDD
       openair0_cfg[card].duplex_mode = duplex_mode_FDD;
 
-#ifdef ETHERNET
 
     //calib needed
     openair0_cfg[card].tx_scheduling_advance = 0;
@@ -2950,14 +2951,12 @@ int main( int argc, char **argv )
       openair0_cfg[card].samples_per_packet = 1024;
 
     printf("HW: samples_per_packet %d\n",openair0_cfg[card].samples_per_packet);
-#endif
 
 
     printf("HW: Configuring card %d, nb_antennas_tx/rx %d/%d\n",card,
            ((UE_flag==0) ? PHY_vars_eNB_g[0][0]->lte_frame_parms.nb_antennas_tx : PHY_vars_UE_g[0][0]->lte_frame_parms.nb_antennas_tx),
            ((UE_flag==0) ? PHY_vars_eNB_g[0][0]->lte_frame_parms.nb_antennas_rx : PHY_vars_UE_g[0][0]->lte_frame_parms.nb_antennas_rx));
     openair0_cfg[card].Mod_id = 0;
-#ifdef ETHERNET
 
     if (UE_flag) {
       printf("ETHERNET: Configuring UE ETH for %s:%d\n",rrh_UE_ip,rrh_UE_port);
@@ -2969,7 +2968,6 @@ int main( int argc, char **argv )
       openair0_cfg[card].remote_port = rrh_eNB_port;
     }
     openair0_cfg[card].num_rb_dl=frame_parms[0]->N_RB_DL;
-#endif
 
     // in the case of the USRP, the following variables need to be initialized before the init
     // since the USRP only supports one CC (for the moment), we initialize all the cards with first CC.
