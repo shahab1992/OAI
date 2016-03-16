@@ -211,7 +211,6 @@ function main() {
             echo_info "Will compile with mscgen output, ..."
             shift;;
        --oaisim)
-	--oaisim)
             oaisim=1
             echo_info "Will compile oaisim and drivers nasmesh, ..."
             shift;;
