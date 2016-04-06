@@ -43,6 +43,10 @@
 #endif // RTAI
 #endif // OAI_NW_DRIVER_USE_NETLINK
 
+
+//#define OAI_DRV_DEBUG_DEVICE
+
+
 #include "constant.h"
 #include "local.h"
 #include "proto_extern.h"

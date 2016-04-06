@@ -172,10 +172,10 @@ function main()
         exe_arguments="$exe_arguments -V /tmp/oai_gtk_wave.vcd"
         shift ;
         ;;
-      -W | ----wireshark-l2)
+      -W | --wireshark-l2)
         echo "setting l2 pcap dump output"
         exe_arguments="$exe_arguments -P wireshark"
-        shift 2;
+        shift ;
         ;;
       *)   
         echo "Unknown option $1"
@@ -210,6 +210,9 @@ function main()
 
   ENB_IPV4_ADDRESS_FOR_S1_MME=$(               echo $ENB_IPV4_ADDRESS_FOR_S1_MME        | cut -f1 -d '/')
   ENB_IPV4_ADDRESS_FOR_S1U=$(                  echo $ENB_IPV4_ADDRESS_FOR_S1U           | cut -f1 -d '/')
+
+  ifconfig eth0:3 $ENB_IPV4_ADDRESS_FOR_S1_MME up
+  ifconfig eth0:4 $ENB_IPV4_ADDRESS_FOR_S1U up
 
 
   is_tun=`is_tun_interface $ENB_INTERFACE_NAME_FOR_S1_MME  $ENB_INTERFACE_NAME_FOR_S1U`
