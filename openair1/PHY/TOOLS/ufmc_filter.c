@@ -301,8 +301,8 @@ The function implemented is : \f$\mathbf{out} = out + (abs(\mathbf{fact1}) ^ 2 )
 */
   int16_t i;
   //int16_t *temps;
-  __m128i mmtmpD0,mmtmpD1,mmtmpD2,mmtmpD3;
-  __m128i *inX,*outX,*vec;
+  __m128i mmtmpD0; 
+  __m128i *inX,*outX;
   outX= (__m128i *)&out[0];
   inX=(__m128i *)&fact1[0];
   for(i=0;i<lIN>>2;i++){
@@ -462,7 +462,7 @@ void CreateModvec(uint16_t n_rb,// number of resource block
 
 int16_t mod_vec[100][2560]  __attribute__((aligned(32)));
 
-void ii_CreateModvec(uint16_t n_rb,// current resource block index
+int ii_CreateModvec(uint16_t n_rb,// current resource block index
 		  uint16_t first_carrier,// first subcarrier offset
 		  uint32_t FFTsize, //FFTsize
 		  uint32_t size_l, //array dimension
@@ -489,29 +489,33 @@ void ii_CreateModvec(uint16_t n_rb,// current resource block index
   */
   switch(FFTsize){
     case 128:
-      cos_tab=&cos_tab_128;
+      cos_tab=cos_tab_128;
       break;
     case 256:
-      cos_tab=&cos_tab_256;
+      cos_tab=cos_tab_256;
       break;
     case 512:
-      cos_tab=&cos_tab_512;
+      cos_tab=cos_tab_512;
       break;
     case 1024:
-      cos_tab=&cos_tab_1024;
+      cos_tab=cos_tab_1024;
       break;
     case 1536:
-      cos_tab=&cos_tab_1536;
+      cos_tab=cos_tab_1536;
       break;
     case 2048:
-      cos_tab=&cos_tab_2048;
+      cos_tab=cos_tab_2048;
       break;
+  default:
+    LOG_E(PHY,"Bad FFT size\n");
+    return(-1);
   }
   //write_output("cosine.m","cosine", cos_tab,FFTsize,1,0);
   for(i=0;i<size_l;i++){
     *(mod_vec+(i<<1))   = cos_tab[(i*(carrierind-1))%FFTsize];
     *(mod_vec+(i<<1)+1) = cos_tab[(M-i*(carrierind-1))%FFTsize]; //sin(x) = cos(pi/2-x);
   }
+  return(0);
 }
 
 
