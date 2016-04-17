@@ -463,30 +463,19 @@ void CreateModvec(uint16_t n_rb,// number of resource block
 int16_t mod_vec[100][2560]  __attribute__((aligned(32)));
 
 int ii_CreateModvec(uint16_t n_rb,// current resource block index
-		  uint16_t first_carrier,// first subcarrier offset
-		  uint32_t FFTsize, //FFTsize
-		  uint32_t size_l, //array dimension
-		  int16_t *mod_vec) //output array
+		    uint16_t first_carrier,// first subcarrier offset
+		    uint32_t FFTsize, //FFTsize
+		    uint32_t size_l, //array dimension
+		    int16_t *mod_vec) //output array
 {
   int16_t i,M=FFTsize/4;
   int16_t *cos_tab;
-  int16_t carrierind = (first_carrier+12*(n_rb-1))+7; //band are more or less superimposed if I put 6 instead of 12 
-  //int16_t carrierind = (first_carrier+12*n_rb)+1; //FK: for 25PRB config this seems to give correct results
-
-  /*if (FFTsize!=1024) {
-    LOG_E(PHY,"UFMC modulation only supported for FFT size 1024 for the moment\n");
-    exit(-1);
-  }*/
+  int16_t carrierind = first_carrier+12*n_rb+6; //+6 should be replaced by (total number of RBs)/2, but we do not have this number at this point. 
 
   // FK: handle wraparound
   if (carrierind >= FFTsize)
     carrierind = carrierind-FFTsize;
-  /*
-  for(i=0;i<size_l;i++){
-     *(mod_vec+(i<<1))=(int16_t)((float)cos((float)2*PI*i*(carrierind-1)/FFTsize)*((1<<15)-1));
-     *(mod_vec+(i<<1)+1)=(int16_t)((float)sin((float)2*PI*i*(carrierind-1)/FFTsize)*((1<<15)-1));
-  }
-  */
+
   switch(FFTsize){
     case 128:
       cos_tab=cos_tab_128;
@@ -512,8 +501,8 @@ int ii_CreateModvec(uint16_t n_rb,// current resource block index
   }
   //write_output("cosine.m","cosine", cos_tab,FFTsize,1,0);
   for(i=0;i<size_l;i++){
-    *(mod_vec+(i<<1))   = cos_tab[(i*(carrierind-1))%FFTsize];
-    *(mod_vec+(i<<1)+1) = cos_tab[(M-i*(carrierind-1))%FFTsize]; //sin(x) = cos(pi/2-x);
+    *(mod_vec+(i<<1))   = cos_tab[(i*carrierind)%FFTsize];
+    *(mod_vec+(i<<1)+1) = cos_tab[(M-i*carrierind)%FFTsize]; //sin(x) = cos(pi/2-x);
   }
   return(0);
 }
@@ -526,7 +515,6 @@ UFMC Modulation - Upsampling+Dolph-Chebyshev+FrequencyShilfting
 int16_t hFIR[152]  __attribute__((aligned(32))); // 152 is closest multiple of 8 to 145
 
 void ufmc_init(uint32_t lFIR,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
-	       int size, // input dimension(only real part) -> FFT dimension
 	       int FFT_size,
 	       int n_rb_max,
 	       int first_carrier) {// dimensione of standard FFT
@@ -535,12 +523,11 @@ void ufmc_init(uint32_t lFIR,  // (nb_prefix_samples)cyclic prefix length -> it 
   uint16_t lOUT, 
 	   lFIR_padded,
            quotient;
-
   int n_rb;
 
-  lOUT=(FFT_size+lFIR)<<1; //output length(complex);
+  lOUT=(FFT_size+lFIR); //output length(complex);
   if ((lFIR%0x0A)>0){ //lFIR!=10 || lFIR!=20 || lFIR!=40 || lFIR!=80 || lFIR!=120 || lFIR!=160 longer prefix from 1st symbol
-    lFIR+=1;                   // 37 for 25 PRB, 73 for 50 PRB, 145 for 10 PRB
+    lFIR+=1;                   // 37 for 25 PRB, 73 for 50 PRB, 145 for 100 PRB
   }else{
     lFIR=(0x09*(lFIR/0x0A))+1; // bring down to : 37 for 25 PRB, 73 for 50 PRB, 145 for 10 PRB
   }
@@ -552,8 +539,8 @@ void ufmc_init(uint32_t lFIR,  // (nb_prefix_samples)cyclic prefix length -> it 
   memset(hFIR,0,lFIR_padded*sizeof(int16_t));
   i_cheby_win(hFIR, lFIR, atten);
   //write_output("h_filter.m","h_filter",hFIR,lFIR_padded,1,0);
-  for (n_rb=1;n_rb<n_rb_max;n_rb++) {
-    ii_CreateModvec(n_rb,first_carrier,FFT_size,lOUT>>1,&mod_vec[n_rb-1][0]);
+  for (n_rb=0;n_rb<n_rb_max;n_rb++) {
+    ii_CreateModvec(n_rb,first_carrier,FFT_size,lOUT,&mod_vec[n_rb][0]);
     //write_output("mod_vec.m","mod_vec",mod_vec, lOUT>>1,1,1);
   }
 }

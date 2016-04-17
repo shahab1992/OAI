@@ -564,10 +564,10 @@ void dolph_cheb(int16_t *in, /// input array-->length=(size+lFIR)*2
 		int n_rb, ///current resource block index 
 		int first_carrier ///first subcarrier offset
 		); 
+double interp(double x, double *xs, double *ys, int count);
+void multcmplx_add(int16_t *out,int16_t *fact1,int16_t *fact2,int16_t lIN);
+void ufmc_init(uint32_t lFIR, int FFT_size, int n_rb_max, int first_carrier);
 
 /** @} */
-
-
-double interp(double x, double *xs, double *ys, int count);
 
 #endif //__PHY_TOOLS_DEFS__H__
