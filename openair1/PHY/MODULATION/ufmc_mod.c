@@ -111,7 +111,7 @@ void PHY_UFMC_mod(int *input,                       // pointer to complex input
   static int temp1[2048*2] __attribute__((aligned(16)));
   static int temp2[2048*2] __attribute__((aligned(16)));
   unsigned short i,j,s;
-  uint16_t log2fftSizeFixed=10; //CV:We decided to work with singulat PRB: each subband is composed by 12 subcarrier and nb_rb is also the number of UFMC total subbands 
+  uint16_t log2fftSizeFixed=6; //CV:We decided to work with singulat PRB: each subband is composed by 12 subcarrier and nb_rb is also the number of UFMC total subbands 
 
 #ifdef DEBUG_OFDM_MOD
   msg("[PHY] OFDM mod (size %d,prefix %d) Symbols %d, input %p, output %p\n",
@@ -154,7 +154,7 @@ void (*idft)(int16_t *,int16_t *, int);
 #endif
     memset(temp,0,(1<<log2fftSizeFixed)*sizeof(int));
     for (j=0;j<ulsch->nb_rb;j++){
-      //write_output("input.m","in",&input[(i<<log2fftsize)],1<<log2fftSizeFixed,1,1);
+      //write_output("input.m","in",&input[(i<<log2fftsize)],1<<log2fftsize,1,1);
 
       memcpy(&temp[(1<<(log2fftSizeFixed))-6],&input[(i<<log2fftsize)+first_carrier+(12*(j+ulsch->first_rb))],6*sizeof(int)); 
       memcpy(temp,&input[(i<<log2fftsize)+first_carrier+6+(12*(j+ulsch->first_rb))],6*sizeof(int));
@@ -163,22 +163,21 @@ void (*idft)(int16_t *,int16_t *, int);
       idft((int16_t *)temp,(int16_t *)temp1,1); 
       //write_output("temp1.m","tmp1",temp1,1<<log2fftSizeFixed,1,1);
 
-      memcpy(&temp2[nb_prefix_samples],temp1,(1<<log2fftSizeFixed)*sizeof(int32_t));
+      //memcpy(&temp2[nb_prefix_samples],temp1,(1<<log2fftSizeFixed)*sizeof(int32_t));
       //write_output("temp2.m","tmp2",temp2,(1<<log2fftSizeFixed)+nb_prefix_samples,1,1);
 
-      multcmplx_add(&output[(i<<log2fftsize) + (i*nb_prefix_samples)],&temp2[0],&mod_vec[j+ulsch->first_rb][0],(1<<log2fftsize)+nb_prefix_samples);
+      //multcmplx_add(&output[(i<<log2fftsize) + (i*nb_prefix_samples)],&temp2[0],&mod_vec[j+ulsch->first_rb][0],(1<<log2fftsize)+nb_prefix_samples);
       //idft((int16_t *)&input[i<<log2fftsize],(int16_t *)&output[(i<<log2fftsize) + ((1+i)*nb_prefix_samples)],1); 
-      //write_output("output.m","out",&output[(i<<log2fftsize) + (i*nb_prefix_samples)],(1<<log2fftSizeFixed)+nb_prefix_samples,1,1);
       
-      /*
-      dolph_cheb((int16_t *)temp, // input
+      dolph_cheb((int16_t *)temp1, // input
 		 (int16_t *)&output[(i<<log2fftsize) + i*nb_prefix_samples],
 		 nb_prefix_samples,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
 		 1<<log2fftSizeFixed, // input dimension(only real part) -> FFT dimension
 		 1<<log2fftsize,
-		 j, //current PRB index for filter frequency shifting
+		 j+ulsch->first_rb, //current PRB index for filter frequency shifting
 		 first_carrier );  
-      */
+
+      //write_output("output.m","out",&output[(i<<log2fftsize) + (i*nb_prefix_samples)],(1<<log2fftsize)+nb_prefix_samples,1,1);
     }
   }
 }

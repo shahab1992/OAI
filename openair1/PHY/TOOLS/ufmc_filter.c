@@ -108,7 +108,7 @@ void i_cheby_win(int16_t *out, int N, float atten){ //Fixed-point real taps Dolp
         if(y[nn]>max)max=y[nn];
     }
     for(nn=0; nn<N; nn++) {
-      *(out+nn) = (int16_t)((y[nn]/ (max*N))*((1<<15)-1)); // normalise everything and scale 
+      *(out+nn) = (int16_t)((y[nn]/ (max*N/4))*((1<<15)-1)); // normalise everything and scale 
     }
     return;
 }
@@ -573,7 +573,7 @@ void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
   memset(out2,0,lOUT2*sizeof(int16_t));
   // Upsampling and Filtering
   ii_complx_UpFilter(&in[0],&out2[0], size, &hFIR[0] , lFIR_padded, Up_factor);
-  //write_output("FIR_out.m","FIR_out",out2, lOUT2>>1,1,1);
+  //write_output("FIR_out.m","fir",out2, lOUT,1,1);
   // Modulation
   multcmplx_add(&out[0],&out2[0],&mod_vec[n_rb][0],lOUT);
 }

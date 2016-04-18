@@ -114,8 +114,8 @@ void lte_param_init(unsigned char N_tx, unsigned char N_rx,unsigned char transmi
   //PHY_config = malloc(sizeof(PHY_CONFIG));
   mac_xface = malloc(sizeof(MAC_xface));
 
-  randominit(0);
-  set_taus_seed(0);
+  randominit(1);
+  set_taus_seed(1);
 
   lte_frame_parms = &(PHY_vars_eNB->lte_frame_parms);
 
@@ -869,26 +869,7 @@ int main(int argc, char **argv)
 
   PHY_vars_UE->frame_tx = (PHY_vars_UE->frame_tx+1)&1023;
   if (ufmc_flag==1){
-    switch(PHY_vars_eNB->lte_frame_parms.N_RB_UL) {
-      case 6:
-	ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,16,128,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
-	break;
-      case 15:
-	 ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,16,256,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
-	break;
-      case 25:
-	ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,32,512,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
-	break;
-      case 50:
-	ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,64,1024,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
-	break;
-      case 75:
-	ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,96,1536,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
-	break;
-      case 100:
-	ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,128,2048,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
-	break;
-    }
+    ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,PHY_vars_eNB->lte_frame_parms.ofdm_symbol_size,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
     generate_drs_ufmc(PHY_vars_eNB,0,AMP,subframe,0);
   }
   
@@ -1255,17 +1236,17 @@ int main(int argc, char **argv)
 
           if (awgn_flag == 0) {
             if (UE2eNB->max_Doppler == 0) {
-	      if(ufmc_flag==1){
+	      /*if(ufmc_flag==1){
 		printf("Multipath_UFMC_channel with length=%d and delay=%d\n",(int)UE2eNB->channel_length,(int)UE2eNB->channel_offset);
 		multipath_ufmc_channel(UE2eNB,s_re,s_im,r_re,r_im,
                                 PHY_vars_eNB->lte_frame_parms.samples_per_tti,hold_channel);
 		ch_out_length=PHY_vars_eNB->lte_frame_parms.samples_per_tti+(int)UE2eNB->channel_length+(int)UE2eNB->channel_offset-1;
 		// printf("ch_out_length=%d\n",ch_out_length);
-	      }else{
+		}else{*/
 		multipath_channel(UE2eNB,s_re,s_im,r_re,r_im,
                                 PHY_vars_eNB->lte_frame_parms.samples_per_tti,hold_channel);
 		ch_out_length=PHY_vars_eNB->lte_frame_parms.samples_per_tti;
-	      }
+		//}
             } else {
 	      if(ufmc_flag==1){
 		printf("\nWARNING!!!! multipath_UFMC_tv_channel WOULD be implemented\n");
@@ -1339,13 +1320,13 @@ int main(int argc, char **argv)
           }
 
 #ifndef OFDMA_ULSCH
-	  /*if(ufmc_flag==1){
+	  if(ufmc_flag==1){
 	    remove_7_5_kHz_UFMC(PHY_vars_eNB,subframe<<1,ch_out_length);
 	    remove_7_5_kHz_UFMC(PHY_vars_eNB,1+(subframe<<1),ch_out_length);
-	  }else{*/
+	  }else{
 	    remove_7_5_kHz(PHY_vars_eNB,subframe<<1);
 	    remove_7_5_kHz(PHY_vars_eNB,1+(subframe<<1));
-	  //}
+	  }
           // write_output("rxsig0_75.m","rxs0_75", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],ch_out_length,1,1);
           // write_output("rxsig1_75.m","rxs1_75", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],ch_out_length,1,1);
 
@@ -1364,7 +1345,7 @@ int main(int argc, char **argv)
 	    // timing synchronizarion using correlator
 	    // delay_est=rx_pusch_ufmc_sync(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata
 	    delay_est=rx_pusch_ufmc_sync_7_5kHz(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata_7_5kHz
-	    delay_est=0;
+	    delay_est=44;
 	  }	  
 	  
           for (l=subframe*PHY_vars_UE->lte_frame_parms.symbols_per_tti; l<((1+subframe)*PHY_vars_UE->lte_frame_parms.symbols_per_tti); l++) {
@@ -1383,7 +1364,7 @@ int main(int argc, char **argv)
                         l/(PHY_vars_eNB->lte_frame_parms.symbols_per_tti/2),
                         0,
                         0);
-	    }
+	      }
           }
 
           stop_meas(&PHY_vars_eNB->ofdm_demod_stats);

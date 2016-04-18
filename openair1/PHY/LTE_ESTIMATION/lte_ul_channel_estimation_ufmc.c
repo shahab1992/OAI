@@ -401,7 +401,7 @@ int rx_pusch_ufmc_sync_7_5kHz(PHY_VARS_eNB *phy_vars_eNB,
     }
     //write_output("delay_est_m.m","delay_est",output,1<<(log2fftSize2),1,2);
     index=max_vec(output,(1<<log2fftSize2));//defined in ufmc_filter.c 
-    printf("TIME SYNCHRO: index_found=%d - corrected index=%d\n",index,index-1);
+    printf("TIME SYNCHRO: index_found=%d, corrected index=%d\n",index,index-1);
     index= (index-1<0) ? 0 : index;  
   }
   return index;
