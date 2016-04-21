@@ -125,8 +125,8 @@ int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
 		    (ref_im*alpha_im[alpha_ind]))>>15);
 		((int16_t*) drs_array)[2*(symbol_offset + re_offset)+1] = (int16_t) (((ref_re*alpha_im[alpha_ind]) +
 		    (ref_im*alpha_re[alpha_ind]))>>15);
-		((short*) drs_array)[2*(symbol_offset + re_offset)]   = (short) ((((short*) drs_array)[2*(symbol_offset + re_offset)]*(int32_t)amp)>>12); ////amp=4096 as defined in ufmcsim -->scale by 12
-		((short*) drs_array)[2*(symbol_offset + re_offset)+1] = (short) ((((short*) drs_array)[2*(symbol_offset + re_offset)+1]*(int32_t)amp)>>12); ////amp=4096 as defined in ufmcsim -->scale by 12
+		((short*) drs_array)[2*(symbol_offset + re_offset)]   = (short) ((((short*) drs_array)[2*(symbol_offset + re_offset)]*(int32_t)amp)>>15); ////amp=4096 as defined in ufmcsim -->scale by 12
+		((short*) drs_array)[2*(symbol_offset + re_offset)+1] = (short) ((((short*) drs_array)[2*(symbol_offset + re_offset)+1]*(int32_t)amp)>>15); ////amp=4096 as defined in ufmcsim -->scale by 12
 
 		alpha_ind = (alpha_ind + cyclic_shift[l]);
 
@@ -139,8 +139,8 @@ int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
 	      symbol_offset+=12;
 	      memset(temp1,0,fftSize*sizeof(int));
 	      memset(temp,0,fftSize2*sizeof(int));
-	      memcpy(temp1,&drs_array[(12*rb)+(l*12*nb_rb)],6*sizeof(int));
-	      memcpy(&temp1[(1<<(6+1))-12],&drs_array[(12*rb)+(l*12*nb_rb)+6],6*sizeof(int));//temp is int16_t
+	      memcpy(temp1,&drs_array[(12*rb)+(l*12*nb_rb)+6],6*sizeof(int));
+	      memcpy(&temp1[(1<<(6+1))-12],&drs_array[(12*rb)+(l*12*nb_rb)],6*sizeof(int));//temp is int16_t
 	      idft64((int16_t *)temp1,(int16_t *)temp,1);
 	      dolph_cheb((int16_t *)temp, // input
 			 (int16_t *)&Rxdft,
