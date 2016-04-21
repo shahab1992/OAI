@@ -369,7 +369,7 @@ int rx_pusch_ufmc_sync_7_5kHz(PHY_VARS_eNB *phy_vars_eNB,
       j=log2_approx(iSqrt(energy));
       j= (j<=0 || j>=12) ? 12 : j+1;
       scale_adj=(12-j);
-      printf("SIGNAL_ENERGY : %d - adj_factor : %d scale_factor_OVER_%d=%d\n",energy,j,scale,scale_adj);
+      //printf("SIGNAL_ENERGY : %d - adj_factor : %d scale_factor_OVER_%d=%d\n",energy,j,scale,scale_adj);
       multcmplx_conj((int16_t *)&temp1[index_start],(int16_t *)&ul_ref_sigs_ufmc[u][v][Msc_RS_idx][k][index_start],(int16_t *)&Rxdft[index_start],index_int,11); // shifted right of 11 bits because this is the dynamic range of ul_ref */
       multcmplx_conj((int16_t *)temp1,(int16_t *) &ul_ref_sigs_ufmc[u][v][Msc_RS_idx][k][0],(int16_t *)Rxdft,1<<(log2fftSize2+1),scale-scale_adj);// shifted right of 11 bits because this is the dynamic range of ul_ref
       memset(temp,0,(1<<log2fftSize2)*sizeof(int));
@@ -401,7 +401,7 @@ int rx_pusch_ufmc_sync_7_5kHz(PHY_VARS_eNB *phy_vars_eNB,
     }
     //write_output("delay_est_m.m","delay_est",output,1<<(log2fftSize2),1,2);
     index=max_vec(output,(1<<log2fftSize2));//defined in ufmc_filter.c 
-    printf("TIME SYNCHRO: index_found=%d, corrected index=%d\n",index,index-1);
+    //printf("TIME SYNCHRO: index_found=%d, corrected index=%d\n",index,index-1);
     index= (index-1<0) ? 0 : index;  
   }
   return index;

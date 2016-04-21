@@ -54,7 +54,6 @@ int slot_fep_ul_ufmc(LTE_DL_FRAME_PARMS *frame_parms,
 
   switch (frame_parms->log2_symbol_size) { 
   case 7:
-    //size of MultiCarrier Symbol=128+
     dft = dft128; 
     break;
 
@@ -102,9 +101,9 @@ int slot_fep_ul_ufmc(LTE_DL_FRAME_PARMS *frame_parms,
   LOG_D(PHY,"slot_fep: Ns %d offset %d, symbol %d, nb_prefix_samples %d filter offset=%d\n",Ns,slot_offset,symbol, nb_prefix_samples,(nb_prefix_samples>>1));
 #endif
   
-  /*printf("index1 in=%d\n",slot_offset +(nb_prefix_samples0>>1));
-  printf("index2 in=%d\n",slot_offset +(frame_parms->ofdm_symbol_size+nb_prefix_samples0) +(frame_parms->ofdm_symbol_size+nb_prefix_samples)*(l-1)+(nb_prefix_samples>>1));
-  printf("index out=%d\n",frame_parms->ofdm_symbol_size*symbol);*/
+  //printf("l=%d, index1 in=%d\n",l,slot_offset +(nb_prefix_samples0>>1));
+  //printf("index2 in=%d\n",slot_offset +(frame_parms->ofdm_symbol_size+nb_prefix_samples0) +(frame_parms->ofdm_symbol_size+nb_prefix_samples)*(l-1)+(nb_prefix_samples>>1));
+  //printf("index out=%d\n",frame_parms->ofdm_symbol_size*symbol);
   
   for (aa=0; aa<frame_parms->nb_antennas_rx; aa++) {
     if (l==0) {
@@ -123,7 +122,7 @@ int slot_fep_ul_ufmc(LTE_DL_FRAME_PARMS *frame_parms,
         (int16_t *)&eNB_common_vars->rxdata[eNB_id][aa][((frame_parms->samples_per_tti>>1)*Ns) +
 #endif
             (frame_parms->ofdm_symbol_size+nb_prefix_samples0) +
-            (frame_parms->ofdm_symbol_size+nb_prefix_samples)*(l-1)+(nb_prefix_samples0>>1)],//+(nb_prefix_samples>>1)
+            (frame_parms->ofdm_symbol_size+nb_prefix_samples)*(l-1)+(nb_prefix_samples>>1)],
         (int16_t *)&eNB_common_vars->rxdataF[eNB_id][aa][frame_parms->ofdm_symbol_size*symbol],1);
     }
   }
