@@ -581,14 +581,6 @@ int main(int argc, char **argv)
   //  r_re0 = malloc(2*sizeof(double*));
   //  r_im0 = malloc(2*sizeof(double*));
 
-  nsymb = (PHY_vars_eNB->lte_frame_parms.Ncp == 0) ? 14 : 12;
-
-  coded_bits_per_codeword = nb_rb * (12 * get_Qm(mcs)) * nsymb;
-
-  rate = (double)dlsch_tbs25[get_I_TBS(mcs)][nb_rb-1]/(coded_bits_per_codeword);
-
-  printf("Rate = %f (mod %d), coded bits %d\n",rate,get_Qm(mcs),coded_bits_per_codeword);
-
   sprintf(bler_fname,"ULbler_mcs%d_nrb%d_ChannelModel%d_nsim%d.csv",mcs,nb_rb,chMod,n_frames);
   bler_fd = fopen(bler_fname,"w");
 
@@ -865,6 +857,13 @@ int main(int argc, char **argv)
                                      CBA_RNTI,
                                      srs_flag);
 
+  harq_pid = subframe2harq_pid(&PHY_vars_eNB->lte_frame_parms,PHY_vars_eNB->proc[subframe].frame_rx,subframe);
+
+  coded_bits_per_codeword = nb_rb * (12 * get_Qm(mcs)) * PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->Nsymb_pusch;
+
+  rate = (double)PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->TBS/(double)coded_bits_per_codeword;
+
+  printf("Rate = %f (mod %d), coded bits %d\n",rate,get_Qm(mcs),coded_bits_per_codeword);
 
 
   PHY_vars_UE->frame_tx = (PHY_vars_UE->frame_tx+1)&1023;
@@ -908,30 +907,8 @@ int main(int argc, char **argv)
 
       //randominit(0);
 
-
-      harq_pid = subframe2harq_pid(&PHY_vars_UE->lte_frame_parms,PHY_vars_UE->frame_tx,subframe);
-
       //      printf("UL frame %d/subframe %d, harq_pid %d\n",PHY_vars_UE->frame,subframe,harq_pid);
-      if (input_fdUL == NULL) {
-        input_buffer_length = PHY_vars_UE->ulsch_ue[0]->harq_processes[harq_pid]->TBS/8;
-        input_buffer = (unsigned char *)malloc(input_buffer_length+4);
-
-        if (n_frames == 1) {
-          trch_out_fdUL= fopen("ulsch_trchUL.txt","w");
-
-          for (i=0; i<input_buffer_length; i++) {
-            input_buffer[i] = taus()&0xff;
-
-            for (j=0; j<8; j++)
-              fprintf(trch_out_fdUL,"%d\n",(input_buffer[i]>>(7-j))&1);
-          }
-
-          fclose(trch_out_fdUL);
-        } else {
-          for (i=0; i<input_buffer_length; i++)
-            input_buffer[i] = taus()&0xff;
-        }
-      } else {
+      if (input_fdUL != NULL) {
         n_frames=1;
         i=0;
 
@@ -1011,12 +988,24 @@ int main(int argc, char **argv)
       initialize(&time_vector_rx_dec);
 
       for (trials = 0; trials<n_frames; trials++) {
-        //      printf("*");
-        //        PHY_vars_UE->frame++;
-        //        PHY_vars_eNB->frame++;
 
-        fflush(stdout);
-        round=0;
+	if (input_fdUL == NULL) {
+	  input_buffer_length = PHY_vars_UE->ulsch_ue[0]->harq_processes[harq_pid]->TBS/8;
+	  input_buffer = (unsigned char *)malloc(input_buffer_length+4);
+	  for (i=0; i<input_buffer_length; i++)
+	    input_buffer[i] = taus()&0xff;
+
+	  if (n_frames == 1) {
+	    trch_out_fdUL= fopen("ulsch_trchUL.txt","w");
+	    for (i=0; i<input_buffer_length; i++)
+	      for (j=0; j<8; j++)
+		fprintf(trch_out_fdUL,"%d\n",(input_buffer[i]>>(7-j))&1);
+	    fclose(trch_out_fdUL);
+          }
+        }
+
+	fflush(stdout);
+	round=0;
 
         while (round < 4) {
           PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->round=round;
