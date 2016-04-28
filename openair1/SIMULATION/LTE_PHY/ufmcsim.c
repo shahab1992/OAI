@@ -858,13 +858,10 @@ int main(int argc, char **argv)
                                      srs_flag);
 
   harq_pid = subframe2harq_pid(&PHY_vars_eNB->lte_frame_parms,PHY_vars_eNB->proc[subframe].frame_rx,subframe);
-
+  nsymb = (PHY_vars_eNB->lte_frame_parms.Ncp == 0) ? 14 : 12;
   coded_bits_per_codeword = nb_rb * (12 * get_Qm(mcs)) * PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->Nsymb_pusch;
-
   rate = (double)PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->TBS/(double)coded_bits_per_codeword;
-
   printf("Rate = %f (mod %d), coded bits %d\n",rate,get_Qm(mcs),coded_bits_per_codeword);
-
 
   PHY_vars_UE->frame_tx = (PHY_vars_UE->frame_tx+1)&1023;
   if (ufmc_flag==1){
@@ -1136,8 +1133,8 @@ int main(int argc, char **argv)
             for (aa=0; aa<1; aa++) {
 	      if (ufmc_flag==1){
 		if (frame_parms->Ncp == 1){
-		  PHY_UFMC_mod(&PHY_vars_UE->lte_ue_common_vars.txdataF[aa][subframe*nsymb*OFDM_SYMBOL_SIZE_COMPLEX_SAMPLES_NO_PREFIX],        // input
-			      &txdata[aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],         // output
+		  PHY_UFMC_mod(&PHY_vars_UE->lte_ue_common_vars.txdataF[aa][subframe*nsymb*PHY_vars_UE->lte_frame_parms.ofdm_symbol_size],        // input
+			      &txdata[aa][PHY_vars_UE->lte_frame_parms.samples_per_tti*subframe],         // output
 			      PHY_vars_UE->lte_frame_parms.log2_symbol_size,                // log2_fft_size
 			      nsymb,                 // number of symbols
 			      PHY_vars_UE->lte_frame_parms.nb_prefix_samples,               // number of prefix samples
@@ -1145,23 +1142,23 @@ int main(int argc, char **argv)
 			      PHY_vars_UE->ulsch_ue[0]->harq_processes[harq_pid],
 			      CYCLIC_PREFIX);
 		}else{
-		  normal_prefix_UFMC_mod(&PHY_vars_UE->lte_ue_common_vars.txdataF[aa][subframe*nsymb*OFDM_SYMBOL_SIZE_COMPLEX_SAMPLES_NO_PREFIX],
-				    &txdata[aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],
+		  normal_prefix_UFMC_mod(&PHY_vars_UE->lte_ue_common_vars.txdataF[aa][subframe*nsymb*PHY_vars_UE->lte_frame_parms.ofdm_symbol_size],
+				    &txdata[aa][PHY_vars_UE->lte_frame_parms.samples_per_tti*subframe],
 				    nsymb,
 				    frame_parms,
 				    PHY_vars_UE->ulsch_ue[0]->harq_processes[harq_pid]);
 		}
 	      }else{
 		if (frame_parms->Ncp == 1)
-		  PHY_ofdm_mod(&PHY_vars_UE->lte_ue_common_vars.txdataF[aa][subframe*nsymb*OFDM_SYMBOL_SIZE_COMPLEX_SAMPLES_NO_PREFIX],        // input
-			      &txdata[aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],         // output
+		  PHY_ofdm_mod(&PHY_vars_UE->lte_ue_common_vars.txdataF[aa][subframe*nsymb*PHY_vars_UE->lte_frame_parms.ofdm_symbol_size],        // input
+			      &txdata[aa][PHY_vars_UE->lte_frame_parms.samples_per_tti*subframe],         // output
 			      PHY_vars_UE->lte_frame_parms.log2_symbol_size,                // log2_fft_size
 			      nsymb,                 // number of symbols
 			      PHY_vars_UE->lte_frame_parms.nb_prefix_samples,               // number of prefix samples
 			      CYCLIC_PREFIX);
 		else
-		  normal_prefix_mod(&PHY_vars_UE->lte_ue_common_vars.txdataF[aa][subframe*nsymb*OFDM_SYMBOL_SIZE_COMPLEX_SAMPLES_NO_PREFIX],
-				    &txdata[aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],
+		  normal_prefix_mod(&PHY_vars_UE->lte_ue_common_vars.txdataF[aa][subframe*nsymb*PHY_vars_UE->lte_frame_parms.ofdm_symbol_size],
+				    &txdata[aa][PHY_vars_UE->lte_frame_parms.samples_per_tti*subframe],
 				    nsymb,
 				    frame_parms);
 	      }
