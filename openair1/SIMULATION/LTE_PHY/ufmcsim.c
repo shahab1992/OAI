@@ -108,8 +108,8 @@ void lte_param_init(unsigned char N_tx, unsigned char N_rx,unsigned char transmi
   //PHY_config = malloc(sizeof(PHY_CONFIG));
   mac_xface = malloc(sizeof(MAC_xface));
 
-  randominit(1);
-  set_taus_seed(1);
+  randominit(0);
+  set_taus_seed(0);
 
   lte_frame_parms = &(PHY_vars_eNB->lte_frame_parms);
 
@@ -167,6 +167,9 @@ int main(int argc, char **argv)
   double sigma2, sigma2_dB=10,SNR,SNR2,snr0=-2.0,snr1,SNRmeas,rate,saving_bler;
   double input_snr_step=.2,snr_int=30;
   double blerr;
+  double uncoded_ber,avg_ber;
+  short *uncoded_ber_bit=NULL;
+
 
   //int **txdataF, **txdata;
 
@@ -586,6 +589,8 @@ int main(int argc, char **argv)
 
   fprintf(bler_fd,"#SNR;mcs;nb_rb;TBS;rate;errors[0];trials[0];errors[1];trials[1];errors[2];trials[2];errors[3];trials[3]\n");
 
+  uncoded_ber_bit = (short*) malloc(sizeof(short)*coded_bits_per_codeword);
+
   if (test_perf != 0) {
     char hostname[1024];
     hostname[1023] = '\0';
@@ -598,37 +603,6 @@ int main(int argc, char **argv)
             dirname,
             N_RB_DL,mcs,n_rx,channel_model_input,transmission_mode);
     time_meas_fd = fopen(time_meas_fname,"w");
-  }
-
-  if(abstx) {
-    sprintf(fperen_name,"ULchan_estims_F_mcs%d_rb%d_chanMod%d_nframes%d_chanReal%d.m",mcs,nb_rb,chMod,n_frames,n_ch_rlz);
-    fperen = fopen(fperen_name,"a+");
-    fprintf(fperen,"chest_f = [");
-    fclose(fperen);
-
-    sprintf(fmageren_name,"ChanMag_F_mcs%d_rb%d_chanMod%d_nframes%d_chanReal%d.m",mcs,nb_rb,chMod,n_frames,n_ch_rlz);
-    fmageren = fopen(fmageren_name,"a+");
-    fprintf(fmageren,"mag_f = [");
-    fclose(fmageren);
-
-    sprintf(flogeren_name,"Log2Max_mcs%d_rb%d_chanMod%d_nframes%d_chanReal%d.m",mcs,nb_rb,chMod,n_frames,n_ch_rlz);
-    flogeren = fopen(flogeren_name,"a+");
-    fprintf(flogeren,"mag_f = [");
-    fclose(flogeren);
-  }
-
-  /*
-    sprintf(ftxlev_name,"txlevel_mcs%d_rb%d_chanMod%d_nframes%d_chanReal%d.m",mcs,nb_rb,chMod,n_frames,n_ch_rlz);
-    ftxlev = fopen(ftxlev_name,"a+");
-    fprintf(ftxlev,"txlev = [");
-    fclose(ftexlv);
-  */
-
-  if(abstx) {
-    // CSV file
-    sprintf(csv_fname,"EULdataout_tx%d_mcs%d_nbrb%d_chan%d_nsimus%d_eren.m",transmission_mode,mcs,nb_rb,chMod,n_frames);
-    csv_fdUL = fopen(csv_fname,"w");
-    fprintf(csv_fdUL,"data_all%d=[",mcs);
   }
 
   for (i=0; i<2; i++) {
@@ -871,22 +845,6 @@ int main(int argc, char **argv)
   
   for (ch_realization=0; ch_realization<n_ch_rlz; ch_realization++) {
 
-    /*
-      if(abstx){
-      int ulchestim_f[300*12];
-      int ulchestim_t[2*(frame_parms->ofdm_symbol_size)];
-      }
-    */
-
-    if(abstx) {
-      printf("**********************Channel Realization Index = %d **************************\n", ch_realization);
-      saving_bler=1;
-    }
-
-
-    //    if ((subframe>5) || (subframe < 4))
-    //      PHY_vars_UE->frame++;
-
     for (SNR=snr0; SNR<snr1; SNR+=input_snr_step) {
       errs[0]=0;
       errs[1]=0;
@@ -989,6 +947,7 @@ int main(int argc, char **argv)
 	if (input_fdUL == NULL) {
 	  input_buffer_length = PHY_vars_UE->ulsch_ue[0]->harq_processes[harq_pid]->TBS/8;
 	  input_buffer = (unsigned char *)malloc(input_buffer_length+4);
+
 	  for (i=0; i<input_buffer_length; i++)
 	    input_buffer[i] = taus()&0xff;
 
@@ -1023,7 +982,6 @@ int main(int argc, char **argv)
           }
 
 
-          /////////////////////
           if (abstx) {
             if (trials==0 && round==0 && SNR==snr0) { //generate a new channel
               hold_channel = 0;
@@ -1037,7 +995,6 @@ int main(int argc, char **argv)
             flagMag=1;
           }
 
-          ///////////////////////////////////////
 
           if (input_fdUL == NULL) {
 
@@ -1244,35 +1201,6 @@ int main(int argc, char **argv)
             }
           }
 
-          if(abstx) {
-            if(saving_bler==0)
-              if (trials==0 && round==0) {
-                // calculate freq domain representation to compute SINR
-                freq_channel(UE2eNB, N_RB_DL,12*N_RB_DL + 1);
-
-                // snr=pow(10.0,.1*SNR);
-                fprintf(csv_fdUL,"%f,%d,%d,%f,%f,%f,",SNR,tx_lev,tx_lev_dB,sigma2_dB,tx_gain,SNR2);
-
-                //fprintf(csv_fdUL,"%f,",SNR);
-                for (u=0; u<12*nb_rb; u++) {
-                  for (aarx=0; aarx<UE2eNB->nb_rx; aarx++) {
-                    for (aatx=0; aatx<UE2eNB->nb_tx; aatx++) {
-                      // abs_channel = (eNB2UE->chF[aarx+(aatx*eNB2UE->nb_rx)][u].x*eNB2UE->chF[aarx+(aatx*eNB2UE->nb_rx)][u].x + eNB2UE->chF[aarx+(aatx*eNB2UE->nb_rx)][u].y*eNB2UE->chF[aarx+(aatx*eNB2UE->nb_rx)][u].y);
-                      channelx = UE2eNB->chF[aarx+(aatx*UE2eNB->nb_rx)][u].x;
-                      channely = UE2eNB->chF[aarx+(aatx*UE2eNB->nb_rx)][u].y;
-                      // if(transmission_mode==5){
-                      fprintf(csv_fdUL,"%e+i*(%e),",channelx,channely);
-                      // }
-                      // else{
-                      //  pilot_sinr = 10*log10(snr*abs_channel);
-                      //  fprintf(csv_fd,"%e,",pilot_sinr);
-                      // }
-                    }
-                  }
-                }
-              }
-          }
-
           if (n_frames==1)
             printf("Sigma2 %f (sigma2_dB %f), tx_gain %f (%f dB)\n",sigma2,sigma2_dB,tx_gain,20*log10(tx_gain));
 
@@ -1327,14 +1255,14 @@ int main(int argc, char **argv)
 	  // write_output("rxsig2.m","rxsig2", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],ch_out_length,1,1);
 	  // write_output("rxsig2all.m","rxsig2all", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][0],PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe*2,1,1);
 	  //write_output("rxsig2_75all_m.m","rxsig2_75all", &PHY_vars_eNB->lte_eNB_common_vars.rxdata_7_5kHz[0][0][0],PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe*2,1,1);
-	  /*
+	  
 	  if (ufmc_flag==1){
 	    // timing synchronizarion using correlator
 	    // delay_est=rx_pusch_ufmc_sync(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata
 	    delay_est=rx_pusch_ufmc_sync_7_5kHz(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata_7_5kHz
-	    delay_est=44;
+	    delay_est=0;
 	  }
-	  */	  
+	  	  
 	  
           for (l=subframe*PHY_vars_UE->lte_frame_parms.symbols_per_tti; l<((1+subframe)*PHY_vars_UE->lte_frame_parms.symbols_per_tti); l++) {
 	    if (ufmc_flag==1){
@@ -1359,12 +1287,6 @@ int main(int argc, char **argv)
 
           PHY_vars_eNB->ulsch_eNB[0]->cyclicShift = cyclic_shift;// cyclic shift for DMRS
 
-          if(abstx) {
-            namepointer_log2 = &flogeren_name;
-            namepointer_chMag = &fmageren_name;
-            //namepointer_txlev = &ftxlev;
-          }
-
           //write_output("rxdataF_m.m","rxdataF", &PHY_vars_eNB->lte_eNB_common_vars.rxdataF[0][0][0],PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe*2,1,1);
           
           start_meas(&PHY_vars_eNB->ulsch_demodulation_stats);
@@ -1376,20 +1298,24 @@ int main(int argc, char **argv)
                    cooperation_flag);
           stop_meas(&PHY_vars_eNB->ulsch_demodulation_stats);
 
-          if(abstx) {
-            namepointer_chMag = NULL;
 
-            if(trials==0 && round==0 && SNR==snr0) {
-              char* namepointer ;
-              namepointer = &fperen_name;
-              write_output(namepointer, "xxx" ,PHY_vars_eNB->lte_eNB_pusch_vars[0]->drs_ch_estimates[0][0],300,1,10);
-              namepointer = NULL ;
-              // flagMag = 1;
-            }
-          }
-
-          ///////
-
+	  // calculate uncoded BLER
+	  uncoded_ber=0;
+	  for (i=0;i<coded_bits_per_codeword;i++)
+	    if (PHY_vars_UE->ulsch_ue[0]->harq_processes[0]->d[0][96+i] != (PHY_vars_eNB->lte_eNB_pusch_vars[0]->llr[i]<0)) {
+	      uncoded_ber_bit[i] = 1;
+	      uncoded_ber++;
+	    }
+	    else
+	      uncoded_ber_bit[i] = 0;
+	  
+	  uncoded_ber/=coded_bits_per_codeword;
+	  avg_ber += uncoded_ber;
+	  
+	  if (n_frames==1)
+	    write_output("uncoded_ber_bit.m","uncoded_ber_bit",uncoded_ber_bit,coded_bits_per_codeword,1,0);
+	  
+	  
           start_meas(&PHY_vars_eNB->ulsch_decoding_stats);
           ret= ulsch_decoding(PHY_vars_eNB,
                               0, // UE_id
@@ -1781,26 +1707,6 @@ int main(int argc, char **argv)
                PHY_vars_eNB->ulsch_tc_intl2_stats.trials);
       }
 
-      if(abstx) { //ABSTRACTION
-        blerr= (double)errs[1]/(round_trials[1]);
-        //printf("hata yok XX,");
-
-
-        blerr = (double)errs[0]/(round_trials[0]);
-
-        if(saving_bler==0)
-          fprintf(csv_fdUL,"%e;\n",blerr);
-
-        //    printf("hata yok XX,");
-
-
-        if(blerr<1)
-          saving_bler = 0;
-        else saving_bler =1;
-
-
-      } //ABStraction
-
       if ( (test_perf != 0) && (100 * effective_rate > test_perf )) {
         //fprintf(time_meas_fd,"SNR; MCS; TBS; rate; err0; trials0; err1; trials1; err2; trials2; err3; trials3\n");
         fprintf(time_meas_fd,"%f;%d;%d;%f;%d;%d;%d;%d;%d;%d;%d;%d;",
@@ -1906,32 +1812,6 @@ int main(int argc, char **argv)
     // write_output("chestim_t.m","chestt",PHY_vars_eNB->lte_eNB_pusch_vars[0]->drs_ch_estimates_time[0][0], (frame_parms->ofdm_symbol_size)*2,2,1);
 
   }//ch realization
-
-  if(abstx) {
-    fperen = fopen(fperen_name,"a+");
-    fprintf(fperen,"];\n");
-    fclose(fperen);
-
-    fmageren = fopen(fmageren_name,"a+");
-    fprintf(fmageren,"];\n");
-    fclose(fmageren);
-
-    flogeren = fopen(flogeren_name,"a+");
-    fprintf(flogeren,"];\n");
-    fclose(flogeren);
-  }
-
-  // ftxlev = fopen(ftxlev_name,"a+");
-  //fprintf(ftxlev,"];\n");
-  //fclose(ftxlev);
-
-
-  //  write_output("chestim_f_dene.m","chestf",ulchestim_f_all,300*12,2,1);*/
-
-  if(abstx) { // ABSTRACTION
-    fprintf(csv_fdUL,"];");
-    fclose(csv_fdUL);
-  }
 
   fclose(bler_fd);
 
