@@ -283,9 +283,8 @@ check_install_freediamter(){
     if [ -d freeDiameter-1.1.5/ ];   then
 	$SUDO rm -rf freeDiameter-1.1.5/
     fi
-    
-    $SUDO wget http://www.freediameter.net/hg/freeDiameter/archive/1.1.5.tar.gz 
-    $SUDO tar -xzf 1.1.5.tar.gz 
+    $SUDO wget http://pkgs.fedoraproject.org/repo/pkgs/freeDiameter/freeDiameter-1.1.5.tar.gz/52f7e9306d35adeffdcc545b8b585fbc/freeDiameter-1.1.5.tar.gz
+   $SUDO tar -xzf freeDiameter-1.1.5.tar.gz  
     echo "Uncompressing freeDiameter archive"
     cd freeDiameter-1.1.5
     $SUDO patch -p1 < $OPENAIR3_DIR/S6A/freediameter/freediameter-1.1.5.patch 
