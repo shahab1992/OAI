@@ -21,7 +21,7 @@
    Contact Information
    OpenAirInterface Admin: openair_admin@eurecom.fr
    OpenAirInterface Tech : openair_tech@eurecom.fr
-   OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+   OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
    Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -97,5 +97,7 @@ unsigned int *openair0_daq_cnt(void);
 
 // set the TX and RX frequencies (card 0 only for now, to retain USRP compatibility)
 int openair0_set_frequencies(openair0_device* device, openair0_config_t *openair0_cfg,int exmimo_dump_config);
+
+int openair0_set_gains(openair0_device* device, openair0_config_t *openair0_cfg);
 
 #endif

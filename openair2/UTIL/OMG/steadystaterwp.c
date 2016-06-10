@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -173,7 +173,7 @@ place_steadystaterwp_node (node_struct * node)
 void
 sleep_steadystaterwp_node (pair_struct * pair, double cur_time)
 {
-  static int initial = 1;
+  //static int initial = 1;
   node_struct *node;
   node = pair->b;
   node->mobile = 0;
@@ -209,10 +209,10 @@ sleep_steadystaterwp_node (pair_struct * pair, double cur_time)
 void
 move_steadystaterwp_node (pair_struct * pair, double cur_time)
 {
-  static int initial = 1;
+  //static int initial = 1;
   double distance, journeytime_next, max_distance;
   double temp_x, temp_y, u1, u2;
-  int loc_num;
+  //int loc_num;
   double pr, block_xmin, block_ymin;
 
   //LOG_D (OMG, "[STEADY_RWP] move node: %d\n", node->ID);

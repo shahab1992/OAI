@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -47,8 +47,8 @@ int8_t get_Po_NOMINAL_PUSCH(module_id_t module_idP,uint8_t CC_id)
 
   if (CC_id>0) {
     LOG_E(MAC,"Transmission on secondary CCs is not supported yet\n");
-    mac_xface->macphy_exit("MAC FATAL  CC_id>0");
-    return 0; // not reached
+    //mac_xface->macphy_exit("MAC FATAL  CC_id>0");
+    return 0; 
   }
 
   if (UE_mac_inst[module_idP].radioResourceConfigCommon) {
@@ -56,7 +56,8 @@ int8_t get_Po_NOMINAL_PUSCH(module_id_t module_idP,uint8_t CC_id)
   }
   else {
     LOG_E(MAC,"[UE %d] CCid %d FATAL radioResourceConfigCommon is NULL !!!\n",module_idP,CC_id);
-    mac_xface->macphy_exit("FATAL radioResourceConfigCommon is NULL");
+    //mac_xface->macphy_exit("FATAL radioResourceConfigCommon is NULL");
+    return 0;
   }
 
   return(-120 + (rach_ConfigCommon->powerRampingParameters.preambleInitialReceivedTargetPower<<1) +

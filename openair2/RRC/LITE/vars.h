@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -88,18 +88,24 @@ struct LogicalChannelConfig__ul_SpecificParameters LCSRB2 =  {3,
 };
 
 
+#ifdef Rel10
+struct LogicalChannelConfig__ext1 logicalChannelSR_Mask_r9_ext1 = {
+         logicalChannelSR_Mask_r9: &logicalChannelSR_Mask_r9
+};
+#endif
+
 // These are the default SRB configurations from 36.331 (Chapter 9, p. 176-179 in v8.6)
-LogicalChannelConfig_t  SRB1_logicalChannelConfig_defaultValue = {&LCSRB1
+LogicalChannelConfig_t  SRB1_logicalChannelConfig_defaultValue = {ul_SpecificParameters: &LCSRB1
 #ifdef Rel10
                                                                   ,
-                                                                  &logicalChannelSR_Mask_r9
+                                                                  ext1: &logicalChannelSR_Mask_r9_ext1
 #endif
                                                                  };
 
-LogicalChannelConfig_t SRB2_logicalChannelConfig_defaultValue = {&LCSRB2
+LogicalChannelConfig_t SRB2_logicalChannelConfig_defaultValue = {ul_SpecificParameters: &LCSRB2
 #ifdef Rel10
                                                                  ,
-                                                                 &logicalChannelSR_Mask_r9
+                                                                 ext1: &logicalChannelSR_Mask_r9_ext1
 #endif
                                                                 };
 

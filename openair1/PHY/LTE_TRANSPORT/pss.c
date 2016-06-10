@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -47,7 +47,7 @@
 #include "PHY/defs.h"
 #include "PHY/extern.h"
 
-int generate_pss(mod_sym_t **txdataF,
+int generate_pss(int32_t **txdataF,
                  short amp,
                  LTE_DL_FRAME_PARMS *frame_parms,
                  unsigned short symbol,

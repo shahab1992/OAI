@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -215,6 +215,16 @@ do_RRCConnectionReconfiguration(
 @returns Size of encoded bit stream in bytes*/
 uint8_t
 do_RRCConnectionReestablishmentReject(
+    uint8_t                    Mod_id,
+    uint8_t*                   const buffer);
+
+/**
+\brief Generate an RRCConnectionReject DL-CCCH-Message (eNB).
+@param Mod_id Module ID of eNB
+@param buffer Pointer to PER-encoded ASN.1 description of DL-CCCH-Message PDU
+@returns Size of encoded bit stream in bytes*/
+uint8_t
+do_RRCConnectionReject(
     uint8_t                    Mod_id,
     uint8_t*                   const buffer);
 

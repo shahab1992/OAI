@@ -21,7 +21,7 @@
    Contact Information
    OpenAirInterface Admin: openair_admin@eurecom.fr
    OpenAirInterface Tech : openair_tech@eurecom.fr
-   OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+   OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
    Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -89,15 +89,8 @@ void 			*rrh_UE_thread_status;
 void *rx_ue[2]; // FIXME hard coded array size; indexed by lte_frame_parms.nb_antennas_rx
 void *tx_ue[2]; // FIXME hard coded array size; indexed by lte_frame_parms.nb_antennas_tx
 
-/*! \fn void create_UE_trx_threads( openair0_device *dev_ue, uint8_t RT_flag,uint8_t NRT_flag)
-* \brief this function
-* \param[in]
-* \param[out]
-* \return
-* \note
-* @ingroup  _oai
-*/
-void create_UE_trx_threads( rrh_module_t *dev_ue, uint8_t RT_flag,uint8_t NRT_flag) {
+
+void config_UE_mod( rrh_module_t *dev_ue, uint8_t RT_flag,uint8_t NRT_flag) {
 
   int 	  i;
   int 	  error_code_UE, error_code_proc_UE;
@@ -155,7 +148,7 @@ void *rrh_proc_UE_thread(void * arg) {
   unsigned int                  samples_per_frame=0;
   rrh_module_t 	*dev=(rrh_module_t *)arg;
   
-  samples_per_frame= dev->eth_dev.openair0_cfg.samples_per_frame;
+  samples_per_frame= dev->eth_dev.openair0_cfg->samples_per_frame;
   AssertFatal(samples_per_frame <=0, "invalide samples_per_frame !%u\n",samples_per_frame);
 
   time_req.tv_sec = 0;
@@ -267,7 +260,7 @@ void *rrh_UE_thread(void *arg) {
   void 			*tmp;
   unsigned int          samples_per_frame=0;
   
-  samples_per_frame= dev->eth_dev.openair0_cfg.samples_per_frame;
+  samples_per_frame= dev->eth_dev.openair0_cfg->samples_per_frame;
   time_req_1us.tv_sec = 0;
   time_req_1us.tv_nsec = 1000;
   
@@ -276,26 +269,26 @@ void *rrh_UE_thread(void *arg) {
     cmd=dev->eth_dev.trx_start_func(&dev->eth_dev);
     
     /* allocate memory for TX/RX buffers */
-    rx_buffer_UE = (int32_t**)malloc16(dev->eth_dev.openair0_cfg.rx_num_channels*sizeof(int32_t*));
-    tx_buffer_UE = (int32_t**)malloc16(dev->eth_dev.openair0_cfg.tx_num_channels*sizeof(int32_t*));
+    rx_buffer_UE = (int32_t**)malloc16(dev->eth_dev.openair0_cfg->rx_num_channels*sizeof(int32_t*));
+    tx_buffer_UE = (int32_t**)malloc16(dev->eth_dev.openair0_cfg->tx_num_channels*sizeof(int32_t*));
     
-    for (i=0; i<dev->eth_dev.openair0_cfg.rx_num_channels; i++) {
+    for (i=0; i<dev->eth_dev.openair0_cfg->rx_num_channels; i++) {
       tmp=(void *)malloc(sizeof(int32_t)*(samples_per_frame+4));
       memset(tmp,0,sizeof(int32_t)*(samples_per_frame+4));
       rx_buffer_UE[i]=(tmp+4*sizeof(int32_t));  
     }
     
-    for (i=0; i<dev->eth_dev.openair0_cfg.tx_num_channels; i++) {
+    for (i=0; i<dev->eth_dev.openair0_cfg->tx_num_channels; i++) {
       tmp=(void *)malloc(sizeof(int32_t)*(samples_per_frame+4));
       memset(tmp,0,sizeof(int32_t)*(samples_per_frame+4));
       tx_buffer_UE[i]=(tmp+4*sizeof(int32_t));  
     }
     
-    printf("Client %s:%d is connected (DL_RB=%d) rt=%d|%d. \n" ,   dev->eth_dev.openair0_cfg.remote_ip,
-	   dev->eth_dev.openair0_cfg.remote_port,
-	   dev->eth_dev.openair0_cfg.num_rb_dl,
-	   dev->eth_dev.openair0_cfg.rx_num_channels,
-	   dev->eth_dev.openair0_cfg.tx_num_channels);
+    printf("Client %s:%d is connected (DL_RB=%d) rt=%d|%d. \n" ,   dev->eth_dev.openair0_cfg->remote_addr,
+	   dev->eth_dev.openair0_cfg->remote_port,
+	   dev->eth_dev.openair0_cfg->num_rb_dl,
+	   dev->eth_dev.openair0_cfg->rx_num_channels,
+	   dev->eth_dev.openair0_cfg->tx_num_channels);
     
     if (cmd==START_CMD) {
       
@@ -355,8 +348,8 @@ void *rrh_UE_rx_thread(void *arg) {
   openair0_timestamp  temp, last_hw_counter=0;
   
   antenna_index     = 0;
-  nsamps	    = dev->eth_dev.openair0_cfg.samples_per_packet;
-  samples_per_frame = dev->eth_dev.openair0_cfg.samples_per_frame;
+  nsamps	    = dev->eth_dev.openair0_cfg->samples_per_packet;
+  samples_per_frame = dev->eth_dev.openair0_cfg->samples_per_frame;
   
   while (rrh_exit == 0) {
     if (!UE_rx_started) {
@@ -499,8 +492,8 @@ void *rrh_UE_tx_thread(void *arg) {
   unsigned int          samples_per_frame=0;
   
   antenna_index    = 0;
-  nsamps 	   = dev->eth_dev.openair0_cfg.samples_per_packet;
-  samples_per_frame = dev->eth_dev.openair0_cfg.samples_per_frame;
+  nsamps 	   = dev->eth_dev.openair0_cfg->samples_per_packet;
+  samples_per_frame = dev->eth_dev.openair0_cfg->samples_per_frame;
   
   
   while (rrh_exit == 0) {

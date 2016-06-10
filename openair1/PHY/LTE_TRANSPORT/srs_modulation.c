@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -137,7 +137,7 @@ int32_t generate_srs_tx(PHY_VARS_UE *phy_vars_ue,
 
   LTE_DL_FRAME_PARMS *frame_parms=&phy_vars_ue->lte_frame_parms;
   SOUNDINGRS_UL_CONFIG_DEDICATED *soundingrs_ul_config_dedicated=&phy_vars_ue->soundingrs_ul_config_dedicated[eNB_id];
-  mod_sym_t *txdataF = phy_vars_ue->lte_ue_common_vars.txdataF[0];
+  int32_t *txdataF = phy_vars_ue->lte_ue_common_vars.txdataF[0];
   uint16_t msrsb=0,Nb=0,nb,b,msrs0=0,k,Msc_RS,Msc_RS_idx,carrier_pos,symbol_offset;
   uint16_t *Msc_idx_ptr;
   int32_t k0;
@@ -237,13 +237,13 @@ int32_t generate_srs_tx(PHY_VARS_UE *phy_vars_ue,
 
     for (k=0; k<Msc_RS; k++) {
       if ((ul_ref_sigs[0][0][Msc_RS_idx][k<<1] >= 0) && (ul_ref_sigs[0][0][Msc_RS_idx][(k<<1)+1] >= 0))
-        txdataF[symbol_offset+carrier_pos] = (mod_sym_t) 4;
+        txdataF[symbol_offset+carrier_pos] = (int32_t) 4;
       else if ((ul_ref_sigs[0][0][Msc_RS_idx][k<<1] >= 0) && (ul_ref_sigs[0][0][Msc_RS_idx][(k<<1)+1] < 0))
-        txdataF[symbol_offset+carrier_pos] = (mod_sym_t) 2;
+        txdataF[symbol_offset+carrier_pos] = (int32_t) 2;
       else if ((ul_ref_sigs[0][0][Msc_RS_idx][k<<1] < 0) && (ul_ref_sigs[0][0][Msc_RS_idx][(k<<1)+1] >= 0))
-        txdataF[symbol_offset+carrier_pos] = (mod_sym_t) 3;
+        txdataF[symbol_offset+carrier_pos] = (int32_t) 3;
       else if ((ul_ref_sigs[0][0][Msc_RS_idx][k<<1] < 0) && (ul_ref_sigs[0][0][Msc_RS_idx][(k<<1)+1] < 0))
-        txdataF[symbol_offset+carrier_pos] = (mod_sym_t) 1;
+        txdataF[symbol_offset+carrier_pos] = (int32_t) 1;
 
       carrier_pos+=2;
 

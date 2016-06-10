@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -55,7 +55,7 @@ int
 start_trace_generator (omg_global_param omg_param_list)
 {
   double cur_time = 0.0;
-  int immobile = 0;
+  //int immobile = 0;
   int node_number;
   node_struct *node = NULL;
   mobility_struct *mobility = NULL;
@@ -235,7 +235,7 @@ schedule_trace_node (pair_struct * pair, node_data * n_data, double cur_time)
 void
 sleep_trace_node (pair_struct * pair, node_data * n_data, double cur_time)
 {
-  double journeytime, distance;
+  //double journeytime, distance;
   node_struct *node = pair->b;
   node->mobile = 0;
   node->mob->speed = 0.0;

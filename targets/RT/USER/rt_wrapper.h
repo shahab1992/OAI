@@ -21,7 +21,7 @@
    Contact Information
    OpenAirInterface Admin: openair_admin@eurecom.fr
    OpenAirInterface Tech : openair_tech@eurecom.fr
-   OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+   OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
    Address      : Eurecom, Compus SophiaTech 450, route des chappes, 06451 Biot, France.
 
@@ -72,7 +72,7 @@ double get_runtime_rx(int rx_subframe, uint16_t runtime_phy_rx[29][6], uint32_t 
  * see https://www.kernel.org/doc/Documentation/scheduler/sched-deadline.txt  or
  * http://www.blaess.fr/christophe/2014/04/05/utiliser-un-appel-systeme-inconnu-de-la-libc/
  */
-#ifdef LOWLATENCY
+#ifdef DEADLINE_SCHEDULER
 
 #define gettid() syscall(__NR_gettid)
 

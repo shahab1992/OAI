@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -38,7 +38,6 @@
 #include "PHY/types.h"
 #include "PHY/defs.h"
 #include "PHY/vars.h"
-#include "MAC_INTERFACE/vars.h"
 #ifdef EMOS
 #include "SCHED/phy_procedures_emos.h"
 #endif
@@ -47,14 +46,11 @@
 #include "LAYER2/MAC/vars.h"
 
 #ifdef XFORMS
-#include <forms.h>
-#include "../../USERSPACE_TOOLS/SCOPE/lte_scope.h"
+#include "PHY/TOOLS/lte_phy_scope.h"
 #endif //XFORMS
 
 
 #include "OCG_vars.h"
-
-//#define BW 5.0
 
 
 PHY_VARS_eNB *PHY_vars_eNB;
@@ -131,11 +127,10 @@ int main(int argc, char **argv)
 
   char c;
 
-  int i,l,aa,aarx;
+  int i,l,l2,aa,aarx,k;
   double sigma2, sigma2_dB=0,SNR,snr0=-2.0,snr1=0.0;
   uint8_t snr1set=0;
   double snr_step=1,input_snr_step=1;
-  //mod_sym_t **txdataF;
   int **txdata;
   double **s_re,**s_im,**r_re,**r_im;
   double iqim = 0.0;
@@ -172,21 +167,23 @@ int main(int argc, char **argv)
   unsigned int trials,errs[4]= {0,0,0,0}; //,round_trials[4]={0,0,0,0};
 
   uint8_t N_RB_DL=25,osf=1;
-  double BW=5.0;
   uint32_t perfect_ce = 0;
 
   lte_frame_type_t frame_type = FDD;
 
+  uint32_t Nsoft = 1827072;
 
+  /*
 #ifdef XFORMS
-  FD_lte_scope *form_dl;
+  FD_lte_phy_scope_ue *form_ue;
   char title[255];
 
   fl_initialize (&argc, argv, NULL, 0, 0);
-  form_dl = create_form_lte_scope();
+  form_ue = create_lte_phy_scope_ue();
   sprintf (title, "LTE DL SCOPE UE");
-  fl_show_form (form_dl->lte_scope, FL_PLACE_HOTSPOT, FL_FULLBORDER, title);
+  fl_show_form (form_ue->lte_phy_scope_ue, FL_PLACE_HOTSPOT, FL_FULLBORDER, title);
 #endif
+  */
 
   logInit();
   number_of_cards = 1;
@@ -255,27 +252,9 @@ int main(int argc, char **argv)
     case 'R':
       N_RB_DL = atoi(optarg);
 
-      switch (N_RB_DL) {
-      case 6:
-        BW=1.25;
-        break;
-
-      case 25:
-        BW=5.0;
-        break;
-
-      case 50:
-        BW=10.0;
-        break;
-
-      case 100:
-        BW=20.0;
-        break;
-
-      default:
+      if ((N_RB_DL!=6) && (N_RB_DL!=25) && (N_RB_DL!=50) && (N_RB_DL!=100))  {
         printf("Unsupported Bandwidth %d\n",N_RB_DL);
         exit(-1);
-        break;
       }
 
       break;
@@ -356,7 +335,11 @@ int main(int argc, char **argv)
   else
     sprintf(fname,"embms_awgn_%d_%d.m",mcs,N_RB_DL);
 
-  fd = fopen(fname,"w");
+  if (!(fd = fopen(fname,"w"))) {
+    printf("Cannot open %s, check permissions\n",fname);
+    exit(-1);
+  }
+	
 
   if (awgn_flag==0)
     fprintf(fd,"SNR_%d_%d=[];errs_mch_%d_%d=[];mch_trials_%d_%d=[];\n",
@@ -397,20 +380,21 @@ int main(int argc, char **argv)
   eNB2UE = new_channel_desc_scm(PHY_vars_eNB->lte_frame_parms.nb_antennas_tx,
                                 PHY_vars_UE->lte_frame_parms.nb_antennas_rx,
                                 channel_model,
-                                BW,
+				N_RB2sampling_rate(PHY_vars_eNB->lte_frame_parms.N_RB_DL),
+				N_RB2channel_bandwidth(PHY_vars_eNB->lte_frame_parms.N_RB_DL),
                                 0,
                                 0,
                                 0);
 
   // Create transport channel structures for 2 transport blocks (MIMO)
-  PHY_vars_eNB->dlsch_eNB_MCH = new_eNB_dlsch(1,8,N_RB_DL,0);
+  PHY_vars_eNB->dlsch_eNB_MCH = new_eNB_dlsch(1,8,Nsoft,N_RB_DL,0);
 
   if (!PHY_vars_eNB->dlsch_eNB_MCH) {
     printf("Can't get eNB dlsch structures\n");
     exit(-1);
   }
 
-  PHY_vars_UE->dlsch_ue_MCH[0]  = new_ue_dlsch(1,8,MAX_TURBO_ITERATIONS_MBSFN,N_RB_DL,0);
+  PHY_vars_UE->dlsch_ue_MCH[0]  = new_ue_dlsch(1,8,Nsoft,MAX_TURBO_ITERATIONS_MBSFN,N_RB_DL,0);
 
   PHY_vars_eNB->lte_frame_parms.num_MBSFN_config = 1;
   PHY_vars_eNB->lte_frame_parms.MBSFN_config[0].radioframeAllocationPeriod = 0;
@@ -470,14 +454,14 @@ int main(int argc, char **argv)
       //if (trials%100==0)
       //eNB2UE[0]->first_run = 1;
       eNB2UE->first_run = 1;
-      memset(&PHY_vars_eNB->lte_eNB_common_vars.txdataF[0][0][0],0,FRAME_LENGTH_COMPLEX_SAMPLES_NO_PREFIX*sizeof(mod_sym_t));
+      memset(&PHY_vars_eNB->lte_eNB_common_vars.txdataF[0][0][0],0,FRAME_LENGTH_COMPLEX_SAMPLES_NO_PREFIX*sizeof(int32_t));
 
       generate_mch(PHY_vars_eNB,sched_subframe,input_buffer,0);
 
 
       PHY_ofdm_mod(PHY_vars_eNB->lte_eNB_common_vars.txdataF[0][0],        // input,
                    txdata[0],         // output
-                   frame_parms->log2_symbol_size,                // log2_fft_size
+                   frame_parms->ofdm_symbol_size,
                    LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*nsymb,                 // number of symbols
                    frame_parms->nb_prefix_samples,               // number of prefix samples
                    CYCLIC_PREFIX);
@@ -541,20 +525,45 @@ int main(int argc, char **argv)
                        subframe%10,
                        0,
                        0);
-      }
+  
+	if (PHY_vars_UE->perfect_ce==1) {
+	  // fill in perfect channel estimates
+	  freq_channel(eNB2UE,PHY_vars_UE->lte_frame_parms.N_RB_DL,12*PHY_vars_UE->lte_frame_parms.N_RB_DL + 1);
+	  for(k=0; k<NUMBER_OF_eNB_MAX; k++) {
+	    for(aa=0; aa<frame_parms->nb_antennas_tx; aa++) {
+	      for (aarx=0; aarx<frame_parms->nb_antennas_rx; aarx++) {
+		for (i=0; i<frame_parms->N_RB_DL*12; i++) {
+		  ((int16_t *) PHY_vars_UE->lte_ue_common_vars.dl_ch_estimates[k][(aa<<1)+aarx])[2*i+(l*frame_parms->ofdm_symbol_size+LTE_CE_FILTER_LENGTH)*2]=(int16_t)(eNB2UE->chF[aarx+(aa*frame_parms->nb_antennas_rx)][i].x*AMP);
+		  ((int16_t *) PHY_vars_UE->lte_ue_common_vars.dl_ch_estimates[k][(aa<<1)+aarx])[2*i+1+(l*frame_parms->ofdm_symbol_size+LTE_CE_FILTER_LENGTH)*2]=(int16_t)(eNB2UE->chF[aarx+(aa*frame_parms->nb_antennas_rx)][i].y*AMP);
+		}
+	      }
+	    }
+	  }
+	}
 
-      for (l=2; l<12; l++) {
-        rx_pmch(PHY_vars_UE,
-                0,
-                subframe%10,
-                l);
-
-
+	if (l==6)
+          for (l2=2;l2<7;l2++)
+	    rx_pmch(PHY_vars_UE,
+		    0,
+		    subframe%10,
+		    l2);
+	if (l==6)
+          for (l2=2;l2<7;l2++)
+	    rx_pmch(PHY_vars_UE,
+		    0,
+		    subframe%10,
+		    l2);
+	if (l==11)
+          for (l2=7;l2<12;l2++)
+	    rx_pmch(PHY_vars_UE,
+		    0,
+		    subframe%10,
+		    l2);
       }
 
       PHY_vars_UE->dlsch_ue_MCH[0]->harq_processes[0]->G = get_G(&PHY_vars_UE->lte_frame_parms,
           PHY_vars_UE->dlsch_ue_MCH[0]->harq_processes[0]->nb_rb,
-          PHY_vars_UE->dlsch_ue_MCH[0]->harq_processes[0]->rb_alloc,
+          PHY_vars_UE->dlsch_ue_MCH[0]->harq_processes[0]->rb_alloc_even,
           get_Qm(PHY_vars_UE->dlsch_ue_MCH[0]->harq_processes[0]->mcs),
           1,2,
           PHY_vars_UE->frame_tx,subframe);
@@ -590,10 +599,10 @@ int main(int argc, char **argv)
               mcs,N_RB_DL,mcs,N_RB_DL,errs[0],
               mcs,N_RB_DL,mcs,N_RB_DL,trials);
     else
-      fprintf(fd,"SNR_awgn_%d = [SNR_awgn_%d %d]; errs_mch_awgn_%d =[errs_mch_awgn_%f  %d]; mch_trials_awgn_%d =[mch_trials_awgn_%d %d];\n",
-              mcs,N_RB_DL,mcs,N_RB_DL,SNR,
-              mcs,N_RB_DL,mcs,N_RB_DL,errs[0],
-              mcs,N_RB_DL,mcs,N_RB_DL,trials);
+      fprintf(fd,"SNR_awgn_%d = [SNR_awgn_%d %f]; errs_mch_awgn_%d =[errs_mch_awgn_%d  %d]; mch_trials_awgn_%d =[mch_trials_awgn_%d %d];\n",
+              N_RB_DL,N_RB_DL,SNR,
+              N_RB_DL,N_RB_DL,errs[0],
+              N_RB_DL,N_RB_DL,trials);
 
     fflush(fd);
 

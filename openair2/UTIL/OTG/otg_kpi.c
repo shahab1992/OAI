@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -61,7 +61,7 @@ void tx_throughput(int src, int dst, int application)
     else if (g_otg->flow_start[src][dst][application] < get_ctime() )
       otg_info->tx_throughput[src][dst][application]=((double)otg_info->tx_num_bytes[src][dst][application] *1000*8)/ ((get_ctime() - g_otg->flow_start[src][dst][application])*1024);
     else 
-      LOG_W("[src %d][dst %d][app %d] flow start time less than the simu time (start %d, duration %d, ctime %d)\n",
+      LOG_W(OTG, "[src %d][dst %d][app %d] flow start time less than the simu time (start %d, duration %d, ctime %d)\n",
 	    src, dst, application,
 	    g_otg->flow_start[src][dst][application],
 	    g_otg->flow_duration[src][dst][application],
@@ -94,7 +94,7 @@ if ((g_otg->flow_start[src][dst][application]+g_otg->flow_duration[src][dst][app
     else if (g_otg->flow_start[src][dst][application] < get_ctime() )
       otg_info->rx_goodput[src][dst][application]=((double)otg_info->rx_num_bytes[src][dst][application] *1000*8)/ ((get_ctime() - g_otg->flow_start[src][dst][application])*1024);
     else 
-      LOG_W("[src %d][dst %d][app %d] flow start time less than the simu time (start %d, duration %d, ctime %d)\n",
+      LOG_W(OTG, "[src %d][dst %d][app %d] flow start time less than the simu time (start %d, duration %d, ctime %d)\n",
 	    src, dst, application,
 	    g_otg->flow_start[src][dst][application],
 	    g_otg->flow_duration[src][dst][application],

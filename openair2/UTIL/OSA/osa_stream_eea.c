@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -78,7 +78,6 @@ int stream_encrypt_eea1(stream_cipher_t *stream_cipher, uint8_t **out)
   int       n ;
   int       i           = 0;
   uint32_t  zero_bit    = 0;
-  uint32_t  byte_length;
   uint32_t *KS;
   uint32_t  K[4],IV[4];
 
@@ -89,7 +88,6 @@ int stream_encrypt_eea1(stream_cipher_t *stream_cipher, uint8_t **out)
 
   n = ( stream_cipher->blength + 31 ) / 32;
   zero_bit = stream_cipher->blength & 0x7;
-  byte_length = stream_cipher->blength >> 3;
 
   memset(&snow_3g_context, 0, sizeof(snow_3g_context));
   /*Initialisation*/

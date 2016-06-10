@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -67,6 +67,9 @@ int32_t subcarrier_energy(int32_t *input,uint32_t length, int32_t *subcarrier_en
     subcarrier_energy[i] = subcarrier_pwr*rx_power_correction;
   }
 
+  _mm_empty();
+  _m_empty();
+
   return i;
 }
 #endif
@@ -111,6 +114,9 @@ int32_t signal_energy(int32_t *input,uint32_t length)
   temp2/=(length*length);
   //  temp2<<=(2*shift_DC);
   temp -= temp2;
+
+  _mm_empty();
+  _m_empty();
 
   return((temp>0)?temp:1);
 }
@@ -191,7 +197,7 @@ int32_t signal_energy(int32_t *input,uint32_t length)
   for (i=0; i<length>>1; i++) {
 
     tmpE = vqaddq_s32(tmpE,vshrq_n_s32(vmull_s16(*in,*in),shift));
-    tmpDC = vaddw_s16(tmpDC,vshr_n_s16(*in++,shift_DC));
+    //tmpDC = vaddw_s16(tmpDC,vshr_n_s16(*in++,shift_DC));
 
   }
 

@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -56,8 +56,8 @@ void lte_sync_timefreq(PHY_VARS_UE *ue,int band,unsigned int DL_freq)
 {
 #if defined(__x86_64__) || defined(__i386__)
   UE_SCAN_INFO_t *scan_info = &ue->scan_info[band];
-  int16_t spectrum[12288] __attribute__((aligned(16)));
-  int16_t spectrum_p5ms[12288] __attribute__((aligned(16)));
+  int16_t spectrum[12288] __attribute__((aligned(32)));
+  int16_t spectrum_p5ms[12288] __attribute__((aligned(32)));
   int i,f,band_idx;
   __m128i autocorr0[256/4],autocorr1[256/4],autocorr2[256/4];
   __m128i autocorr0_t[256/4],autocorr1_t[256/4],autocorr2_t[256/4];

@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -41,7 +41,13 @@
 #if !defined (msg)
 # define msg(aRGS...) LOG_D(PHY, ##aRGS)
 #endif
-#define malloc16(x) memalign(16,x) //malloc(x)
+#ifndef malloc16
+#  ifdef __AVX2__
+#    define malloc16(x) memalign(32,x)
+#  else
+#    define malloc16(x) memalign(16,x)
+#  endif
+#endif
 #define free16(y,x) free(y)
 #define bigmalloc malloc
 #define bigmalloc16 malloc16

@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -61,7 +61,7 @@
 #define PBCH_A 24
 
 int allocate_pbch_REs_in_RB(LTE_DL_FRAME_PARMS *frame_parms,
-                            mod_sym_t **txdataF,
+                            int32_t **txdataF,
                             uint32_t *jj,
                             uint16_t re_offset,
                             uint32_t symbol_offset,
@@ -160,7 +160,7 @@ int allocate_pbch_REs_in_RB(LTE_DL_FRAME_PARMS *frame_parms,
 
 //uint8_t pbch_d[96+(3*(16+PBCH_A))], pbch_w[3*3*(16+PBCH_A)],pbch_e[1920];  //one bit per byte
 int generate_pbch(LTE_eNB_PBCH *eNB_pbch,
-                  mod_sym_t **txdataF,
+                  int32_t **txdataF,
                   int amp,
                   LTE_DL_FRAME_PARMS *frame_parms,
                   uint8_t *pbch_pdu,

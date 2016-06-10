@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -45,7 +45,6 @@
 #include "PHY/types.h"
 #include "PHY/defs.h"
 #include "PHY/vars.h"
-#include "MAC_INTERFACE/vars.h"
 
 #include "SCHED/defs.h"
 #include "SCHED/vars.h"
@@ -57,24 +56,11 @@
 extern unsigned short dftsizes[33];
 extern short *ul_ref_sigs[30][2][33];
 extern short ul_ref_sigs_ufmc[30][2][33][2][2048<<1];//u,v,MSC_RS,cyclic_shift,dft size
-//#define AWGN
-//#define NO_DCI
 
-#define BW 7.68
-#define AMP 4096
-//#define ABSTRACTION
-//#define PERFECT_CE
-
-/*
-  #define RBmask0 0x00fc00fc
-  #define RBmask1 0x0
-  #define RBmask2 0x0
-  #define RBmask3 0x0
-*/
 PHY_VARS_eNB *PHY_vars_eNB;
 PHY_VARS_UE *PHY_vars_UE;
 
-#define MCS_COUNT 23//added for PHY abstraction
+//#define MCS_COUNT 23//added for PHY abstraction
 
 channel_desc_t *eNB2UE[NUMBER_OF_eNB_MAX][NUMBER_OF_UE_MAX];
 channel_desc_t *UE2eNB[NUMBER_OF_UE_MAX][NUMBER_OF_eNB_MAX];
@@ -86,6 +72,7 @@ node_desc_t *ue_data[NUMBER_OF_UE_MAX];
 extern uint16_t beta_ack[16],beta_ri[16],beta_cqi[16];
 //extern  char* namepointer_chMag ;
 
+int xforms=0;
 FD_lte_phy_scope_enb *form_enb;
 char title[255];
 
@@ -97,65 +84,6 @@ double t_rx_min = 1000000000; /*!< \brief initial min process time for tx */
 int n_tx_dropped = 0; /*!< \brief initial max process time for tx */
 int n_rx_dropped = 0; /*!< \brief initial max process time for rx */
 
-void lte_param_init(unsigned char N_tx, unsigned char N_rx,unsigned char transmission_mode,uint8_t extended_prefix_flag,uint8_t N_RB_DL,uint8_t frame_type,uint8_t tdd_config,uint8_t osf)
-{
-
-  LTE_DL_FRAME_PARMS *lte_frame_parms;
-
-  printf("Start lte_param_init\n");
-  PHY_vars_eNB = malloc(sizeof(PHY_VARS_eNB));
-  PHY_vars_UE = malloc(sizeof(PHY_VARS_UE));
-  //PHY_config = malloc(sizeof(PHY_CONFIG));
-  mac_xface = malloc(sizeof(MAC_xface));
-
-  randominit(0);
-  set_taus_seed(0);
-
-  lte_frame_parms = &(PHY_vars_eNB->lte_frame_parms);
-
-  lte_frame_parms->frame_type         = frame_type;
-  lte_frame_parms->tdd_config         = tdd_config;
-  lte_frame_parms->N_RB_DL            = N_RB_DL;   //50 for 10MHz and 25 for 5 MHz
-  lte_frame_parms->N_RB_UL            = N_RB_DL;
-  lte_frame_parms->Ncp                = extended_prefix_flag;
-  lte_frame_parms->Ncp_UL             = extended_prefix_flag;
-  lte_frame_parms->Nid_cell           = 10;
-  lte_frame_parms->nushift            = 0;
-  lte_frame_parms->nb_antennas_tx     = N_tx;
-  lte_frame_parms->nb_antennas_rx     = N_rx;
-  //  lte_frame_parms->Csrs = 2;
-  //  lte_frame_parms->Bsrs = 0;
-  //  lte_frame_parms->kTC = 0;
-  //  lte_frame_parms->n_RRC = 0;
-  lte_frame_parms->mode1_flag = (transmission_mode == 1)? 1 : 0;
-  lte_frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift = 0;//n_DMRS1 set to 0
-
-  init_frame_parms(lte_frame_parms,osf);
-
-  //copy_lte_parms_to_phy_framing(lte_frame_parms, &(PHY_config->PHY_framing));
-
-
-  PHY_vars_UE->lte_frame_parms = *lte_frame_parms;
-
-  phy_init_lte_top(lte_frame_parms);
-
-  phy_init_lte_ue(PHY_vars_UE,1,0);
-
-  phy_init_lte_eNB(PHY_vars_eNB,0,0,0);
-
-  printf("Done lte_param_init\n");
-
-
-}
-
-
-
-
-#define UL_RB_ALLOC 0x1ff;
-
-
-
-
 int main(int argc, char **argv)
 {
 
@@ -164,14 +92,12 @@ int main(int argc, char **argv)
 
   int aarx,aatx;
   double channelx,channely;
-  double sigma2, sigma2_dB=10,SNR,SNR2,snr0=-2.0,snr1,SNRmeas,rate,saving_bler;
+  double sigma2, sigma2_dB=10,SNR,SNR2,snr0=-2.0,snr1,SNRmeas,rate,saving_bler=0;
   double input_snr_step=.2,snr_int=30;
   double blerr;
   double uncoded_ber,avg_ber[4]={0,0,0,0};
   short *uncoded_ber_bit=NULL;
 
-
-  //int **txdataF, **txdata;
 
   int **txdata;
 
@@ -198,7 +124,7 @@ int main(int argc, char **argv)
   unsigned int coded_bits_per_codeword,nsymb;
   int subframe=3;
   unsigned int tx_lev=0,tx_lev_dB,trials,errs[4]= {0,0,0,0},round_trials[4]= {0,0,0,0};
-  uint8_t transmission_mode=1,n_rx=1,n_tx=1;
+  uint8_t transmission_mode=1,n_rx=1;
 
   FILE *bler_fd=NULL;
   char bler_fname[512];
@@ -213,6 +139,7 @@ int main(int argc, char **argv)
   //  FILE *rx_frame_file;
   FILE *csv_fdUL=NULL;
 
+  /*
   FILE *fperen=NULL;
   char fperen_name[512];
 
@@ -221,6 +148,7 @@ int main(int argc, char **argv)
 
   FILE *flogeren=NULL;
   char flogeren_name[512];
+  */
 
   /* FILE *ftxlev;
      char ftxlev_name[512];
@@ -267,7 +195,7 @@ int main(int argc, char **argv)
   int nb_rb_set = 0;
   int sf;
 
-  int xforms=0;
+  int threequarter_fs=0;
 
   opp_enabled=1; // to enable the time meas
 
@@ -278,7 +206,7 @@ int main(int argc, char **argv)
 
   logInit();
 
-  while ((c = getopt (argc, argv, "hapZbm:n:Y:X:x:s:w:e:q:d:D:O:c:r:i:f:y:c:oA:C:R:g:N:l:S:T:QB:PI:L:uF")) != -1) {
+  while ((c = getopt (argc, argv, "hapZEbm:n:Y:X:x:s:w:e:q:d:D:O:c:r:i:f:y:c:oA:C:R:g:N:l:S:T:QB:PI:LuF")) != -1) {
     switch (c) {
     case 'u':
       ufmc_flag = 1;
@@ -392,7 +320,7 @@ int main(int argc, char **argv)
         break;
 
       default:
-        msg("Unsupported channel model!\n");
+        printf("Unsupported channel model!\n");
         exit(-1);
         break;
       }
@@ -416,12 +344,8 @@ int main(int argc, char **argv)
 
       if ((transmission_mode!=1) &&
           (transmission_mode!=2)) {
-        msg("Unsupported transmission mode %d\n",transmission_mode);
+        printf("Unsupported transmission mode %d\n",transmission_mode);
         exit(-1);
-      }
-
-      if (transmission_mode>1) {
-        n_tx = 1;
       }
 
       break;
@@ -456,6 +380,10 @@ int main(int argc, char **argv)
       cyclic_shift = atoi(optarg);
       break;
 
+    case 'E':
+      threequarter_fs=1;
+      break;
+
     case 'N':
       N0 = atoi(optarg);
       break;
@@ -466,10 +394,10 @@ int main(int argc, char **argv)
 
     case 'i':
       input_fdUL = fopen(optarg,"r");
-      msg("Reading in %s (%p)\n",optarg,input_fdUL);
+      printf("Reading in %s (%p)\n",optarg,input_fdUL);
 
       if (input_fdUL == (FILE*)NULL) {
-        msg("Unknown file %s\n",optarg);
+        printf("Unknown file %s\n",optarg);
         exit(-1);
       }
 
@@ -548,9 +476,20 @@ int main(int argc, char **argv)
       break;
     }
   }
+
   int drs_gen[12*2*nb_rb*n_frames];//mux with another variable in order to consider the frame number
-  //12 symb*2 prb(0,1)*2 block(3,10)
-  lte_param_init(1,n_rx,1,extended_prefix_flag,N_RB_DL,frame_type,tdd_config,osf);
+
+  lte_param_init(1,
+		 n_rx,
+		 1,
+		 extended_prefix_flag,
+		 frame_type,
+		 0,
+		 tdd_config,
+		 N_RB_DL,
+		 threequarter_fs,
+		 osf,
+		 0);
 
   if (nb_rb_set == 0)
     nb_rb = PHY_vars_eNB->lte_frame_parms.N_RB_UL;
@@ -598,13 +537,16 @@ int main(int argc, char **argv)
     hostname[1023] = '\0';
     gethostname(hostname, 1023);
     printf("Hostname: %s\n", hostname);
-    char dirname[FILENAME_MAX];
-    sprintf(dirname, "%s//SIMU/USER/pre-ci-logs-%s", getenv("OPENAIR_TARGETS"),hostname);
-    mkdir(dirname, 0777);
-    sprintf(time_meas_fname,"%s/time_meas_prb%d_mcs%d_antrx%d_channel%s_tx%d.csv",
-            dirname,
+    //char dirname[FILENAME_MAX];
+    //sprintf(dirname, "%s//SIMU/USER/pre-ci-logs-%s", getenv("OPENAIR_TARGETS"),hostname);
+    //mkdir(dirname, 0777);
+    sprintf(time_meas_fname,"time_meas_prb%d_mcs%d_antrx%d_channel%s_tx%d.csv",
             N_RB_DL,mcs,n_rx,channel_model_input,transmission_mode);
     time_meas_fd = fopen(time_meas_fname,"w");
+    if (time_meas_fd==NULL) {
+      fprintf(stderr,"Cannot create file %s!\n",time_meas_fname);
+      exit(-1);
+    }
   }
 
   for (i=0; i<2; i++) {
@@ -658,7 +600,8 @@ int main(int argc, char **argv)
   UE2eNB = new_channel_desc_scm(PHY_vars_eNB->lte_frame_parms.nb_antennas_tx,
                                 PHY_vars_UE->lte_frame_parms.nb_antennas_rx,
                                 channel_model,
-                                BW,
+				N_RB2sampling_rate(PHY_vars_eNB->lte_frame_parms.N_RB_UL),
+				N_RB2channel_bandwidth(PHY_vars_eNB->lte_frame_parms.N_RB_UL),
                                 forgetting_factor,
                                 delay,
                                 0);
@@ -666,13 +609,13 @@ int main(int argc, char **argv)
   UE2eNB->max_Doppler = maxDoppler;
 
   // NN: N_RB_UL has to be defined in ulsim
-  PHY_vars_eNB->ulsch_eNB[0] = new_eNB_ulsch(8,max_turbo_iterations,N_RB_DL,0);
-  PHY_vars_UE->ulsch_ue[0]   = new_ue_ulsch(8,N_RB_DL,0);
+  PHY_vars_eNB->ulsch_eNB[0] = new_eNB_ulsch(max_turbo_iterations,N_RB_DL,0);
+  PHY_vars_UE->ulsch_ue[0]   = new_ue_ulsch(N_RB_DL,0);
 
   // Create transport channel structures for 2 transport blocks (MIMO)
   for (i=0; i<2; i++) {
-    PHY_vars_eNB->dlsch_eNB[0][i] = new_eNB_dlsch(1,8,N_RB_DL,0);
-    PHY_vars_UE->dlsch_ue[0][i]  = new_ue_dlsch(1,8,MAX_TURBO_ITERATIONS,N_RB_DL,0);
+    PHY_vars_eNB->dlsch_eNB[0][i] = new_eNB_dlsch(1,8,1827072,N_RB_DL,0);
+    PHY_vars_UE->dlsch_ue[0][i]  = new_ue_dlsch(1,8,1827072,MAX_TURBO_ITERATIONS,N_RB_DL,0);
 
     if (!PHY_vars_eNB->dlsch_eNB[0][i]) {
       printf("Can't get eNB dlsch structures\n");
@@ -687,7 +630,7 @@ int main(int argc, char **argv)
     PHY_vars_eNB->dlsch_eNB[0][i]->rnti = 14;
     PHY_vars_UE->dlsch_ue[0][i]->rnti   = 14;
 
-  }
+  } 
 
 
   switch (PHY_vars_eNB->lte_frame_parms.N_RB_UL) {
@@ -791,9 +734,9 @@ int main(int argc, char **argv)
     PHY_vars_eNB->proc[sf].subframe_rx=sf;
   }
 
-  msg("Init UL hopping UE\n");
+  printf("Init UL hopping UE\n");
   init_ul_hopping(&PHY_vars_UE->lte_frame_parms);
-  msg("Init UL hopping eNB\n");
+  printf("Init UL hopping eNB\n");
   init_ul_hopping(&PHY_vars_eNB->lte_frame_parms);
 
   PHY_vars_eNB->proc[subframe].frame_rx = PHY_vars_UE->frame_tx;
@@ -870,13 +813,12 @@ int main(int argc, char **argv)
 
       //randominit(0);
 
-      //      printf("UL frame %d/subframe %d, harq_pid %d\n",PHY_vars_UE->frame,subframe,harq_pid);
       if (input_fdUL != NULL) {
         n_frames=1;
         i=0;
 
         while (!feof(input_fdUL)) {
-          fscanf(input_fdUL,"%s %s",input_val_str,input_val_str2);//&input_val1,&input_val2);
+          ret=fscanf(input_fdUL,"%s %s",input_val_str,input_val_str2);//&input_val1,&input_val2);
 
           if ((i%4)==0) {
             ((short*)txdata[0])[i/2] = (short)((1<<15)*strtod(input_val_str,NULL));
@@ -1097,10 +1039,10 @@ int main(int argc, char **argv)
             start_meas(&PHY_vars_UE->ofdm_mod_stats);
             for (aa=0; aa<1; aa++) {
 	      if (ufmc_flag==1){
-		if (frame_parms->Ncp == 1){
+		if (frame_parms->Ncp == EXTENDED){
 		  PHY_UFMC_mod(&PHY_vars_UE->lte_ue_common_vars.txdataF[aa][subframe*nsymb*PHY_vars_UE->lte_frame_parms.ofdm_symbol_size],        // input
 			      &txdata[aa][PHY_vars_UE->lte_frame_parms.samples_per_tti*subframe],         // output
-			      PHY_vars_UE->lte_frame_parms.log2_symbol_size,                // log2_fft_size
+			      PHY_vars_UE->lte_frame_parms.ofdm_symbol_size,                // fft_size
 			      nsymb,                 // number of symbols
 			      PHY_vars_UE->lte_frame_parms.nb_prefix_samples,               // number of prefix samples
 			      PHY_vars_UE->lte_frame_parms.first_carrier_offset,		// first subcarrier
@@ -1114,10 +1056,10 @@ int main(int argc, char **argv)
 				    PHY_vars_UE->ulsch_ue[0]->harq_processes[harq_pid]);
 		}
 	      }else{
-		if (frame_parms->Ncp == 1)
+		if (frame_parms->Ncp == EXTENDED)
 		  PHY_ofdm_mod(&PHY_vars_UE->lte_ue_common_vars.txdataF[aa][subframe*nsymb*PHY_vars_UE->lte_frame_parms.ofdm_symbol_size],        // input
 			      &txdata[aa][PHY_vars_UE->lte_frame_parms.samples_per_tti*subframe],         // output
-			      PHY_vars_UE->lte_frame_parms.log2_symbol_size,                // log2_fft_size
+			      PHY_vars_UE->lte_frame_parms.ofdm_symbol_size,                // fft_size
 			      nsymb,                 // number of symbols
 			      PHY_vars_UE->lte_frame_parms.nb_prefix_samples,               // number of prefix samples
 			      CYCLIC_PREFIX);
@@ -1258,6 +1200,7 @@ int main(int argc, char **argv)
           start_meas(&PHY_vars_eNB->phy_proc_rx);
           start_meas(&PHY_vars_eNB->ofdm_demod_stats);
           lte_eNB_I0_measurements(PHY_vars_eNB,
+				  subframe,
                                   0,
                                   1);
 	  // write_output("rxsig2.m","rxsig2", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],ch_out_length,1,1);
@@ -1295,8 +1238,6 @@ int main(int argc, char **argv)
 
           PHY_vars_eNB->ulsch_eNB[0]->cyclicShift = cyclic_shift;// cyclic shift for DMRS
 
-          //write_output("rxdataF_m.m","rxdataF", &PHY_vars_eNB->lte_eNB_common_vars.rxdataF[0][0][0],PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe*2,1,1);
-          
           start_meas(&PHY_vars_eNB->ulsch_demodulation_stats);
           rx_ulsch(PHY_vars_eNB,
                    subframe,
@@ -1305,7 +1246,6 @@ int main(int argc, char **argv)
                    PHY_vars_eNB->ulsch_eNB,
                    cooperation_flag);
           stop_meas(&PHY_vars_eNB->ulsch_demodulation_stats);
-
 
 	  // calculate uncoded BLER
 	  uncoded_ber=0;
@@ -1326,6 +1266,7 @@ int main(int argc, char **argv)
 	  }
 	  
           start_meas(&PHY_vars_eNB->ulsch_decoding_stats);
+
           ret= ulsch_decoding(PHY_vars_eNB,
                               0, // UE_id
                               subframe,
@@ -1362,7 +1303,7 @@ int main(int argc, char **argv)
           if (PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->o_ACK[0] != PHY_vars_UE->ulsch_ue[0]->o_ACK[0])
             ack_errors++;
 
-          //    msg("ulsch_coding: O[%d] %d\n",i,o_flip[i]);
+          //    printf("ulsch_coding: O[%d] %d\n",i,o_flip[i]);
 
 
           if (ret <= PHY_vars_eNB->ulsch_eNB[0]->max_turbo_iterations) {
@@ -1585,7 +1526,7 @@ int main(int argc, char **argv)
              rate*effective_rate,
              100*effective_rate,
              rate,
-             rate*get_Qm(mcs),
+             rate*get_Qm_ul(mcs),
              (1.0*(round_trials[0]-errs[0])+2.0*(round_trials[1]-errs[1])+3.0*(round_trials[2]-errs[2])+4.0*(round_trials[3]-errs[3]))/((double)round_trials[0])/
              (double)PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->TBS,
              (1.0*(round_trials[0]-errs[0])+2.0*(round_trials[1]-errs[1])+3.0*(round_trials[2]-errs[2])+4.0*(round_trials[3]-errs[3]))/((double)round_trials[0]),

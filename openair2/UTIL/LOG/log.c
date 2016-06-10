@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -698,6 +698,10 @@ void logRecord_mt(const char *file, const char *func, int line, int comp,
   char *log_start;
   char *log_end;
 
+  /* for no gcc warnings */
+  (void)log_start;
+  (void)log_end;
+
   c = &g_log->log_component[comp];
 
   // do not apply filtering for LOG_F
@@ -970,6 +974,10 @@ void logRecord_mt(const char *file, const char *func, int line, int comp,
    * big enough so that the buffer is never full.
    */
   char log_buffer[MAX_LOG_TOTAL];
+
+  /* for no gcc warnings */
+  (void)log_start;
+  (void)log_end;
 
   c = &g_log->log_component[comp];
 

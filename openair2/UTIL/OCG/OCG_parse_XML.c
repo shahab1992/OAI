@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -50,10 +50,6 @@
 #include "UTIL/OTG/otg_defs.h"
 #include "UTIL/OPT/opt.h"
 /*----------------------------------------------------------------------------*/
-
-#ifndef HAVE_STRNDUP
-char * strndup (const char *s, size_t size);
-#endif
 
 static int oai_emulation_;  /*!< \brief indicating that the parsing position is now within OAI_Emulation_*/
 

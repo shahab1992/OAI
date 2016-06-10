@@ -52,24 +52,24 @@ int slot_fep_ul_ufmc(LTE_DL_FRAME_PARMS *frame_parms,
 
   void (*dft)(int16_t *,int16_t *, int);
 
-  switch (frame_parms->log2_symbol_size) { 
-  case 7:
+  switch (frame_parms->ofdm_symbol_size) { 
+  case 128:
     dft = dft128; 
     break;
 
-  case 8:
+  case 256:
     dft = dft256;
     break;
 
-  case 9:
+  case 512:
     dft = dft512;
     break;
 
-  case 10:
+  case 1024:
     dft = dft1024;
     break;
 
-  case 11:
+  case 2048:
     dft = dft2048;
     break;
 

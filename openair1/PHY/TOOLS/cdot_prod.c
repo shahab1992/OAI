@@ -21,7 +21,7 @@
   Contact Information
   OpenAirInterface Admin: openair_admin@eurecom.fr
   OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
   Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -115,10 +115,10 @@ int32_t dot_product(int16_t *x,
   // convert back to integer
   result = _mm_cvtsi64_si32(mmtmp7);
 
-  return(result);
-
   _mm_empty();
   _m_empty();
+
+  return(result);
 
 #elif defined(__arm__)
   int16x4_t *x_128=(int16x4_t*)x;

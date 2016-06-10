@@ -21,7 +21,7 @@
    Contact Information
    OpenAirInterface Admin: openair_admin@eurecom.fr
    OpenAirInterface Tech : openair_tech@eurecom.fr
-   OpenAirInterface Dev  : openair4g-devel@eurecom.fr
+   OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
 
    Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
 
@@ -50,14 +50,6 @@
 #include "PHY/extern.h"
 
 #include "SCHED/defs.h"
-
-#include "MAC_INTERFACE/extern.h"
-
-#ifdef CBMIMO1
-#include "ARCH/CBMIMO1/DEVICE_DRIVER/cbmimo1_device.h"
-#include "ARCH/CBMIMO1/DEVICE_DRIVER/extern.h"
-#include "ARCH/CBMIMO1/DEVICE_DRIVER/defs.h"
-#endif // CBMIMO1
 
 #include "UTIL/LOG/vcd_signal_dumper.h"
 
