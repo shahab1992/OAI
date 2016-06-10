@@ -167,7 +167,7 @@ int main(int argc, char **argv)
   double sigma2, sigma2_dB=10,SNR,SNR2,snr0=-2.0,snr1,SNRmeas,rate,saving_bler;
   double input_snr_step=.2,snr_int=30;
   double blerr;
-  double uncoded_ber,avg_ber;
+  double uncoded_ber,avg_ber[4]={0,0,0,0};
   short *uncoded_ber_bit=NULL;
 
 
@@ -837,7 +837,7 @@ int main(int argc, char **argv)
   nsymb = (PHY_vars_eNB->lte_frame_parms.Ncp == 0) ? 14 : 12;
   coded_bits_per_codeword = nb_rb * (12 * get_Qm(mcs)) * PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->Nsymb_pusch;
   rate = (double)PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->TBS/(double)coded_bits_per_codeword;
-  printf("Rate = %f (mod %d), coded bits %d\n",rate,get_Qm(mcs),coded_bits_per_codeword);
+  printf("Rate = %f (mod %d), coded bits %d, harq_pid %d\n",rate,get_Qm(mcs),coded_bits_per_codeword,harq_pid);
 
   uncoded_ber_bit = (short*) malloc(sizeof(short)*coded_bits_per_codeword);
   if (uncoded_ber_bit==NULL) {
@@ -1310,7 +1310,7 @@ int main(int argc, char **argv)
 	  // calculate uncoded BLER
 	  uncoded_ber=0;
 	  for (i=0;i<coded_bits_per_codeword;i++)
-	    if (PHY_vars_UE->ulsch_ue[0]->harq_processes[0]->d[0][96+i] != (PHY_vars_eNB->lte_eNB_pusch_vars[0]->llr[i]<0)) {
+	    if (PHY_vars_UE->ulsch_ue[0]->b_tilde[i] != (PHY_vars_eNB->lte_eNB_pusch_vars[0]->llr[i]<0)) {
 	      uncoded_ber_bit[i] = 1;
 	      uncoded_ber++;
 	    }
@@ -1318,11 +1318,12 @@ int main(int argc, char **argv)
 	      uncoded_ber_bit[i] = 0;
 	  
 	  uncoded_ber/=coded_bits_per_codeword;
-	  avg_ber += uncoded_ber;
-	  
-	  if (n_frames==1)
+	  avg_ber[round] += uncoded_ber;
+	
+	  if (n_frames==1) {
+	    printf("uncoded BER=%f\n", uncoded_ber);
 	    write_output("uncoded_ber_bit.m","uncoded_ber_bit",uncoded_ber_bit,coded_bits_per_codeword,1,0);
-	  
+	  }
 	  
           start_meas(&PHY_vars_eNB->ulsch_decoding_stats);
           ret= ulsch_decoding(PHY_vars_eNB,
@@ -1568,7 +1569,7 @@ int main(int argc, char **argv)
 
       effective_rate = ((double)(round_trials[0])/((double)round_trials[0] + round_trials[1] + round_trials[2] + round_trials[3]));
 
-      printf("Errors (%d/%d %d/%d %d/%d %d/%d), Pe = (%e,%e,%e,%e) => effective rate %f (%3.1f%%,%f,%f), normalized delay %f (%f)\n",
+      printf("Errors (%d/%d %d/%d %d/%d %d/%d), Pe = (%e,%e,%e,%e) => effective rate %f (%3.1f%%,%f,%f), normalized delay %f (%f), uncoded_ber (%f,%f,%f,%f)\n",
              errs[0],
              round_trials[0],
              errs[1],
@@ -1587,7 +1588,11 @@ int main(int argc, char **argv)
              rate*get_Qm(mcs),
              (1.0*(round_trials[0]-errs[0])+2.0*(round_trials[1]-errs[1])+3.0*(round_trials[2]-errs[2])+4.0*(round_trials[3]-errs[3]))/((double)round_trials[0])/
              (double)PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->TBS,
-             (1.0*(round_trials[0]-errs[0])+2.0*(round_trials[1]-errs[1])+3.0*(round_trials[2]-errs[2])+4.0*(round_trials[3]-errs[3]))/((double)round_trials[0]));
+             (1.0*(round_trials[0]-errs[0])+2.0*(round_trials[1]-errs[1])+3.0*(round_trials[2]-errs[2])+4.0*(round_trials[3]-errs[3]))/((double)round_trials[0]),
+	     avg_ber[0]/round_trials[0],
+	     avg_ber[1]/round_trials[1],
+	     avg_ber[2]/round_trials[2],
+	     avg_ber[3]/round_trials[3]);
 
       if (cqi_flag >0) {
         printf("CQI errors %d/%d,false positives %d/%d, CQI false negatives %d/%d\n",
