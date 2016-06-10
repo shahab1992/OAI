@@ -810,6 +810,10 @@ int main(int argc, char **argv)
       cqi_crc_falsepositives=0;
       cqi_crc_falsenegatives=0;
       round=0;
+      avg_ber[0]=0;
+      avg_ber[1]=0;
+      avg_ber[2]=0;
+      avg_ber[3]=0;
 
       //randominit(0);
 
@@ -1349,7 +1353,7 @@ int main(int argc, char **argv)
 
               dump_ulsch(PHY_vars_eNB,subframe,0);
               exit(-1);
-            }
+	    }
 
             //      printf("round %d errors %d/%d\n",round,errs[round],trials);
             round++;
