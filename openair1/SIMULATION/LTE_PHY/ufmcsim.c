@@ -586,10 +586,12 @@ int main(int argc, char **argv)
 
   sprintf(bler_fname,"ULbler_mcs%d_nrb%d_ChannelModel%d_nsim%d.csv",mcs,nb_rb,chMod,n_frames);
   bler_fd = fopen(bler_fname,"w");
+  if (bler_fd==NULL) {
+    printf("error opening file %s for writing\n",bler_fname);
+    exit(-1);
+  }
 
   fprintf(bler_fd,"#SNR;mcs;nb_rb;TBS;rate;errors[0];trials[0];errors[1];trials[1];errors[2];trials[2];errors[3];trials[3]\n");
-
-  uncoded_ber_bit = (short*) malloc(sizeof(short)*coded_bits_per_codeword);
 
   if (test_perf != 0) {
     char hostname[1024];
@@ -836,6 +838,12 @@ int main(int argc, char **argv)
   coded_bits_per_codeword = nb_rb * (12 * get_Qm(mcs)) * PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->Nsymb_pusch;
   rate = (double)PHY_vars_eNB->ulsch_eNB[0]->harq_processes[harq_pid]->TBS/(double)coded_bits_per_codeword;
   printf("Rate = %f (mod %d), coded bits %d\n",rate,get_Qm(mcs),coded_bits_per_codeword);
+
+  uncoded_ber_bit = (short*) malloc(sizeof(short)*coded_bits_per_codeword);
+  if (uncoded_ber_bit==NULL) {
+    printf("error allocaing memory\n");
+    exit(-1);
+  }
 
   PHY_vars_UE->frame_tx = (PHY_vars_UE->frame_tx+1)&1023;
   if (ufmc_flag==1){
@@ -1814,6 +1822,7 @@ int main(int argc, char **argv)
   }//ch realization
 
   fclose(bler_fd);
+  free(uncoded_ber_bit);
 
   if (test_perf !=0)
     fclose (time_meas_fd);
