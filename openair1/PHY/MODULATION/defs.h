@@ -99,8 +99,6 @@ void do_OFDM_mod(int32_t **txdataF, int32_t **txdata, uint32_t frame,uint16_t ne
 
 void remove_7_5_kHz(PHY_VARS_eNB *phy_vars_eNB,uint8_t subframe);
 
-void remove_7_5_kHz_UFMC(PHY_VARS_eNB *phy_vars_eNB,uint8_t slot,uint32_t length_input);
-
 void apply_7_5_kHz(PHY_VARS_UE *phy_vars_ue,int32_t*txdata,uint8_t subframe);
 
 void init_prach625(LTE_DL_FRAME_PARMS *frame_parms);

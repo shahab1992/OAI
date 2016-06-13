@@ -1784,7 +1784,7 @@ target_link_libraries (oaisim_nos1 forms)
 # Unitary tests for each piece of L1: example, mbmssim is MBMS L1 simulator
 #####################################
 
-foreach(myExe dlsim ulsim ufmcsim pbchsim scansim mbmssim pdcchsim pucchsim prachsim syncsim)
+foreach(myExe dlsim ulsim pbchsim scansim mbmssim pdcchsim pucchsim prachsim syncsim)
   add_executable(${myExe}
     ${OPENAIR_BIN_DIR}/messages_xml.h
     ${OPENAIR1_DIR}/SIMULATION/LTE_PHY/${myExe}.c

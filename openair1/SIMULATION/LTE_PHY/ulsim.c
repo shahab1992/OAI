@@ -1133,17 +1133,17 @@ int main(int argc, char **argv)
 
           if (awgn_flag == 0) {
             if (UE2eNB->max_Doppler == 0) {
-	      /*if(ufmc_flag==1){
+	      if(ufmc_flag==1){
 		printf("Multipath_UFMC_channel with length=%d and delay=%d\n",(int)UE2eNB->channel_length,(int)UE2eNB->channel_offset);
 		multipath_ufmc_channel(UE2eNB,s_re,s_im,r_re,r_im,
                                 PHY_vars_eNB->lte_frame_parms.samples_per_tti,hold_channel);
 		ch_out_length=PHY_vars_eNB->lte_frame_parms.samples_per_tti+(int)UE2eNB->channel_length+(int)UE2eNB->channel_offset-1;
 		// printf("ch_out_length=%d\n",ch_out_length);
-		}else{*/
+	      }else{
 		multipath_channel(UE2eNB,s_re,s_im,r_re,r_im,
                                 PHY_vars_eNB->lte_frame_parms.samples_per_tti,hold_channel);
 		ch_out_length=PHY_vars_eNB->lte_frame_parms.samples_per_tti;
-		//}
+	      }
             } else {
 	      if(ufmc_flag==1){
 		printf("\nWARNING!!!! multipath_UFMC_tv_channel WOULD be implemented\n");
@@ -1188,14 +1188,8 @@ int main(int argc, char **argv)
           }
 
 #ifndef OFDMA_ULSCH
-	  // both versions seem to be the same!
-	  if(ufmc_flag==1){
-	    remove_7_5_kHz_UFMC(PHY_vars_eNB,subframe<<1,ch_out_length);
-	    remove_7_5_kHz_UFMC(PHY_vars_eNB,1+(subframe<<1),ch_out_length);
-	  }else{
-	    remove_7_5_kHz(PHY_vars_eNB,subframe<<1);
-	    remove_7_5_kHz(PHY_vars_eNB,1+(subframe<<1));
-	  }
+	  remove_7_5_kHz(PHY_vars_eNB,subframe<<1);
+	  remove_7_5_kHz(PHY_vars_eNB,1+(subframe<<1));
           // write_output("rxsig0_75.m","rxs0_75", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],ch_out_length,1,1);
           // write_output("rxsig1_75.m","rxs1_75", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],ch_out_length,1,1);
 

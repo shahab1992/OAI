@@ -1108,11 +1108,8 @@ void ulsch_channel_compensation(int32_t **rxdataF_ext,
         mmtmpU1 = vqshlq_s32(mmtmpU1,-output_shift128);
         rxdataF_comp128[2] = vcombine_s16(vmovn_s32(mmtmpU0),vmovn_s32(mmtmpU1));
               
-              // Add a jitter to compensate for the saturation in "packs" resulting in a bias on the DC after IDFT
-        rxdataF_comp128[0] = vqaddq_s16(rxdataF_comp128[0],(    
-    printf("rx_ulsch : symbol %d (first_rb %d,nb_rb %d)\n",l,
-        ulsch[UE_id]->harq_processes[harq_pid]->first_rb,
-        ulsch[UE_id]->harq_processes[harq_pid]->nb_rb);*(int16x8_t*)&jitter[0]));
+	// Add a jitter to compensate for the saturation in "packs" resulting in a bias on the DC after IDFT
+        rxdataF_comp128[0] = vqaddq_s16(rxdataF_comp128[0],(*(int16x8_t*)&jitter[0]));
         rxdataF_comp128[1] = vqaddq_s16(rxdataF_comp128[1],(*(int16x8_t*)&jitter[0]));
         rxdataF_comp128[2] = vqaddq_s16(rxdataF_comp128[2],(*(int16x8_t*)&jitter[0]));
 

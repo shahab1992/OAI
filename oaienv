@@ -8,8 +8,6 @@ export OPENAIR_TARGETS=$OPENAIR_HOME/targets
 
 export PATH=$PATH:$OPENAIR_TARGETS/bin
 
-export PATH=$PATH:$OPENAIR_TARGETS/bin
-
 alias  oai='cd $OPENAIR_HOME'
 alias oai0='cd $OPENAIR0_DIR'
 alias oai1='cd $OPENAIR1_DIR'
