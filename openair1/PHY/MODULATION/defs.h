@@ -109,7 +109,7 @@ void apply_625_Hz(PHY_VARS_UE *phy_vars_ue,int16_t *prach);
 
 void PHY_UFMC_mod(int *input,                       /// pointer to complex input
                   int *output,                      /// pointer to complex output
-                  unsigned char log2fftsize,        /// log2(FFT_SIZE)
+                  int fftsize,                      /// FFT_SIZE
                   unsigned char nb_symbols,         /// number of OFDM symbols
                   unsigned short nb_prefix_samples,  /// cyclic prefix length
 		  unsigned short first_carrier,	   /// first subcarrier offset

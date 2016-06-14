@@ -98,12 +98,12 @@ extern int16_t mod_vec[100][2560]  __attribute__((aligned(32)));
 
 void PHY_UFMC_mod(int *input,                       // pointer to complex input
                   int *output,                      // pointer to complex output
-                  unsigned char fftsize,        // FFT_SIZE
+                  int fftsize,                      // FFT_SIZE
                   unsigned char nb_symbols,         // number of OFDM symbols
-                  unsigned short nb_prefix_samples,  // cyclic prefix length
-		  unsigned short first_carrier,	   // first subcarrier offset
-		  LTE_UL_UE_HARQ_t *ulsch,	   // ulsch structure
-                  Extension_t etype                // type of extension
+                  unsigned short nb_prefix_samples, // cyclic prefix length
+		  unsigned short first_carrier,	    // first subcarrier offset
+		  LTE_UL_UE_HARQ_t *ulsch,	    // ulsch structure
+                  Extension_t etype                 // type of extension
                  )
 {
 
@@ -118,7 +118,7 @@ void PHY_UFMC_mod(int *input,                       // pointer to complex input
       fftsize,nb_prefix_samples,nb_symbols,input,output);
 #endif
     
-void (*idft)(int16_t *,int16_t *, int);
+  void (*idft)(int16_t *,int16_t *, int);
 
   switch (fftSizeFixed) {  
   case 64:
