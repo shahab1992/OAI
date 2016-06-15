@@ -267,6 +267,16 @@ void freq_equalization(LTE_DL_FRAME_PARMS *frame_parms,
                        unsigned short Msc_RS,
                        unsigned char Qm);
 
+int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
+                       uint8_t eNB_id,
+                       short amp,
+                       unsigned int subframe,
+		      uint8_t ant);
 
+int rx_pusch_ufmc_sync_7_5kHz(PHY_VARS_eNB *phy_vars_eNB,
+			      uint8_t eNB_id,
+			      short amp,
+			      unsigned int subframe,
+			      uint8_t ant);
 /** @} */
 #endif

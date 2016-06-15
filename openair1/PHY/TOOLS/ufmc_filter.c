@@ -27,6 +27,7 @@
 
  *******************************************************************************/
 #include "defs.h"
+#include "PHY/defs.h"
 #include "log.h"
 
 #include <stdlib.h>
@@ -514,18 +515,21 @@ UFMC Modulation - Upsampling+Dolph-Chebyshev+FrequencyShilfting
 
 int16_t hFIR[152]  __attribute__((aligned(32))); // 152 is closest multiple of 8 to 145
 
-void ufmc_init(uint32_t lFIR,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
-	       int FFT_size,
-	       int n_rb_max,
-	       int first_carrier) {// dimensione of standard FFT
+void ufmc_init(LTE_DL_FRAME_PARMS *frame_parms)
+{
 
   float atten=60;
-  uint16_t lOUT, 
-	   lFIR_padded,
-           quotient;
-  int n_rb;
+  uint16_t FFT_size=frame_parms->ofdm_symbol_size;
+  uint16_t lFIR=frame_parms->nb_prefix_samples;
+  uint16_t prefix_len0=frame_parms->nb_prefix_samples0;
+  uint16_t first_carrier=frame_parms->first_carrier_offset;
+  uint16_t lOUT,lFIR_padded;
+  uint16_t n_rb,n_rb_max=frame_parms->N_RB_UL;
 
-  lOUT=(FFT_size+lFIR); //output length(complex);
+  //lFIR has to be a multiple of 8, so round down if necessary (cannot round up since this will create memory overflow)
+  lFIR_padded = (lFIR/8)*8;
+  lOUT=(FFT_size+prefix_len0); //output length(complex);
+  /*
   if ((lFIR%0x0A)>0){ //lFIR!=10 || lFIR!=20 || lFIR!=40 || lFIR!=80 || lFIR!=120 || lFIR!=160 longer prefix from 1st symbol
     lFIR+=1;                   // 37 for 25 PRB, 73 for 50 PRB, 145 for 100 PRB
   }else{
@@ -533,11 +537,12 @@ void ufmc_init(uint32_t lFIR,  // (nb_prefix_samples)cyclic prefix length -> it 
   }
   quotient=lFIR/8;
   lFIR_padded = (lFIR%8)>0 ? (quotient+2)<<3 : quotient<<3; //CV: extended padded length by 16 samples more
+  */
 
   // Filter Impulse Response creation
   // printf("length fir=%d\n,length fir padded=%d\n",lFIR,lFIR_padded);
   memset(hFIR,0,lFIR_padded*sizeof(int16_t));
-  i_cheby_win(hFIR, lFIR, atten);
+  i_cheby_win(hFIR, lFIR_padded, atten);
   //write_output("h_filter.m","h_filter",hFIR,lFIR_padded,1,0);
   for (n_rb=0;n_rb<n_rb_max;n_rb++) {
     ii_CreateModvec(n_rb,first_carrier,FFT_size,lOUT,&mod_vec[n_rb][0]);
@@ -547,7 +552,8 @@ void ufmc_init(uint32_t lFIR,  // (nb_prefix_samples)cyclic prefix length -> it 
 
 void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
 		int16_t *out, // output array-->length=(FFT_size+lFIR)*2
-		uint32_t lFIR,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
+		uint16_t lFIR,  // FIR length(multiple of 8)
+		uint16_t lFIR_padded, //prefix length (has to be <= lFIR)
 		int size, // input dimension(only real part) -> FFT dimension
 		int FFT_size, // dimensione of standard FFT
 		int n_rb, //current resource block index 
@@ -557,16 +563,15 @@ void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
   
   uint16_t Up_factor=FFT_size/size, //Upsampling factor-->multiple of 4
 	   lOUT, //output length(complex)
-	   lFIR_padded,
-	   quotient,
 	   lOUT2;
 
 
   // printf("lFIR=%d\n",lFIR);
   lOUT=FFT_size+lFIR; //output length(complex);
-  lFIR++;
-  quotient=(int)lFIR/8;
-  lFIR_padded = (quotient+1)<<3;
+  //FK: what are the following 3 lines supposed to do? Make sure lOUT is a multiple of 8? They don't and they change lOUT an will create memory leaks
+  //lFIR++;
+  //quotient=(int)lFIR/8;
+  //lFIR_padded = (quotient+1)<<3;
   lOUT2=(FFT_size+lFIR_padded)<<1; //filter output length (complex);
   // printf("lOUT=%d,lFIR=%d,quotient=%d,lFIR_padded=%d,lOUT2=%d\n",lOUT,lFIR,quotient,lFIR_padded,lOUT2);
   int16_t out2[lOUT2] __attribute__((aligned(32)));

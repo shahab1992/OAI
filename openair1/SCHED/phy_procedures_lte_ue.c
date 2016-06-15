@@ -1318,6 +1318,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstra
 			     frame_parms->ofdm_symbol_size,
 			     nsymb,
 			     frame_parms->nb_prefix_samples,
+			     frame_parms->nb_prefix_samples,
 			     frame_parms->first_carrier_offset,
 			     phy_vars_ue->ulsch_ue[eNB_id]->harq_processes[harq_pid],
 			     CYCLIC_PREFIX);

@@ -111,10 +111,11 @@ void PHY_UFMC_mod(int *input,                       /// pointer to complex input
                   int *output,                      /// pointer to complex output
                   int fftsize,                      /// FFT_SIZE
                   unsigned char nb_symbols,         /// number of OFDM symbols
-                  unsigned short nb_prefix_samples,  /// cyclic prefix length
-		  unsigned short first_carrier,	   /// first subcarrier offset
-		  LTE_UL_UE_HARQ_t *ulsch,	   /// ulsch structure
-                  Extension_t etype                /// type of extension
+                  unsigned short nb_prefix_samples, /// cyclic prefix length
+                  unsigned short lFIR,              /// filter length
+		  unsigned short first_carrier,	    /// first subcarrier offset
+		  LTE_UL_UE_HARQ_t *ulsch,	    /// ulsch structure
+                  Extension_t etype                 /// type of extension
 		  );
 
 void normal_prefix_UFMC_mod(int32_t *txdataF,

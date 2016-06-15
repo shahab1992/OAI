@@ -790,7 +790,7 @@ int main(int argc, char **argv)
 
   PHY_vars_UE->frame_tx = (PHY_vars_UE->frame_tx+1)&1023;
   if (ufmc_flag==1){
-    ufmc_init(PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,PHY_vars_eNB->lte_frame_parms.ofdm_symbol_size,PHY_vars_eNB->lte_frame_parms.N_RB_UL,PHY_vars_eNB->lte_frame_parms.first_carrier_offset);
+    ufmc_init(&PHY_vars_eNB->lte_frame_parms);
     generate_drs_ufmc(PHY_vars_eNB,0,AMP,subframe,0);
   }
   
@@ -1049,6 +1049,7 @@ int main(int argc, char **argv)
 			      PHY_vars_UE->lte_frame_parms.ofdm_symbol_size,                // fft_size
 			      nsymb,                 // number of symbols
 			      PHY_vars_UE->lte_frame_parms.nb_prefix_samples,               // number of prefix samples
+			      PHY_vars_UE->lte_frame_parms.nb_prefix_samples,               // filter length
 			      PHY_vars_UE->lte_frame_parms.first_carrier_offset,		// first subcarrier
 			      PHY_vars_UE->ulsch_ue[0]->harq_processes[harq_pid],
 			      CYCLIC_PREFIX);
@@ -1133,17 +1134,17 @@ int main(int argc, char **argv)
 
           if (awgn_flag == 0) {
             if (UE2eNB->max_Doppler == 0) {
-	      if(ufmc_flag==1){
-		printf("Multipath_UFMC_channel with length=%d and delay=%d\n",(int)UE2eNB->channel_length,(int)UE2eNB->channel_offset);
+	      /*if(ufmc_flag==1){
+		//printf("Multipath_UFMC_channel with length=%d and delay=%d\n",(int)UE2eNB->channel_length,(int)UE2eNB->channel_offset);
 		multipath_ufmc_channel(UE2eNB,s_re,s_im,r_re,r_im,
                                 PHY_vars_eNB->lte_frame_parms.samples_per_tti,hold_channel);
 		ch_out_length=PHY_vars_eNB->lte_frame_parms.samples_per_tti+(int)UE2eNB->channel_length+(int)UE2eNB->channel_offset-1;
 		// printf("ch_out_length=%d\n",ch_out_length);
-	      }else{
+	      }else{*/
 		multipath_channel(UE2eNB,s_re,s_im,r_re,r_im,
                                 PHY_vars_eNB->lte_frame_parms.samples_per_tti,hold_channel);
 		ch_out_length=PHY_vars_eNB->lte_frame_parms.samples_per_tti;
-	      }
+	      //}
             } else {
 	      if(ufmc_flag==1){
 		printf("\nWARNING!!!! multipath_UFMC_tv_channel WOULD be implemented\n");
@@ -1210,11 +1211,12 @@ int main(int argc, char **argv)
 	    // delay_est=rx_pusch_ufmc_sync(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata
 	    delay_est=rx_pusch_ufmc_sync_7_5kHz(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata_7_5kHz
 	    delay_est=0;
+	    //printf("delay_est=%d\n",delay_est);
 	  }
 	  	  
 	  
           for (l=subframe*PHY_vars_UE->lte_frame_parms.symbols_per_tti; l<((1+subframe)*PHY_vars_UE->lte_frame_parms.symbols_per_tti); l++) {
-	    if (ufmc_flag==1){
+	    /*if (ufmc_flag==1){
 	      slot_fep_ul_ufmc(&PHY_vars_eNB->lte_frame_parms,
                         &PHY_vars_eNB->lte_eNB_common_vars,
                         l%(PHY_vars_eNB->lte_frame_parms.symbols_per_tti/2),
@@ -1222,14 +1224,14 @@ int main(int argc, char **argv)
                         0,
                         0,
 			delay_est);
-	    }else{
+			}else{*/
 	      slot_fep_ul(&PHY_vars_eNB->lte_frame_parms,
                         &PHY_vars_eNB->lte_eNB_common_vars,
                         l%(PHY_vars_eNB->lte_frame_parms.symbols_per_tti/2),
                         l/(PHY_vars_eNB->lte_frame_parms.symbols_per_tti/2),
                         0,
                         0);
-	      }
+	      //}
           }
 
           stop_meas(&PHY_vars_eNB->ofdm_demod_stats);

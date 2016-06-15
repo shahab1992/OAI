@@ -39,6 +39,7 @@
 #include <stdint.h>
 
 #include "PHY/sse_intrin.h"
+#include "PHY/defs.h"
 
 
 //defined in rtai_math.h
@@ -402,7 +403,8 @@ void idft8192(int16_t *x,int16_t *y,int scale);
 
 void dolph_cheb(int16_t *in, /// input array-->length=(size+lFIR)*2
 		int16_t *out, /// output array-->length=(FFT_size+lFIR)*2
-		uint32_t lFIR,  /// (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
+		uint16_t lFIR,  /// FIR length(multiple of 8)
+		uint16_t lFIR_padded, /// prefix length
 		int size, /// input dimension(only real part) -> FFT dimension
 		int FFT_size, /// dimensione of standard FFT
 		int n_rb, ///current resource block index 
@@ -410,7 +412,11 @@ void dolph_cheb(int16_t *in, /// input array-->length=(size+lFIR)*2
 		); 
 double interp(double x, double *xs, double *ys, int count);
 void multcmplx_add(int16_t *out,int16_t *fact1,int16_t *fact2,int16_t lIN);
-void ufmc_init(uint32_t lFIR, int FFT_size, int n_rb_max, int first_carrier);
+//void ufmc_init(uint32_t lFIR, int FFT_size, int n_rb_max, int first_carrier);
+void ufmc_init(LTE_DL_FRAME_PARMS *frame_parms);
+int32_t sum_square_abs_cmplx(int16_t *fact,int16_t lIN);
+void multcmplx_conj(int16_t *out,int16_t *fact1,int16_t *fact2,int16_t lIN,uint8_t right_shift);
+int max_vec(int32_t *in,uint16_t lin);
 
 /** @} */
 

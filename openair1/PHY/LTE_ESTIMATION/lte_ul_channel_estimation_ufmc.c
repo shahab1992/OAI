@@ -50,53 +50,21 @@ int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
                        unsigned int subframe,
                        uint8_t ant)
 {
-  uint16_t k,l,rb,drs_offset,fftSize;
-  int lCP,re_offset,symbol_offset;
+  LTE_DL_FRAME_PARMS *frame_parms = &phy_vars_eNB->lte_frame_parms;
+  uint16_t k,l,rb,drs_offset,fftSize=frame_parms->ofdm_symbol_size;
+  int re_offset,symbol_offset,lFIR=frame_parms->nb_prefix_samples,lCP=lFIR;
 
   int16_t alpha_re[12] = {32767, 28377, 16383,     0,-16384,  -28378,-32768,-28378,-16384,    -1, 16383, 28377};
   int16_t alpha_im[12] = {0,     16383, 28377, 32767, 28377,   16383,     0,-16384,-28378,-32768,-28378,-16384};
   
-  switch(phy_vars_eNB->lte_frame_parms.N_RB_UL){
-    case 6:
-      fftSize=128;
-      lCP=9;
-      break;
-    case 15:
-      fftSize=256;
-      lCP=18;
-      break;
-    case 25:
-      lCP=36;
-      fftSize=512;
-      break;
-    case 50:
-      lCP=72;
-      fftSize=1024;
-      break;
-    case 75:
-      lCP=108;
-      fftSize=1536;
-      break;
-    case 100:
-      lCP=144;
-      fftSize=2048;
-      break;
-    default:
-      lCP=72;
-      fftSize=1024;
-      break;
-  }
-
   uint8_t cyclic_shift[2];
-  LTE_DL_FRAME_PARMS *frame_parms = &phy_vars_eNB->lte_frame_parms;
   uint32_t u,v,Msc_RS,alpha_ind,v_max;
   int32_t ref_re,ref_im;
   uint8_t harq_pid = subframe2harq_pid(frame_parms,phy_vars_eNB->proc[subframe].frame_rx,subframe);
   uint16_t nb_rb=phy_vars_eNB->ulsch_eNB[eNB_id]->harq_processes[harq_pid]->nb_rb;
   uint16_t fftSize2=2*fftSize;
   int drs_array[12*2*nb_rb];//mux with another variable in order to consider the frame number
-  static short temp[2048*4] __attribute__((aligned(16))),temp1[2048*4] __attribute__((aligned(16))),
-  Rxdft[2048*4] __attribute__((aligned(16)));
+  static short temp[2048*4] __attribute__((aligned(16))),temp1[2048*4] __attribute__((aligned(16))),Rxdft[2048*4] __attribute__((aligned(16)));
   cyclic_shift[0] = (frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift +
                   phy_vars_eNB->ulsch_eNB[eNB_id]->harq_processes[harq_pid]->n_DMRS2 +
                   frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[(subframe<<1)]+((phy_vars_eNB->cooperation_flag==2)?10:0)+
@@ -105,7 +73,7 @@ int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
                   phy_vars_eNB->ulsch_eNB[eNB_id]->harq_processes[harq_pid]->n_DMRS2 +
                   frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[(subframe<<1)+1]+((phy_vars_eNB->cooperation_flag==2)?10:0)+
                    ant*6) % 12;
-  printf("lCP=%d,phy_vars_eNB->lte_frame_parms.nb_prefix_samples=%d\n",lCP,phy_vars_eNB->lte_frame_parms.nb_prefix_samples);
+  printf("lFIR=%d,phy_vars_eNB->lte_frame_parms.nb_prefix_samples=%d\n",lFIR,phy_vars_eNB->lte_frame_parms.nb_prefix_samples);
   for(u=0;u<30;u++){
     for(Msc_RS=0;Msc_RS<33;Msc_RS++){
       v_max = (Msc_RS<2) ? 1 : 2;
@@ -144,7 +112,8 @@ int generate_drs_ufmc(PHY_VARS_eNB *phy_vars_eNB,
 	      idft64((int16_t *)temp1,(int16_t *)temp,1);
 	      dolph_cheb((int16_t *)temp, // input
 			 (int16_t *)&Rxdft,
-			 lCP,  // (nb_prefix_samples)cyclic prefix length -> it becomes FIR length(multiple of 8)
+			 lFIR,  // FIR length(multiple of 8)
+			 lCP,
 			 1<<6, // input dimension(only real part) -> FFT dimension
 			 fftSize,
 			 rb, //nPRB for filter frequency shifting
