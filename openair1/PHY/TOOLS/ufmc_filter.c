@@ -93,7 +93,7 @@ void f_cheby_win(float *out, int N, float atten){ //Floating-point real taps Dol
 void i_cheby_win(int16_t *out, int N, float atten){ //Fixed-point real taps Dolph-Chebyshev filter
     int nn, i;
     float y[N];
-    double M, n, sum = 0, max=0;
+    double M, n, sum = 0, max=0, norm=0;
     double tg = pow(10,atten/20);  /* 1/r term [2], 10^gamma [2] */
     double x0 = cosh((1.0/(N-1))*acosh(tg));
     M = (N-1)/2;
@@ -106,10 +106,13 @@ void i_cheby_win(int16_t *out, int N, float atten){ //Fixed-point real taps Dolp
         }
         y[nn] = tg + 2*sum;
         y[N-nn-1] = y[nn];
+	norm+=y[nn];
         if(y[nn]>max)max=y[nn];
     }
+    printf("cheb_win: max %f, norm %f\n",max,norm);
     for(nn=0; nn<N; nn++) {
-      *(out+nn) = (int16_t)((y[nn]/ (max*N/4))*((1<<15)-1)); // normalise everything and scale 
+      *(out+nn) = (int16_t)((y[nn]/ (max*2))*((1<<15)-1)); // normalise everything and scale 
+      //*(out+nn) = (int16_t)((y[nn]/ (norm))*((1<<15)-1)); // normalise everything and scale 
     }
     return;
 }
@@ -540,10 +543,10 @@ void ufmc_init(LTE_DL_FRAME_PARMS *frame_parms)
   */
 
   // Filter Impulse Response creation
-  // printf("length fir=%d\n,length fir padded=%d\n",lFIR,lFIR_padded);
+  printf("length fir=%d,length fir padded=%d\n",lFIR,lFIR_padded);
   memset(hFIR,0,lFIR_padded*sizeof(int16_t));
   i_cheby_win(hFIR, lFIR_padded, atten);
-  //write_output("h_filter.m","h_filter",hFIR,lFIR_padded,1,0);
+  write_output("h_filter.m","h_filter",hFIR,lFIR_padded,1,0);
   for (n_rb=0;n_rb<n_rb_max;n_rb++) {
     ii_CreateModvec(n_rb,first_carrier,FFT_size,lOUT,&mod_vec[n_rb][0]);
     //write_output("mod_vec.m","mod_vec",mod_vec, lOUT>>1,1,1);
@@ -562,23 +565,20 @@ void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
 {
   
   uint16_t Up_factor=FFT_size/size, //Upsampling factor-->multiple of 4
-	   lOUT, //output length(complex)
 	   lOUT2;
 
 
-  // printf("lFIR=%d\n",lFIR);
-  lOUT=FFT_size+lFIR; //output length(complex);
-  //FK: what are the following 3 lines supposed to do? Make sure lOUT is a multiple of 8? They don't and they change lOUT an will create memory leaks
+  //FK: I was not sure what the following 3 lines are supposed to do, so I added lFIR_padded as an input parameter
   //lFIR++;
   //quotient=(int)lFIR/8;
   //lFIR_padded = (quotient+1)<<3;
   lOUT2=(FFT_size+lFIR_padded)<<1; //filter output length (complex);
-  // printf("lOUT=%d,lFIR=%d,quotient=%d,lFIR_padded=%d,lOUT2=%d\n",lOUT,lFIR,quotient,lFIR_padded,lOUT2);
+  //printf("lOUT=%d,lFIR=%d,lFIR_padded=%d,lOUT2=%d\n",lOUT,lFIR,lFIR_padded,lOUT2);
   int16_t out2[lOUT2] __attribute__((aligned(32)));
   memset(out2,0,lOUT2*sizeof(int16_t));
   // Upsampling and Filtering
-  ii_complx_UpFilter(&in[0],&out2[0], size, &hFIR[0] , lFIR_padded, Up_factor);
-  //write_output("FIR_out.m","fir",out2, lOUT,1,1);
+  ii_complx_UpFilter(&in[0],&out2[0], size, &hFIR[0] , lFIR, Up_factor);
+  //write_output("FIR_out.m","fir",out2, lOUT2>>1,1,1);
   // Modulation
   memset(out,0,lOUT2*sizeof(int16_t));
   multcmplx_add(&out[0],&out2[0],&mod_vec[n_rb][0],lOUT2>>1);

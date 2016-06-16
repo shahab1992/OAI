@@ -115,8 +115,8 @@ void PHY_UFMC_mod(int *input,                       // pointer to complex input
   static int temp[2048*2] __attribute__((aligned(16)));
   static int temp1[2048*2] __attribute__((aligned(16)));
   static int temp2[2048*2] __attribute__((aligned(16)));
-  unsigned short i,j,s;
-  uint16_t fftSizeFixed=fftsize; //64; //CV:We decided to work with singulat PRB: each subband is composed by 12 subcarrier and nb_rb is also the number of UFMC total subbands 
+  unsigned short i,j;
+  uint16_t fftSizeFixed=64; //CV:We decided to work with singulat PRB: each subband is composed by 12 subcarrier and nb_rb is also the number of UFMC total subbands 
 
 #ifdef DEBUG_OFDM_MOD
   msg("[PHY] OFDM mod (size %d,prefix %d) Symbols %d, input %p, output %p\n",
@@ -173,17 +173,17 @@ void PHY_UFMC_mod(int *input,                       // pointer to complex input
       //write_output("temp1.m","tmp1",temp1,fftSizeFixed,1,1);
 
       //activate the following lines (with fftSizeFixed=fftsize and disabling dolph_cheb) to test the re-modulation to the right subbands without applying the filter 
-      memcpy(&temp2[nb_prefix_samples],temp1,(fftSizeFixed)*sizeof(int32_t));
+      //memcpy(&temp2[nb_prefix_samples],temp1,(fftSizeFixed)*sizeof(int32_t));
       //memcpy(temp2,&temp1[fftSizeFixed-nb_prefix_samples],nb_prefix_samples*sizeof(int32_t));//cyclic prefix
       //write_output("temp2.m","tmp2",temp2,(fftSizeFixed)+nb_prefix_samples,1,1);
-      multcmplx_add(&output[(i*fftsize) + (i*nb_prefix_samples)],&temp2[0],&mod_vec[j+ulsch->first_rb][0],(fftsize)+nb_prefix_samples);
+      //multcmplx_add(&output[(i*fftsize) + (i*nb_prefix_samples)],&temp2[0],&mod_vec[j+ulsch->first_rb][0],(fftsize)+nb_prefix_samples);
       //write_output("output1.m","out1",&output[(i*fftsize) + (i*nb_prefix_samples)],(fftsize)+nb_prefix_samples,1,1);
 
       // activate this line (with fftSizeFixed=fftsize and disabling dolph_cheb) to test the original version of UFMC and without the filter
       //idft((int16_t *)&input[i*fftsize],(int16_t *)&output[(i*fftsize) + ((1+i)*nb_prefix_samples)],1); 
       //write_output("output2.m","out2",&output[(i*fftsize) + (i*nb_prefix_samples)],(fftsize)+nb_prefix_samples,1,1);
       
-      /*
+      
       dolph_cheb((int16_t *)temp1, // input
 		 (int16_t *)&output[(i*fftsize) + i*nb_prefix_samples],
 		 lFIR, //filter length
@@ -192,8 +192,8 @@ void PHY_UFMC_mod(int *input,                       // pointer to complex input
 		 fftsize,
 		 j+ulsch->first_rb, //current PRB index for filter frequency shifting
 		 first_carrier );  
-      */
-      //write_output("output.m","out",&output[(1*fftsize) + (i*nb_prefix_samples)],(fftsize)+nb_prefix_samples,1,1);
+
+      //write_output("output.m","out",&output[(i*fftsize) + (i*nb_prefix_samples)],(fftsize)+nb_prefix_samples,1,1);
     }
   }
 }

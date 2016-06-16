@@ -1210,13 +1210,13 @@ int main(int argc, char **argv)
 	    // timing synchronizarion using correlator
 	    // delay_est=rx_pusch_ufmc_sync(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata
 	    delay_est=rx_pusch_ufmc_sync_7_5kHz(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata_7_5kHz
-	    delay_est=0;
 	    //printf("delay_est=%d\n",delay_est);
+	    delay_est=0;
 	  }
 	  	  
 	  
           for (l=subframe*PHY_vars_UE->lte_frame_parms.symbols_per_tti; l<((1+subframe)*PHY_vars_UE->lte_frame_parms.symbols_per_tti); l++) {
-	    /*if (ufmc_flag==1){
+	    if (ufmc_flag==1){
 	      slot_fep_ul_ufmc(&PHY_vars_eNB->lte_frame_parms,
                         &PHY_vars_eNB->lte_eNB_common_vars,
                         l%(PHY_vars_eNB->lte_frame_parms.symbols_per_tti/2),
@@ -1224,14 +1224,14 @@ int main(int argc, char **argv)
                         0,
                         0,
 			delay_est);
-			}else{*/
+	    }else{
 	      slot_fep_ul(&PHY_vars_eNB->lte_frame_parms,
                         &PHY_vars_eNB->lte_eNB_common_vars,
                         l%(PHY_vars_eNB->lte_frame_parms.symbols_per_tti/2),
                         l/(PHY_vars_eNB->lte_frame_parms.symbols_per_tti/2),
                         0,
                         0);
-	      //}
+	    }
           }
 
           stop_meas(&PHY_vars_eNB->ofdm_demod_stats);
