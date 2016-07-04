@@ -44,8 +44,7 @@ Description NAS procedure functions triggered by the user
 *****************************************************************************/
 
 
-#include "nas_user.h"
-#include "userDef.h"
+#include "user_defs.h"
 #include "nas_log.h"
 #include "memory.h"
 
@@ -54,6 +53,7 @@ Description NAS procedure functions triggered by the user
 #include "at_error.h"
 #include "user_indication.h"
 #include "nas_proc.h"
+#include "nas_user.h"
 #include "user_api.h"
 
 #include <string.h> // memset, strncpy, strncmp
@@ -72,30 +72,30 @@ Description NAS procedure functions triggered by the user
  *  Functions executed upon receiving AT command from the user
  * ---------------------------------------------------------------------
  */
-static int _nas_user_proc_cgsn    (const at_command_t *data);
-static int _nas_user_proc_cgmi    (const at_command_t *data);
-static int _nas_user_proc_cgmm    (const at_command_t *data);
-static int _nas_user_proc_cgmr    (const at_command_t *data);
-static int _nas_user_proc_cimi    (const at_command_t *data);
-static int _nas_user_proc_cfun    (const at_command_t *data);
-static int _nas_user_proc_cpin    (const at_command_t *data);
-static int _nas_user_proc_csq     (const at_command_t *data);
-static int _nas_user_proc_cesq    (const at_command_t *data);
-static int _nas_user_proc_cops    (const at_command_t *data);
-static int _nas_user_proc_cgatt   (const at_command_t *data);
-static int _nas_user_proc_creg    (const at_command_t *data);
-static int _nas_user_proc_cgreg   (const at_command_t *data);
-static int _nas_user_proc_cereg   (const at_command_t *data);
-static int _nas_user_proc_cgdcont (const at_command_t *data);
-static int _nas_user_proc_cgact   (const at_command_t *data);
-static int _nas_user_proc_cmee    (const at_command_t *data);
-static int _nas_user_proc_clck    (const at_command_t *data);
-static int _nas_user_proc_cgpaddr (const at_command_t *data);
-static int _nas_user_proc_cnum    (const at_command_t *data);
-static int _nas_user_proc_clac    (const at_command_t *data);
+static int _nas_user_proc_cgsn    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cgmi    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cgmm    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cgmr    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cimi    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cfun    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cpin    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_csq     (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cesq    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cops    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cgatt   (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_creg    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cgreg   (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cereg   (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cgdcont (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cgact   (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cmee    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_clck    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cgpaddr (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_cnum    (nas_user_t *user, const at_command_t *data);
+static int _nas_user_proc_clac    (nas_user_t *user, const at_command_t *data);
 
 /* NAS procedures applicable to AT commands */
-typedef int (*_nas_user_procedure_t) (const at_command_t *);
+typedef int (*_nas_user_procedure_t) (nas_user_t *, const at_command_t *);
 
 static _nas_user_procedure_t _nas_user_procedure[AT_COMMAND_ID_MAX] = {
   NULL,
@@ -193,7 +193,7 @@ static user_nvdata_t _nas_user_nvdata;
  **          Others:    _nas_user_nvdata, _nas_user_context        **
  **                                                                        **
  ***************************************************************************/
-void nas_user_initialize(emm_indication_callback_t emm_cb,
+void nas_user_initialize(nas_user_t *user, emm_indication_callback_t emm_cb,
                          esm_indication_callback_t esm_cb, const char *version)
 {
   LOG_FUNC_IN;
@@ -221,7 +221,7 @@ void nas_user_initialize(emm_indication_callback_t emm_cb,
   _nas_user_context.fun = AT_CFUN_FUN_DEFAULT;
 
   /* Initialize the internal NAS processing data */
-  nas_proc_initialize(emm_cb, esm_cb, _nas_user_nvdata.IMEI);
+  nas_proc_initialize(user, emm_cb, esm_cb, _nas_user_nvdata.IMEI);
 
   LOG_FUNC_OUT;
 }
@@ -239,7 +239,7 @@ void nas_user_initialize(emm_indication_callback_t emm_cb,
  ** Outputs:     Return:        FALSE, TRUE                                **
  **                                                                        **
  ***************************************************************************/
-int nas_user_receive_and_process(int *fd, char *message)
+int nas_user_receive_and_process(nas_user_t *user, char *message)
 {
   LOG_FUNC_IN;
 
@@ -253,7 +253,7 @@ int nas_user_receive_and_process(int *fd, char *message)
     bytes = user_api_set_data(message);
   } else {
     /* Read the user data message */
-    bytes = user_api_read_data (*fd);
+    bytes = user_api_read_data (user->fd);
 
     if (bytes == RETURNerror) {
       /* Failed to read data from the user application layer;
@@ -286,7 +286,7 @@ int nas_user_receive_and_process(int *fd, char *message)
     }
 
     /* Process the user data message */
-    ret_code = nas_user_process_data (data);
+    ret_code = nas_user_process_data (user, data);
 
     if (ret_code != RETURNok) {
       /* The user data message has not been successfully
@@ -309,7 +309,7 @@ int nas_user_receive_and_process(int *fd, char *message)
       }
 
       /* Send the data message to the user */
-      bytes = user_api_send_data (*fd, bytes);
+      bytes = user_api_send_data (user->fd, bytes);
 
       if (bytes == RETURNerror) {
         /* Failed to send data to the user application layer;
@@ -341,7 +341,7 @@ int nas_user_receive_and_process(int *fd, char *message)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-int nas_user_process_data(const void *data)
+int nas_user_process_data(nas_user_t *user, const void *data)
 {
   LOG_FUNC_IN;
 
@@ -362,7 +362,7 @@ int nas_user_process_data(const void *data)
     nas_procedure = _nas_user_procedure[user_data->id];
 
     if (nas_procedure != NULL) {
-      ret_code = (*nas_procedure)(user_data);
+      ret_code = (*nas_procedure)(user, user_data);
     } else {
       /* AT command related to result format only */
       _nas_user_data.id = user_data->id;
@@ -425,7 +425,7 @@ const void *nas_user_get_data(void)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cgsn(const at_command_t *data)
+static int _nas_user_proc_cgsn(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -477,7 +477,7 @@ static int _nas_user_proc_cgsn(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cgmi(const at_command_t *data)
+static int _nas_user_proc_cgmi(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -529,7 +529,7 @@ static int _nas_user_proc_cgmi(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cgmm(const at_command_t *data)
+static int _nas_user_proc_cgmm(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -582,7 +582,7 @@ static int _nas_user_proc_cgmm(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cgmr(const at_command_t *data)
+static int _nas_user_proc_cgmr(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -638,7 +638,7 @@ static int _nas_user_proc_cgmr(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cimi(const at_command_t *data)
+static int _nas_user_proc_cimi(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -699,7 +699,7 @@ static int _nas_user_proc_cimi(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cfun(const at_command_t *data)
+static int _nas_user_proc_cfun(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -758,7 +758,7 @@ static int _nas_user_proc_cfun(const at_command_t *data)
     case AT_CFUN_FULL:
       /* Notify the NAS procedure call manager that the UE is
        * operational */
-      ret_code = nas_proc_enable_s1_mode();
+      ret_code = nas_proc_enable_s1_mode(user);
       break;
 
     default:
@@ -812,7 +812,7 @@ static int _nas_user_proc_cfun(const at_command_t *data)
  **          Others:    _nas_user_context, _nas_user_data          **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cpin(const at_command_t *data)
+static int _nas_user_proc_cpin(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -898,7 +898,7 @@ static int _nas_user_proc_cpin(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_csq(const at_command_t *data)
+static int _nas_user_proc_csq(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -959,7 +959,7 @@ static int _nas_user_proc_csq(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cesq(const at_command_t *data)
+static int _nas_user_proc_cesq(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -986,7 +986,7 @@ static int _nas_user_proc_cesq(const at_command_t *data)
     cesq->ber  = AT_CESQ_BER_UNKNOWN;
     cesq->rscp = AT_CESQ_RSCP_UNKNOWN;
     cesq->ecno = AT_CESQ_ECNO_UNKNOWN;
-    ret_code = nas_proc_get_signal_quality(&cesq->rsrq, &cesq->rsrp);
+    ret_code = nas_proc_get_signal_quality(user, &cesq->rsrq, &cesq->rsrp);
     break;
 
   case AT_COMMAND_TST:
@@ -1024,7 +1024,7 @@ static int _nas_user_proc_cesq(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cops(const at_command_t *data)
+static int _nas_user_proc_cops(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -1273,7 +1273,7 @@ static int _nas_user_proc_cops(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cgatt(const at_command_t *data)
+static int _nas_user_proc_cgatt(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -1378,7 +1378,7 @@ static int _nas_user_proc_cgatt(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_creg(const at_command_t *data)
+static int _nas_user_proc_creg(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -1527,7 +1527,7 @@ static int _nas_user_proc_creg(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cgreg(const at_command_t *data)
+static int _nas_user_proc_cgreg(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -1676,7 +1676,7 @@ static int _nas_user_proc_cgreg(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cereg(const at_command_t *data)
+static int _nas_user_proc_cereg(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -1857,7 +1857,7 @@ static int _nas_user_proc_cereg(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cgdcont(const at_command_t *data)
+static int _nas_user_proc_cgdcont(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -2109,7 +2109,7 @@ static int _nas_user_proc_cgdcont(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cgact(const at_command_t *data)
+static int _nas_user_proc_cgact(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -2236,7 +2236,7 @@ static int _nas_user_proc_cgact(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cmee(const at_command_t *data)
+static int _nas_user_proc_cmee(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -2349,7 +2349,7 @@ static int _nas_user_proc_cmee(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_clck(const at_command_t *data)
+static int _nas_user_proc_clck(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -2481,7 +2481,7 @@ static int _nas_user_proc_clck(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cgpaddr(const at_command_t *data)
+static int _nas_user_proc_cgpaddr(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -2573,7 +2573,7 @@ static int _nas_user_proc_cgpaddr(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_cnum(const at_command_t *data)
+static int _nas_user_proc_cnum(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 
@@ -2634,7 +2634,7 @@ static int _nas_user_proc_cnum(const at_command_t *data)
  **          Others:    _nas_user_data                             **
  **                                                                        **
  ***************************************************************************/
-static int _nas_user_proc_clac(const at_command_t *data)
+static int _nas_user_proc_clac(nas_user_t *user, const at_command_t *data)
 {
   LOG_FUNC_IN;
 

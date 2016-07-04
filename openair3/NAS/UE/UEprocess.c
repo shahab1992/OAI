@@ -53,6 +53,7 @@
 #include "nas_user.h"
 #include "nas_network.h"
 #include "nas_parser.h"
+#include "user_defs.h"
 
 #include <stdlib.h> // exit
 #include <poll.h>   // poll
@@ -77,6 +78,9 @@ static int _nas_set_signal_handler(int signal, void (handler)(int));
 static void _nas_signal_handler(int signal);
 
 static void _nas_clean(int usr_fd, int net_fd);
+
+// FIXME user must be set up with right itti message instance
+nas_user_t *user = NULL;
 
 /****************************************************************************/
 /******************  E X P O R T E D    F U N C T I O N S  ******************/
@@ -134,7 +138,7 @@ int main(int argc, const char *argv[])
   /*
    * Initialize the NAS contexts
    */
-  nas_user_initialize (&user_api_emm_callback, &user_api_esm_callback,
+  nas_user_initialize (user, &user_api_emm_callback, &user_api_esm_callback,
                        FIRMWARE_VERSION);
   nas_network_initialize ();
 
@@ -231,7 +235,7 @@ static void *_nas_user_mngr(void *args)
 
   /* User receiving loop */
   while (!exit_loop) {
-    exit_loop = nas_user_receive_and_process(fd, NULL);
+    exit_loop = nas_user_receive_and_process(user, NULL);
   }
 
   /* Close the connection to the user application layer */
@@ -296,7 +300,7 @@ static void *_nas_network_mngr(void *args)
     }
 
     /* Process the network data message */
-    ret_code = nas_network_process_data (network_message_id,
+    ret_code = nas_network_process_data (user, network_message_id,
                                          network_api_get_data ());
 
     if (ret_code != RETURNok) {
