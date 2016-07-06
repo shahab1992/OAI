@@ -108,7 +108,7 @@ void nas_proc_initialize(nas_user_t *user, emm_indication_callback_t emm_cb,
   emm_main_initialize(emm_cb, imei);
 
   /* Initialize the ESM procedure manager */
-  esm_main_initialize(esm_cb);
+  _esm_data = esm_main_initialize(esm_cb);
 
   LOG_FUNC_OUT;
 }
@@ -144,7 +144,7 @@ void nas_proc_cleanup(nas_user_t *user)
   emm_main_cleanup();
 
   /* Perform the EPS Session Manager's clean up procedure */
-  esm_main_cleanup();
+  esm_main_cleanup(_esm_data);
 
   LOG_FUNC_OUT;
 }
@@ -656,11 +656,11 @@ int nas_proc_get_attach_status(nas_user_t *user)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int nas_proc_get_pdn_range(nas_user_t *user)
+int nas_proc_get_pdn_range(esm_data_t *esm_data)
 {
   LOG_FUNC_IN;
 
-  int max_pdn_id = esm_main_get_nb_pdns_max();
+  int max_pdn_id = esm_main_get_nb_pdns_max(esm_data);
 
   LOG_FUNC_RETURN (max_pdn_id);
 }
@@ -681,7 +681,7 @@ int nas_proc_get_pdn_range(nas_user_t *user)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int nas_proc_get_pdn_status(nas_user_t *user, int *cids, int *states, int n_pdn_max)
+int nas_proc_get_pdn_status(esm_data_t *esm_data, int *cids, int *states, int n_pdn_max)
 {
   LOG_FUNC_IN;
 
@@ -689,13 +689,13 @@ int nas_proc_get_pdn_status(nas_user_t *user, int *cids, int *states, int n_pdn_
   int n_defined_pdn = 0;
 
   /* Get the maximum number of supported PDN contexts */
-  int n_pdn = esm_main_get_nb_pdns_max();
+  int n_pdn = esm_main_get_nb_pdns_max(esm_data);
 
   /* For all PDN contexts */
   for (cid = 1; (cid < n_pdn+1) && (n_defined_pdn < n_pdn_max); cid++) {
     /* Get the status of this PDN */
     int state = FALSE;
-    int is_defined = esm_main_get_pdn_status(cid, &state);
+    int is_defined = esm_main_get_pdn_status(esm_data, cid, &state);
 
     if (is_defined != FALSE) {
       /* This PDN has been defined */
@@ -725,7 +725,7 @@ int nas_proc_get_pdn_status(nas_user_t *user, int *cids, int *states, int n_pdn_
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int nas_proc_get_pdn_param(nas_user_t *user, int *cids, int *types, const char **apns,
+int nas_proc_get_pdn_param(esm_data_t *esm_data, int *cids, int *types, const char **apns,
                            int n_pdn_max)
 {
   LOG_FUNC_IN;
@@ -734,13 +734,13 @@ int nas_proc_get_pdn_param(nas_user_t *user, int *cids, int *types, const char *
   int n_defined_pdn = 0;
 
   /* Get the maximum number of supported PDN contexts */
-  int n_pdn = esm_main_get_nb_pdns_max();
+  int n_pdn = esm_main_get_nb_pdns_max(esm_data);
 
   /* For all PDN contexts */
   for (cid = 1; (cid < n_pdn+1) && (n_defined_pdn < n_pdn_max); cid++) {
     int emergency, active;
     /* Get PDN connection parameters */
-    int rc = esm_main_get_pdn(cid, types, apns, &emergency, &active);
+    int rc = esm_main_get_pdn(esm_data, cid, types, apns, &emergency, &active);
 
     if (rc != RETURNerror) {
       /* This PDN has been defined */
@@ -787,7 +787,7 @@ int nas_proc_get_pdn_addr(nas_user_t *user, int cid, int *cids, const char **add
 
   if (cid > 0) {
     /* Get addresses assigned to the specified PDN */
-    rc = esm_main_get_pdn_addr(cid, addr1, addr2);
+    rc = esm_main_get_pdn_addr(_esm_data, cid, addr1, addr2);
 
     if (rc != RETURNerror) {
       *cids = cid;
@@ -795,12 +795,12 @@ int nas_proc_get_pdn_addr(nas_user_t *user, int cid, int *cids, const char **add
     }
   } else if (cid < 0) {
     /* Get the maximum number of supported PDN contexts */
-    int n_pdn = esm_main_get_nb_pdns_max();
+    int n_pdn = esm_main_get_nb_pdns_max(_esm_data);
 
     /* For all PDN contexts */
     for (cid = 1; (cid < n_pdn+1) && (n_defined_pdn < n_pdn_max); cid++) {
       /* Get PDN connection addresses */
-      rc = esm_main_get_pdn_addr(cid, addr1, addr2);
+      rc = esm_main_get_pdn_addr(_esm_data, cid, addr1, addr2);
 
       if (rc != RETURNerror) {
         /* This PDN has been defined */
@@ -927,7 +927,7 @@ int nas_proc_deactivate_pdn(nas_user_t *user, int cid)
     cid = 2;
 
     /* Deactivate all active PDN contexts */
-    while ((rc != RETURNerror) && (cid < esm_main_get_nb_pdns_max()+1)) {
+    while ((rc != RETURNerror) && (cid < esm_main_get_nb_pdns_max(_esm_data)+1)) {
       rc = _nas_proc_deactivate(user, cid++, TRUE);
     }
   }
@@ -979,7 +979,7 @@ int nas_proc_activate_pdn(nas_user_t *user, int cid)
       cid = 1;
 
       /* Activate all defined PDN contexts */
-      while ((rc != RETURNerror) && (cid < esm_main_get_nb_pdns_max()+1)) {
+      while ((rc != RETURNerror) && (cid < esm_main_get_nb_pdns_max(_esm_data)+1)) {
         rc = _nas_proc_activate(user, cid++, TRUE);
       }
     }
@@ -1298,7 +1298,7 @@ static int _nas_proc_activate(nas_user_t *user, int cid, int apply_to_all)
   esm_sap_t esm_sap;
 
   /* Get PDN context parameters */
-  rc = esm_main_get_pdn(cid, &esm_sap.data.pdn_connect.pdn_type,
+  rc = esm_main_get_pdn(_esm_data, cid, &esm_sap.data.pdn_connect.pdn_type,
                         &esm_sap.data.pdn_connect.apn,
                         &esm_sap.data.pdn_connect.is_emergency, &active);
 
@@ -1320,7 +1320,7 @@ static int _nas_proc_activate(nas_user_t *user, int cid, int apply_to_all)
   }
 
   if (esm_sap.data.pdn_connect.is_emergency) {
-    if (esm_main_has_emergency()) {
+    if (esm_main_has_emergency(_esm_data)) {
       /* There is already a PDN connection for emergency
        * bearer services established; the UE shall not
        * request an additional PDN connection for emer-
@@ -1372,7 +1372,7 @@ static int _nas_proc_deactivate(nas_user_t *user, int cid, int apply_to_all)
   int active = FALSE;
 
   /* Get PDN context parameters */
-  rc = esm_main_get_pdn(cid, &pdn_type, &apn, &emergency, &active);
+  rc = esm_main_get_pdn(_esm_data, cid, &pdn_type, &apn, &emergency, &active);
 
   if (rc != RETURNok) {
     /* No any context is defined for the specified PDN */
@@ -1390,7 +1390,7 @@ static int _nas_proc_deactivate(nas_user_t *user, int cid, int apply_to_all)
     LOG_FUNC_RETURN (RETURNok);
   }
 
-  if (esm_main_get_nb_pdns() > 1) {
+  if (esm_main_get_nb_pdns(_esm_data) > 1) {
     /*
      * Notify ESM that all EPS bearers towards the specified PDN
      * has to be released
