@@ -96,14 +96,12 @@ static int _esm_ebr_context_check_precedence(const network_tft_t *,
  **             bearer context                             **
  **      esm_qos:   EPS bearer level QoS parameters            **
  **      tft:       Traffic flow template parameters           **
- **      Others:    _esm_data                                  **
  **                                                                        **
  ** Outputs:     None                                                      **
  **      Return:    The EPS bearer identity of the default EPS **
  **             bearer associated to the new EPS bearer    **
  **             context if successfully created;           **
  **             UNASSIGN EPS bearer value otherwise.       **
- **      Others:    _esm_data                                  **
  **                                                                        **
  ***************************************************************************/
 int esm_ebr_context_create(
@@ -325,7 +323,6 @@ int esm_ebr_context_create(
  **                                                                        **
  ** Inputs:  ueid:      UE identifier                              **
  **      ebi:       EPS bearer identity                        **
- **      Others:    _esm_data                                  **
  **                                                                        **
  ** Outputs:     pid:       Identifier of the PDN connection entry the **
  **             EPS bearer context belongs to              **
@@ -334,7 +331,6 @@ int esm_ebr_context_create(
  **      Return:    The EPS bearer identity associated to the  **
  **             EPS bearer context if successfully relea-  **
  **             sed; UNASSIGN EPS bearer value otherwise.  **
- **      Others:    _esm_data                                  **
  **                                                                        **
  ***************************************************************************/
 int esm_ebr_context_release(nas_user_t *user,
@@ -348,7 +344,7 @@ int esm_ebr_context_release(nas_user_t *user,
 
   LOG_FUNC_IN;
 
-  esm_ctx = _esm_data;
+  esm_ctx = user->esm_data;
 
   if (ebi != ESM_EBI_UNASSIGNED) {
     /*
@@ -530,7 +526,6 @@ int esm_ebr_context_release(nas_user_t *user,
  **                                                                        **
  ** Inputs:  ebi:       The EPS bearer identity of the default EPS **
  **             bearer context                             **
- **      Others:    _esm_data                                  **
  **                                                                        **
  ** Outputs:     None                                                      **
  **      Return:    The identifier of the PDN connection entry **
@@ -582,7 +577,6 @@ int esm_ebr_context_get_pid(esm_data_t *esm_data, int ebi)
  **      tft:       The traffic flow template (set of packet   **
  **             filters) to be checked                     **
  **      operation: Traffic flow template operation            **
- **      Others:    _esm_data                                  **
  **                                                                        **
  ** Outputs:     None                                                      **
  **      Return:    RETURNok, RETURNerror                      **
