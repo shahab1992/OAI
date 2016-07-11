@@ -49,6 +49,7 @@ Description Defines the EMMESM Service Access Point that provides
 #define __EMM_ESM_H__
 
 #include "emm_esmDef.h"
+#include "user_defs.h"
 
 /****************************************************************************/
 /*********************  G L O B A L    C O N S T A N T S  *******************/
@@ -68,6 +69,6 @@ Description Defines the EMMESM Service Access Point that provides
 
 void emm_esm_initialize(void);
 
-int emm_esm_send(const emm_esm_t *msg);
+int emm_esm_send(nas_user_t *user, const emm_esm_t *msg);
 
 #endif /* __EMM_ESM_H__*/

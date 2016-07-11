@@ -90,7 +90,7 @@ Description Implements the EPS Mobility Management procedures executed
  **      Others:    emm_fsm_status                             **
  **                                                                        **
  ***************************************************************************/
-int EmmDeregisteredLimitedService(const emm_reg_t *evt)
+int EmmDeregisteredLimitedService(nas_user_t *user, const emm_reg_t *evt)
 {
   LOG_FUNC_IN;
 
@@ -116,7 +116,7 @@ int EmmDeregisteredLimitedService(const emm_reg_t *evt)
     /*
      * Initiate attach procedure for emergency bearer services
      */
-    rc = emm_proc_attach(EMM_ATTACH_TYPE_EMERGENCY);
+    rc = emm_proc_attach(user, EMM_ATTACH_TYPE_EMERGENCY);
     break;
 
   case _EMMREG_ATTACH_REQ:

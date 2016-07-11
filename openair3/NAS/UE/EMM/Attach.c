@@ -104,7 +104,7 @@ static void *_emm_attach_t3402_handler(void *);
 /*
  * Abnormal case attach procedure
  */
-static void _emm_attach_abnormal_cases_bcd(emm_sap_t *);
+static void _emm_attach_abnormal_cases_bcd(nas_user_t *user, emm_sap_t *);
 
 /*
  * Internal data used for attach procedure
@@ -147,7 +147,7 @@ static struct {
  **      Others:    T3402, T3410, T3411                        **
  **                                                                        **
  ***************************************************************************/
-int emm_proc_attach(emm_proc_attach_type_t type)
+int emm_proc_attach(nas_user_t *user, emm_proc_attach_type_t type)
 {
   LOG_FUNC_IN;
 
@@ -252,14 +252,14 @@ int emm_proc_attach(emm_proc_attach_type_t type)
   esm_sap.data.pdn_connect.pdn_type = NET_PDN_TYPE_IPV4;
   esm_sap.data.pdn_connect.apn = NULL;
   esm_sap.data.pdn_connect.is_emergency = _emm_data.is_emergency;
-  rc = esm_sap_send(&esm_sap);
+  rc = esm_sap_send(user, &esm_sap);
 
   if (rc != RETURNerror) {
     /* Setup EMM procedure handler to be executed upon receiving
      * lower layer notification */
     rc = emm_proc_lowerlayer_initialize(emm_proc_attach_request,
                                         emm_proc_attach_failure,
-                                        emm_proc_attach_release, NULL);
+                                        emm_proc_attach_release, user);
 
     if (rc != RETURNok) {
       LOG_TRACE(WARNING, "Failed to initialize EMM procedure handler");
@@ -267,7 +267,7 @@ int emm_proc_attach(emm_proc_attach_type_t type)
     }
 
     /* Start T3410 timer */
-    T3410.id = nas_timer_start(T3410.sec, _emm_attach_t3410_handler, NULL);
+    T3410.id = nas_timer_start(T3410.sec, _emm_attach_t3410_handler, user);
     LOG_TRACE(INFO,"EMM-PROC  - Timer T3410 (%d) expires in %ld seconds",
               T3410.id, T3410.sec);
     /* Stop T3402 and T3411 timers if running */
@@ -283,7 +283,7 @@ int emm_proc_attach(emm_proc_attach_type_t type)
     /* Get the PDN connectivity request to transfer within the ESM
      * container of the initial attach request message */
     emm_sap.u.emm_as.u.establish.NASmsg = esm_sap.send;
-    rc = emm_sap_send(&emm_sap);
+    rc = emm_sap_send(user, &emm_sap);
   }
 
   LOG_FUNC_RETURN(rc);
@@ -308,7 +308,7 @@ int emm_proc_attach(emm_proc_attach_type_t type)
 int emm_proc_attach_request(void *args)
 {
   LOG_FUNC_IN;
-
+  nas_user_t *user=args;
   emm_sap_t emm_sap;
   int rc;
 
@@ -316,7 +316,7 @@ int emm_proc_attach_request(void *args)
    * Notify EMM that Attach Request has been sent to the network
    */
   emm_sap.primitive = EMMREG_ATTACH_REQ;
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN(rc);
 }
@@ -352,7 +352,7 @@ int emm_proc_attach_request(void *args)
  **      Others:    _emm_data, T3412, T3402, T3423             **
  **                                                                        **
  ***************************************************************************/
-int emm_proc_attach_accept(long t3412, long t3402, long t3423,
+int emm_proc_attach_accept(nas_user_t *user, long t3412, long t3402, long t3423,
                            int n_tais, tai_t *tai, GUTI_t *guti,
                            int n_eplmns, plmn_t *eplmn,
                            const OctetString *esm_msg_pP)
@@ -434,14 +434,14 @@ int emm_proc_attach_accept(long t3412, long t3402, long t3423,
   esm_sap.primitive = ESM_DEFAULT_EPS_BEARER_CONTEXT_ACTIVATE_REQ;
   esm_sap.is_standalone = FALSE;
   esm_sap.recv = esm_msg_pP;
-  rc = esm_sap_send(&esm_sap);
+  rc = esm_sap_send(user, &esm_sap);
 
   if ( (rc != RETURNerror) && (esm_sap.err == ESM_SAP_SUCCESS) ) {
     /* Setup EMM procedure handler to be executed upon receiving
      * lower layer notification */
     rc = emm_proc_lowerlayer_initialize(emm_proc_attach_complete,
                                         emm_proc_attach_failure,
-                                        NULL, NULL);
+                                        NULL, user);
 
     if (rc != RETURNok) {
       LOG_TRACE(WARNING,
@@ -465,7 +465,7 @@ int emm_proc_attach_accept(long t3412, long t3402, long t3423,
      * complete message */
     emm_sap.u.emm_as.u.data.NASinfo = EMM_AS_NAS_DATA_ATTACH;
     emm_sap.u.emm_as.u.data.NASmsg = esm_sap.send;
-    rc = emm_sap_send(&emm_sap);
+    rc = emm_sap_send(user, &emm_sap);
   } else if (esm_sap.err != ESM_SAP_DISCARDED) {
     /* 3GPP TS 24.301, section 5.5.1.2.6, case j
      * If the ACTIVATE DEFAULT BEARER CONTEXT REQUEST message combined
@@ -474,7 +474,7 @@ int emm_proc_attach_accept(long t3412, long t3402, long t3423,
      * procedure by sending a DETACH REQUEST message to the network.
      */
     emm_sap.primitive = EMMREG_DETACH_INIT;
-    rc = emm_sap_send(&emm_sap);
+    rc = emm_sap_send(user, &emm_sap);
   } else {
     /*
      * ESM procedure failed and, received message has been discarded or
@@ -507,7 +507,7 @@ int emm_proc_attach_accept(long t3412, long t3402, long t3423,
  **      Others:    _emm_data, _emm_attach_data, T3410         **
  **                                                                        **
  ***************************************************************************/
-int emm_proc_attach_reject(int emm_cause, const OctetString *esm_msg_pP)
+int emm_proc_attach_reject(nas_user_t *user, int emm_cause, const OctetString *esm_msg_pP)
 {
   LOG_FUNC_IN;
 
@@ -683,11 +683,11 @@ int emm_proc_attach_reject(int emm_cause, const OctetString *esm_msg_pP)
   default :
     /* Other values are considered as abnormal cases
      * 3GPP TS 24.301, section 5.5.1.2.6, case d */
-    _emm_attach_abnormal_cases_bcd(&emm_sap);
+    _emm_attach_abnormal_cases_bcd(user, &emm_sap);
     break;
   }
 
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   /*
    * Notify ESM that the network rejected connectivity to the PDN
@@ -697,7 +697,7 @@ int emm_proc_attach_reject(int emm_cause, const OctetString *esm_msg_pP)
     esm_sap.primitive = ESM_PDN_CONNECTIVITY_REJ;
     esm_sap.is_standalone = FALSE;
     esm_sap.recv = esm_msg_pP;
-    rc = esm_sap_send(&esm_sap);
+    rc = esm_sap_send(user, &esm_sap);
   }
 
   LOG_FUNC_RETURN(rc);
@@ -728,6 +728,7 @@ int emm_proc_attach_complete(void *args)
 {
   LOG_FUNC_IN;
 
+  nas_user_t *user=args;
   emm_sap_t emm_sap;
   esm_sap_t esm_sap;
   int rc;
@@ -750,7 +751,7 @@ int emm_proc_attach_complete(void *args)
    * to the network
    */
   emm_sap.primitive = EMMREG_ATTACH_CNF;
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   if (rc != RETURNerror) {
     /*
@@ -760,7 +761,7 @@ int emm_proc_attach_complete(void *args)
      */
     esm_sap.primitive = ESM_DEFAULT_EPS_BEARER_CONTEXT_ACTIVATE_CNF;
     esm_sap.is_standalone = FALSE;
-    rc = esm_sap_send(&esm_sap);
+    rc = esm_sap_send(user, &esm_sap);
   }
 
   LOG_FUNC_RETURN(rc);
@@ -793,9 +794,9 @@ int emm_proc_attach_complete(void *args)
 int emm_proc_attach_failure(int is_initial, void *args)
 {
   LOG_FUNC_IN;
-
   int rc = RETURNok;
   esm_sap_t esm_sap;
+  nas_user_t *user=args;
 
   LOG_TRACE(WARNING, "EMM-PROC  - EPS attach failure");
 
@@ -828,7 +829,7 @@ int emm_proc_attach_failure(int is_initial, void *args)
     esm_sap.recv = NULL;
   }
 
-  rc = esm_sap_send(&esm_sap);
+  rc = esm_sap_send(user, &esm_sap);
 
   if (rc != RETURNerror) {
     /* Start T3411 timer */
@@ -862,16 +863,16 @@ int emm_proc_attach_failure(int is_initial, void *args)
 int emm_proc_attach_release(void *args)
 {
   LOG_FUNC_IN;
-
+  nas_user_t *user=args;
   emm_sap_t emm_sap;
   int rc;
 
   LOG_TRACE(WARNING, "EMM-PROC  - NAS signalling connection released");
 
   /* Execute abnormal case attach procedure */
-  _emm_attach_abnormal_cases_bcd(&emm_sap);
+  _emm_attach_abnormal_cases_bcd(user, &emm_sap);
 
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN(rc);
 }
@@ -890,7 +891,7 @@ int emm_proc_attach_release(void *args)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int emm_proc_attach_restart(void)
+int emm_proc_attach_restart(nas_user_t *user)
 {
   LOG_FUNC_IN;
 
@@ -904,7 +905,7 @@ int emm_proc_attach_restart(void)
    */
   emm_sap.primitive = EMMREG_ATTACH_INIT;
   emm_sap.u.emm_reg.u.attach.is_emergency = _emm_data.is_emergency;
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN(rc);
 }
@@ -950,10 +951,11 @@ int emm_proc_attach_set_emergency(void)
  **      Others:    _emm_data                                  **
  **                                                                        **
  ***************************************************************************/
-int emm_proc_attach_set_detach(void)
+int emm_proc_attach_set_detach(void *nas_user)
 {
   LOG_FUNC_IN;
 
+  nas_user_t *user=nas_user;
   int rc;
 
   LOG_TRACE(WARNING,
@@ -966,7 +968,7 @@ int emm_proc_attach_set_detach(void)
    */
   emm_sap_t emm_sap;
   emm_sap.primitive = EMMREG_DETACH_CNF;
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN(rc);
 }
@@ -1006,6 +1008,7 @@ void *_emm_attach_t3410_handler(void *args)
 {
   LOG_FUNC_IN;
 
+  nas_user_t *user=args;
   emm_sap_t emm_sap;
   int rc;
 
@@ -1014,9 +1017,9 @@ void *_emm_attach_t3410_handler(void *args)
   /* Stop T3410 timer */
   T3410.id = nas_timer_stop(T3410.id);
   /* Execute abnormal case attach procedure */
-  _emm_attach_abnormal_cases_bcd(&emm_sap);
+  _emm_attach_abnormal_cases_bcd(user, &emm_sap);
 
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   if (rc != RETURNerror) {
     /* Locally release the NAS signalling connection */
@@ -1048,6 +1051,7 @@ static void *_emm_attach_t3411_handler(void *args)
 {
   LOG_FUNC_IN;
 
+  nas_user_t *user=args;
   emm_sap_t emm_sap;
 
   LOG_TRACE(WARNING, "EMM-PROC  - T3411 timer expired");
@@ -1061,7 +1065,7 @@ static void *_emm_attach_t3411_handler(void *args)
   emm_sap.primitive = EMMREG_ATTACH_INIT;
   emm_sap.u.emm_reg.u.attach.is_emergency = _emm_data.is_emergency;
 
-  (void) emm_sap_send(&emm_sap);
+  (void) emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN(NULL);
 }
@@ -1092,6 +1096,7 @@ static void *_emm_attach_t3402_handler(void *args)
 {
   LOG_FUNC_IN;
 
+  nas_user_t *user=args;
   emm_sap_t emm_sap;
 
   LOG_TRACE(WARNING, "EMM-PROC  - T3402 timer expired");
@@ -1107,7 +1112,7 @@ static void *_emm_attach_t3402_handler(void *args)
   emm_sap.primitive = EMMREG_ATTACH_INIT;
   emm_sap.u.emm_reg.u.attach.is_emergency = _emm_data.is_emergency;
 
-  (void) emm_sap_send(&emm_sap);
+  (void) emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN(NULL);
 }
@@ -1139,7 +1144,7 @@ static void *_emm_attach_t3402_handler(void *args)
  **             T3411                                      **
  **                                                                        **
  ***************************************************************************/
-static void _emm_attach_abnormal_cases_bcd(emm_sap_t *emm_sap)
+static void _emm_attach_abnormal_cases_bcd(nas_user_t *user, emm_sap_t *emm_sap)
 {
   LOG_FUNC_IN;
 
@@ -1184,7 +1189,7 @@ static void _emm_attach_abnormal_cases_bcd(emm_sap_t *emm_sap)
     _emm_data.status = EU2_NOT_UPDATED;
 
     /* Start T3402 timer */
-    T3402.id = nas_timer_start(T3402.sec, _emm_attach_t3402_handler, NULL);
+    T3402.id = nas_timer_start(T3402.sec, _emm_attach_t3402_handler, user);
     LOG_TRACE(INFO, "EMM-PROC  - Timer T3402 (%d) expires in %ld seconds",
               T3402.id, T3402.sec);
     /*

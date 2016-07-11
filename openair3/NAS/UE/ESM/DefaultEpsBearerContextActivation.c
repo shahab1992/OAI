@@ -111,12 +111,12 @@ static struct {
  **      Others:    _default_eps_bearer_context_data           **
  **                                                                        **
  ***************************************************************************/
-int esm_proc_default_eps_bearer_context_request(esm_data_t *esm_data, int pid, int ebi,
+int esm_proc_default_eps_bearer_context_request(nas_user_t *user, int pid, int ebi,
     const esm_proc_qos_t *qos,
     int *esm_cause)
 {
   LOG_FUNC_IN;
-
+  esm_data_t *esm_data = _esm_data;
   int rc = RETURNerror;
 
   LOG_TRACE(INFO, "ESM-PROC  - Default EPS bearer context activation "
@@ -133,7 +133,7 @@ int esm_proc_default_eps_bearer_context_request(esm_data_t *esm_data, int pid, i
     int old_pid, old_bid;
     /* Locally deactivate the existing EPS bearer context and proceed
      * with the requested default EPS bearer context activation */
-    rc = esm_proc_eps_bearer_context_deactivate(esm_data, TRUE, ebi,
+    rc = esm_proc_eps_bearer_context_deactivate(user, TRUE, ebi,
          &old_pid, &old_bid);
 
     if (rc != RETURNok) {
@@ -195,7 +195,7 @@ int esm_proc_default_eps_bearer_context_request(esm_data_t *esm_data, int pid, i
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int esm_proc_default_eps_bearer_context_accept(int is_standalone, int ebi,
+int esm_proc_default_eps_bearer_context_accept(nas_user_t *user, int is_standalone, int ebi,
     OctetString *msg, int ue_triggered)
 {
   LOG_FUNC_IN;
@@ -215,7 +215,7 @@ int esm_proc_default_eps_bearer_context_accept(int is_standalone, int ebi,
     emm_sap.u.emm_esm.ueid = 0;
     emm_esm->msg.length = msg->length;
     emm_esm->msg.value = msg->value;
-    rc = emm_sap_send(&emm_sap);
+    rc = emm_sap_send(user, &emm_sap);
   }
 
   if (rc != RETURNerror) {
@@ -263,7 +263,7 @@ int esm_proc_default_eps_bearer_context_accept(int is_standalone, int ebi,
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int esm_proc_default_eps_bearer_context_reject(int is_standalone, int ebi,
+int esm_proc_default_eps_bearer_context_reject(nas_user_t *user, int is_standalone, int ebi,
     OctetString *msg, int ue_triggered)
 {
   LOG_FUNC_IN;
@@ -290,7 +290,7 @@ int esm_proc_default_eps_bearer_context_reject(int is_standalone, int ebi,
     emm_sap.u.emm_esm.ueid = 0;
     emm_esm->msg.length = msg->length;
     emm_esm->msg.value = msg->value;
-    rc = emm_sap_send(&emm_sap);
+    rc = emm_sap_send(user, &emm_sap);
   } else {
     /* An error is returned to notify EMM that the default EPS bearer
      * activation procedure initiated as part of the initial attach
@@ -353,7 +353,7 @@ int esm_proc_default_eps_bearer_context_complete(void)
  **      Others:    _default_eps_bearer_context_data           **
  **                                                                        **
  ***************************************************************************/
-int esm_proc_default_eps_bearer_context_failure(esm_data_t *esm_data)
+int esm_proc_default_eps_bearer_context_failure(nas_user_t *user)
 {
   LOG_FUNC_IN;
 
@@ -364,7 +364,7 @@ int esm_proc_default_eps_bearer_context_failure(esm_data_t *esm_data)
             "ESM-PROC  - Default EPS bearer context activation failure");
 
   /* Release the default EPS bearer context and enter state INACTIVE */
-  int rc = esm_proc_eps_bearer_context_deactivate(esm_data, TRUE, ebi, &pid, &bid);
+  int rc = esm_proc_eps_bearer_context_deactivate(user, TRUE, ebi, &pid, &bid);
 
   if (rc != RETURNerror) {
     /* Reset default EPS bearer context internal data */

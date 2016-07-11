@@ -103,7 +103,7 @@ static struct {
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int lowerlayer_success(unsigned int ueid)
+int lowerlayer_success(nas_user_t *user, unsigned int ueid)
 {
   LOG_FUNC_IN;
 
@@ -112,7 +112,7 @@ int lowerlayer_success(unsigned int ueid)
 
   emm_sap.primitive = EMMREG_LOWERLAYER_SUCCESS;
   emm_sap.u.emm_reg.ueid = ueid;
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN (rc);
 }
@@ -132,7 +132,7 @@ int lowerlayer_success(unsigned int ueid)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int lowerlayer_failure(unsigned int ueid)
+int lowerlayer_failure(nas_user_t *user, unsigned int ueid)
 {
   LOG_FUNC_IN;
 
@@ -141,7 +141,7 @@ int lowerlayer_failure(unsigned int ueid)
 
   emm_sap.primitive = EMMREG_LOWERLAYER_FAILURE;
   emm_sap.u.emm_reg.ueid = ueid;
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN (rc);
 }
@@ -162,7 +162,7 @@ int lowerlayer_failure(unsigned int ueid)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int lowerlayer_establish(void)
+int lowerlayer_establish(nas_user_t *user)
 {
   LOG_FUNC_IN;
 
@@ -187,7 +187,7 @@ int lowerlayer_establish(void)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int lowerlayer_release(int cause)
+int lowerlayer_release(nas_user_t *user, int cause)
 {
   LOG_FUNC_IN;
 
@@ -199,7 +199,7 @@ int lowerlayer_release(int cause)
 
   emm_sap.primitive = EMMREG_LOWERLAYER_RELEASE;
   emm_sap.u.emm_reg.ueid = 0;
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN (rc);
 }
@@ -220,7 +220,7 @@ int lowerlayer_release(int cause)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int lowerlayer_data_ind(unsigned int ueid, const OctetString *data)
+int lowerlayer_data_ind(nas_user_t *user, unsigned int ueid, const OctetString *data)
 {
   esm_sap_t esm_sap;
   int rc;
@@ -233,7 +233,7 @@ int lowerlayer_data_ind(unsigned int ueid, const OctetString *data)
   esm_sap.ueid = ueid;
 
   esm_sap.recv = data;
-  rc = esm_sap_send(&esm_sap);
+  rc = esm_sap_send(user, &esm_sap);
 
   LOG_FUNC_RETURN (rc);
 }
@@ -254,7 +254,7 @@ int lowerlayer_data_ind(unsigned int ueid, const OctetString *data)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int lowerlayer_data_req(unsigned int ueid, const OctetString *data)
+int lowerlayer_data_req(nas_user_t *user, unsigned int ueid, const OctetString *data)
 {
   LOG_FUNC_IN;
 
@@ -273,7 +273,7 @@ int lowerlayer_data_req(unsigned int ueid, const OctetString *data)
   emm_sap.u.emm_as.u.data.NASmsg.value = data->value;
   /* Setup EPS NAS security data */
   emm_as_set_security_data(&emm_sap.u.emm_as.u.data.sctx, sctx, FALSE, TRUE);
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN (rc);
 }

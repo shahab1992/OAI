@@ -85,8 +85,8 @@ Description Defines EMM procedures executed by the Non-Access Stratum
 /****************************************************************************/
 
 static int _IdleMode_plmn_str(char *plmn_str, const plmn_t *plmn);
-static int _IldlMode_get_opnn_id(const plmn_t *plmn);
-static int _IdleMode_get_suitable_cell(int index);
+static int _IldlMode_get_opnn_id(nas_user_t *user, const plmn_t *plmn);
+static int _IdleMode_get_suitable_cell(nas_user_t *user, int index);
 
 /*
  * A list of PLMN identities in priority order is maintained locally
@@ -159,7 +159,7 @@ static IdleMode_callback_t _emm_indication_notify;
  **      Others:    _emm_plmn_list, _emm_indication_notify     **
  **                                                                        **
  ***************************************************************************/
-void IdleMode_initialize(IdleMode_callback_t cb)
+void IdleMode_initialize(nas_user_t *user, IdleMode_callback_t cb)
 {
   /* Initialize the list of available PLMNs */
   _emm_plmn_list.n_plmns = 0;
@@ -173,7 +173,7 @@ void IdleMode_initialize(IdleMode_callback_t cb)
   _emm_indication_notify = *cb;
 
   /* Initialize EMM Service Access Point */
-  emm_sap_initialize();
+  emm_sap_initialize(user);
 }
 
 /*
@@ -517,7 +517,7 @@ int IdleMode_get_plmn_id_index(const char *plmn)
  **      Others:    _emm_plmn_list                             **
  **                                                                        **
  ***************************************************************************/
-int emm_proc_initialize(void)
+int emm_proc_initialize(nas_user_t *user)
 {
   LOG_FUNC_IN;
 
@@ -583,7 +583,7 @@ int emm_proc_initialize(void)
     /* Initialize the PLMNs' parameters */
     for (i=0; i < _emm_plmn_list.n_plmns; i++) {
       struct plmn_param_t *plmn = &(_emm_plmn_list.param[i]);
-      int id = _IldlMode_get_opnn_id(_emm_plmn_list.plmn[i]);
+      int id = _IldlMode_get_opnn_id(user, _emm_plmn_list.plmn[i]);
 
       if (id < 0) {
         plmn->fullname[0] = '\0';
@@ -610,7 +610,7 @@ int emm_proc_initialize(void)
     emm_sap.u.emm_reg.u.regist.index = 0;
   }
 
-  rc = emm_sap_send(&emm_sap);
+  rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN(rc);
 
@@ -641,7 +641,7 @@ int emm_proc_initialize(void)
  **      Others:    _emm_plmn_list.index                       **
  **                                                                        **
  ***************************************************************************/
-int emm_proc_plmn_selection(int index)
+int emm_proc_plmn_selection(nas_user_t *user, int index)
 {
   LOG_FUNC_IN;
 
@@ -686,7 +686,7 @@ int emm_proc_plmn_selection(int index)
      * automatic mode.
      */
     _emm_plmn_list.index = index;
-    rc = _IdleMode_get_suitable_cell(index);
+    rc = _IdleMode_get_suitable_cell(user, index);
   }
 
   LOG_FUNC_RETURN (rc);
@@ -728,7 +728,7 @@ int emm_proc_plmn_selection(int index)
  **      Others:    _emm_plmn_list, _emm_data                  **
  **                                                                        **
  ***************************************************************************/
-int emm_proc_plmn_selection_end(int found, tac_t tac, ci_t ci, AcT_t rat)
+int emm_proc_plmn_selection_end(nas_user_t *user, int found, tac_t tac, ci_t ci, AcT_t rat)
 {
   LOG_FUNC_IN;
 
@@ -899,7 +899,7 @@ int emm_proc_plmn_selection_end(int found, tac_t tac, ci_t ci, AcT_t rat)
     if (index < last_plmn_index) {
       /* Try to select the next PLMN in the list of available PLMNs */
       _emm_plmn_list.index = index;
-      rc = emm_proc_plmn_selection(index);
+      rc = emm_proc_plmn_selection(user, index);
     } else {
       /* No suitable cell of any PLMN within the ordered list
        * of available PLMNs has been found */
@@ -938,7 +938,7 @@ int emm_proc_plmn_selection_end(int found, tac_t tac, ci_t ci, AcT_t rat)
     /*
      * Notify EMM that PLMN selection procedure has completed
      */
-    rc = emm_sap_send(&emm_sap);
+    rc = emm_sap_send(user, &emm_sap);
 
     if (_emm_plmn_list.splmn != -1) {
       if (_emm_plmn_list.splmn == _emm_plmn_list.rplmn) {
@@ -956,7 +956,7 @@ int emm_proc_plmn_selection_end(int found, tac_t tac, ci_t ci, AcT_t rat)
        * to register the presence of the UE to the selected PLMN
        */
       emm_sap.primitive = EMMREG_ATTACH_INIT;
-      rc = emm_sap_send(&emm_sap);
+      rc = emm_sap_send(user, &emm_sap);
     }
   }
 
@@ -1141,7 +1141,7 @@ static int _IdleMode_plmn_str(char *plmn_str, const plmn_t *plmn)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-static int _IldlMode_get_opnn_id(const plmn_t *plmn)
+static int _IldlMode_get_opnn_id(nas_user_t *user, const plmn_t *plmn)
 {
   int i;
 
@@ -1194,7 +1194,7 @@ static int _IldlMode_get_opnn_id(const plmn_t *plmn)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-static int _IdleMode_get_suitable_cell(int index)
+static int _IdleMode_get_suitable_cell(nas_user_t *user, int index)
 {
   emm_sap_t emm_sap;
   const plmn_t *plmn = _emm_plmn_list.plmn[index];
@@ -1218,6 +1218,6 @@ static int _IdleMode_get_suitable_cell(int index)
     emm_sap.u.emm_as.u.cell_info.rat = NET_ACCESS_UNAVAILABLE;
   }
 
-  return emm_sap_send(&emm_sap);
+  return emm_sap_send(user, &emm_sap);
 }
 

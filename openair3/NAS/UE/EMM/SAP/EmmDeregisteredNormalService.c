@@ -90,7 +90,7 @@ Description Implements the EPS Mobility Management procedures executed
  **      Others:    emm_fsm_status                             **
  **                                                                        **
  ***************************************************************************/
-int EmmDeregisteredNormalService(const emm_reg_t *evt)
+int EmmDeregisteredNormalService(nas_user_t *user, const emm_reg_t *evt)
 {
   LOG_FUNC_IN;
 
@@ -116,7 +116,7 @@ int EmmDeregisteredNormalService(const emm_reg_t *evt)
     /*
      * Initiate the attach procedure for EPS services
      */
-    rc = emm_proc_attach(EMM_ATTACH_TYPE_EPS);
+    rc = emm_proc_attach(user, EMM_ATTACH_TYPE_EPS);
     break;
 
   case _EMMREG_ATTACH_REQ:

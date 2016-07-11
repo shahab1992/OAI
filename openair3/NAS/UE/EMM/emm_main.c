@@ -105,7 +105,7 @@ static int _emm_main_callback(int);
  **      Others:    _emm_data                                  **
  **                                                                        **
  ***************************************************************************/
-void emm_main_initialize(emm_indication_callback_t cb, const char *imei)
+void emm_main_initialize(nas_user_t *user, emm_indication_callback_t cb, const char *imei)
 {
   LOG_FUNC_IN;
 
@@ -396,7 +396,7 @@ void emm_main_initialize(emm_indication_callback_t cb, const char *imei)
   /*
    * Initialize EMM internal data used for UE in idle mode
    */
-  IdleMode_initialize(&_emm_main_callback);
+  IdleMode_initialize(user, &_emm_main_callback);
 
   LOG_FUNC_OUT;
 }

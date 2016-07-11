@@ -83,7 +83,7 @@ Description Implements the EPS Mobility Management procedures executed
  **      Others:    emm_fsm_status                             **
  **                                                                        **
  ***************************************************************************/
-int EmmNull(const emm_reg_t *evt)
+int EmmNull(nas_user_t *user, const emm_reg_t *evt)
 {
   LOG_FUNC_IN;
 
@@ -111,7 +111,7 @@ int EmmNull(const emm_reg_t *evt)
      * establish an EMM context and make the UE reachable by an MME.
      */
     if (rc != RETURNerror) {
-      rc = emm_proc_initialize();
+      rc = emm_proc_initialize(user);
     }
 
     break;
