@@ -161,7 +161,7 @@ int esm_recv_pdn_connectivity_reject(nas_user_t *user, int pti, int ebi,
      */
     LOG_TRACE(WARNING, "ESM-SAP   - Invalid PTI value (pti=%d)", pti);
     LOG_FUNC_RETURN (ESM_CAUSE_INVALID_PTI_VALUE);
-  } else if ( esm_pt_is_not_in_use(pti) ) {
+  } else if ( esm_pt_is_not_in_use(user->esm_pt_data, pti) ) {
     /* 3GPP TS 24.301, section 7.3.1, case a
      * Assigned value that does not match any PTI in use
      */
@@ -232,7 +232,7 @@ int esm_recv_pdn_disconnect_reject(nas_user_t *user, int pti, int ebi,
      */
     LOG_TRACE(WARNING, "ESM-SAP   - Invalid PTI value (pti=%d)", pti);
     LOG_FUNC_RETURN (ESM_CAUSE_INVALID_PTI_VALUE);
-  } else if ( esm_pt_is_not_in_use(pti) ) {
+  } else if ( esm_pt_is_not_in_use(user->esm_pt_data, pti) ) {
     /* 3GPP TS 24.301, section 7.3.1, case b
      * Assigned value that does not match any PTI in use
      */
@@ -289,7 +289,9 @@ int esm_recv_activate_default_eps_bearer_context_request(nas_user_t *user, int p
     const activate_default_eps_bearer_context_request_msg *msg)
 {
   LOG_FUNC_IN;
+
   int esm_cause = ESM_CAUSE_SUCCESS;
+  esm_pt_data_t *esm_pt_data = user->esm_pt_data;
 
   LOG_TRACE(INFO, "ESM-SAP   - Received Activate Default EPS Bearer Context "
             "Request message (pti=%d, ebi=%d)", pti, ebi);
@@ -303,7 +305,7 @@ int esm_recv_activate_default_eps_bearer_context_request(nas_user_t *user, int p
      */
     LOG_TRACE(WARNING, "ESM-SAP   - Invalid PTI value (pti=%d)", pti);
     LOG_FUNC_RETURN (ESM_CAUSE_INVALID_PTI_VALUE);
-  } else if ( esm_pt_is_not_in_use(pti) ) {
+  } else if ( esm_pt_is_not_in_use(esm_pt_data, pti) ) {
     /* 3GPP TS 24.301, section 7.3.1, case g
      * Assigned value that does not match any PTI in use
      */
@@ -420,6 +422,7 @@ int esm_recv_activate_dedicated_eps_bearer_context_request(nas_user_t *user, int
   int esm_cause = ESM_CAUSE_SUCCESS;
   int i;
   int j;
+  esm_pt_data_t *esm_pt_data = user->esm_pt_data;
 
   LOG_TRACE(INFO, "ESM-SAP   - Received Activate Dedicated EPS Bearer "
             "Context Request message (pti=%d, ebi=%d)", pti, ebi);
@@ -433,7 +436,7 @@ int esm_recv_activate_dedicated_eps_bearer_context_request(nas_user_t *user, int
      */
     LOG_TRACE(WARNING, "ESM-SAP   - Invalid PTI value (pti=%d)", pti);
     LOG_FUNC_RETURN (ESM_CAUSE_INVALID_PTI_VALUE);
-  } else if ( (pti != ESM_PT_UNASSIGNED) && esm_pt_is_not_in_use(pti) ) {
+  } else if ( (pti != ESM_PT_UNASSIGNED) && esm_pt_is_not_in_use(esm_pt_data, pti) ) {
     /* 3GPP TS 24.301, section 7.3.1, case i
      * Assigned value that does not match any PTI in use
      */
@@ -627,6 +630,7 @@ int esm_recv_deactivate_eps_bearer_context_request(nas_user_t *user, int pti, in
 
   int rc = RETURNok;
   int esm_cause;
+  esm_pt_data_t *esm_pt_data = user->esm_pt_data;
 
   LOG_TRACE(INFO, "ESM-SAP   - Received Deactivate EPS Bearer Context "
             "Request message (pti=%d, ebi=%d)", pti, ebi);
@@ -640,7 +644,7 @@ int esm_recv_deactivate_eps_bearer_context_request(nas_user_t *user, int pti, in
      */
     LOG_TRACE(WARNING, "ESM-SAP   - Invalid PTI value (pti=%d)", pti);
     LOG_FUNC_RETURN (ESM_CAUSE_INVALID_PTI_VALUE);
-  } else if ( esm_pt_is_not_in_use(pti) ) {
+  } else if ( esm_pt_is_not_in_use(esm_pt_data, pti) ) {
     /* 3GPP TS 24.301, section 7.3.1, case m
      * Assigned value does not match any PTI in use
      */
@@ -671,7 +675,7 @@ int esm_recv_deactivate_eps_bearer_context_request(nas_user_t *user, int pti, in
 
   /* Execute the PDN disconnect procedure accepted by the network */
   if (pti != ESM_PT_UNASSIGNED) {
-    rc = esm_proc_pdn_disconnect_accept(pti, &esm_cause);
+    rc = esm_proc_pdn_disconnect_accept(esm_pt_data, pti, &esm_cause);
   }
 
   if (rc != RETURNerror) {
