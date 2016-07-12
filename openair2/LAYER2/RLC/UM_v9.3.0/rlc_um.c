@@ -687,6 +687,14 @@ rlc_um_data_req (const protocol_ctxt_t* const ctxt_pP, void *rlc_pP, mem_block_t
   char                 message_string[7000];
 #endif
 
+  /* put a hard limit of 16MB */
+  if (rlc_p->buffer_occupancy > 16 * 1024 * 1024) {
+    free_mem_block(sdu_pP);
+    LOG_E(RLC, PROTOCOL_RLC_UM_CTXT_FMT" buffer full, dropping incoming data\n",
+          PROTOCOL_RLC_UM_CTXT_ARGS(ctxt_pP,rlc_p));
+    return;
+  }
+
   LOG_D(RLC, PROTOCOL_RLC_UM_CTXT_FMT" RLC_UM_DATA_REQ size %d Bytes, BO %d , NB SDU %d\n",
         PROTOCOL_RLC_UM_CTXT_ARGS(ctxt_pP,rlc_p),
         ((struct rlc_um_data_req *) (sdu_pP->data))->data_size,
