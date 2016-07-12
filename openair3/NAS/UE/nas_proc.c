@@ -141,7 +141,7 @@ void nas_proc_cleanup(nas_user_t *user)
 
 
   /* Perform the EPS Mobility Manager's clean up procedure */
-  emm_main_cleanup();
+  emm_main_cleanup(user->emm_data);
 
   /* Perform the EPS Session Manager's clean up procedure */
   esm_main_cleanup(user->esm_data);
@@ -258,11 +258,11 @@ int nas_proc_get_eps(nas_user_t *user, int *stat)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int nas_proc_get_imsi(char *imsi_str)
+int nas_proc_get_imsi(emm_data_t *emm_data, char *imsi_str)
 {
   LOG_FUNC_IN;
 
-  const imsi_t *imsi = emm_main_get_imsi();
+  const imsi_t *imsi = emm_main_get_imsi(emm_data);
 
   if (imsi != NULL) {
     int offset = 0;
@@ -393,7 +393,7 @@ int nas_proc_register(nas_user_t *user, int mode, int format, const network_plmn
   /*
    * Set the PLMN selection mode of operation
    */
-  int index = emm_main_set_plmn_selection_mode(mode, format, oper, AcT);
+  int index = emm_main_set_plmn_selection_mode(user->emm_data, mode, format, oper, AcT);
 
   if ( !(index < 0) ) {
     /*
@@ -459,16 +459,16 @@ int nas_proc_get_reg_data(nas_user_t *user, int *mode, int *selected, int format
   LOG_FUNC_IN;
 
   /* Get the PLMN selection mode of operation */
-  *mode = emm_main_get_plmn_selection_mode();
+  *mode = emm_main_get_plmn_selection_mode(user->emm_data);
 
   /* Get the currently selected operator */
-  const char *oper_name = emm_main_get_selected_plmn(oper, format);
+  const char *oper_name = emm_main_get_selected_plmn(user->emm_data, oper, format);
 
   if (oper_name != NULL) {
     /* An operator is currently selected */
     *selected = TRUE;
     /* Get the supported Radio Access Technology */
-    *AcT = emm_main_get_plmn_rat();
+    *AcT = emm_main_get_plmn_rat(user->emm_data);
   } else {
     /* No any operator is selected */
     *selected = FALSE;
@@ -496,7 +496,7 @@ int nas_proc_get_oper_list(nas_user_t *user, const char **oper_list)
 {
   LOG_FUNC_IN;
 
-  int size = emm_main_get_plmn_list(oper_list);
+  int size = emm_main_get_plmn_list(user->emm_data, oper_list);
 
   LOG_FUNC_RETURN (size);
 }
@@ -521,7 +521,7 @@ int nas_proc_get_reg_status(nas_user_t *user, int *stat)
 {
   LOG_FUNC_IN;
 
-  *stat = emm_main_get_plmn_status();
+  *stat = emm_main_get_plmn_status(user->emm_data);
 
   LOG_FUNC_RETURN (RETURNok);
 }
@@ -549,9 +549,9 @@ int nas_proc_get_loc_info(nas_user_t *user, char *tac, char *ci, int *AcT)
 {
   LOG_FUNC_IN;
 
-  sprintf(tac, "%.4x", emm_main_get_plmn_tac());  // two byte
-  sprintf(ci, "%.8x", emm_main_get_plmn_ci());    // four byte
-  *AcT = emm_main_get_plmn_rat();             // E-UTRAN
+  sprintf(tac, "%.4x", emm_main_get_plmn_tac(user->emm_data));  // two byte
+  sprintf(ci, "%.8x", emm_main_get_plmn_ci(user->emm_data));    // four byte
+  *AcT = emm_main_get_plmn_rat(user->emm_data);             // E-UTRAN
 
   LOG_FUNC_RETURN (RETURNok);
 }
@@ -577,7 +577,7 @@ int nas_proc_detach(nas_user_t *user, int switch_off)
   emm_sap_t emm_sap;
   int rc = RETURNok;
 
-  if ( emm_main_is_attached() ) {
+  if ( emm_main_is_attached(user->emm_data) ) {
     /* Initiate an Detach procedure */
     emm_sap.primitive = EMMREG_DETACH_INIT;
     emm_sap.u.emm_reg.u.detach.switch_off = switch_off;
@@ -608,7 +608,7 @@ int nas_proc_attach(nas_user_t *user)
   emm_sap_t emm_sap;
   int rc = RETURNok;
 
-  if ( !emm_main_is_attached() ) {
+  if ( !emm_main_is_attached(user->emm_data) ) {
     /* Initiate an Attach procedure */
     emm_sap.primitive = EMMREG_ATTACH_INIT;
     emm_sap.u.emm_reg.u.attach.is_emergency = FALSE;
@@ -637,7 +637,7 @@ int nas_proc_get_attach_status(nas_user_t *user)
 {
   LOG_FUNC_IN;
 
-  int is_attached = emm_main_is_attached();
+  int is_attached = emm_main_is_attached(user->emm_data);
 
   LOG_FUNC_RETURN (is_attached);
 }
@@ -957,14 +957,14 @@ int nas_proc_activate_pdn(nas_user_t *user, int cid)
 
   int rc = RETURNok;
 
-  if ( !emm_main_is_attached() ) {
+  if ( !emm_main_is_attached(user->emm_data) ) {
     /*
      * If the UE is not attached to the network, perform EPS attach
      * procedure prior to attempt to request any PDN connectivity
      */
     LOG_TRACE(WARNING, "NAS-PROC  - UE is not attached to the network");
     rc = nas_proc_attach(user);
-  } else if (emm_main_is_emergency()) {
+  } else if (emm_main_is_emergency(user->emm_data)) {
     /* The UE is attached for emergency bearer services; It shall not
      * request a PDN connection to any other PDN */
     LOG_TRACE(WARNING,"NAS-PROC  - Attached for emergency bearer services");

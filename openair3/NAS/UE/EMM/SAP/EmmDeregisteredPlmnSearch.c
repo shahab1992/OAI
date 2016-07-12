@@ -102,7 +102,7 @@ int EmmDeregisteredPlmnSearch(nas_user_t *user, const emm_reg_t *evt)
     /*
      * No suitable cell of the selected PLMN has been found to camp on
      */
-    rc = emm_proc_registration_notify(NET_REG_STATE_DENIED);
+    rc = emm_proc_registration_notify(user->emm_data, NET_REG_STATE_DENIED);
 
     if (rc != RETURNok) {
       LOG_TRACE(WARNING, "EMM-FSM   - "
@@ -119,7 +119,7 @@ int EmmDeregisteredPlmnSearch(nas_user_t *user, const emm_reg_t *evt)
      * may be selected either automatically or manually.
      * Or the user manually re-selected a PLMN to register to.
      */
-    rc = emm_proc_registration_notify(NET_REG_STATE_ON);
+    rc = emm_proc_registration_notify(user->emm_data, NET_REG_STATE_ON);
 
     if (rc != RETURNok) {
       LOG_TRACE(WARNING, "EMM-FSM   - "
