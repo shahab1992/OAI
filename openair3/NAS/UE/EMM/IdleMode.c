@@ -911,7 +911,7 @@ int emm_proc_plmn_selection_end(nas_user_t *user, int found, tac_t tac, ci_t ci,
    * Or terminate the PLMN selection procedure
    */
   if (!select_next_plmn) {
-    if (!(_emm_plmn_list.fplmn) < 0) { // FIXME this comparison makes no sense (bool < 0)
+    if (_emm_plmn_list.fplmn >= 0) {
       /* There were one or more PLMNs which were available and allowable,
        * but an LR failure made registration on those PLMNs unsuccessful
        * or an entry in any of the forbidden area lists prevented a
