@@ -54,7 +54,8 @@ signed int rlc_um_get_pdu_infos(
 
   pdu_info_pP->num_li = 0;
 
-  AssertFatal( total_sizeP > 0 , "RLC UM PDU LENGTH %d", total_sizeP);
+  //AssertFatal( total_sizeP > 0 , "RLC UM PDU LENGTH %d", total_sizeP);
+  if (total_sizeP <= 0) return -1;
 
   if (sn_lengthP == 10) {
     pdu_info_pP->fi           = (header_pP->b1 >> 3) & 0x03;
@@ -84,15 +85,19 @@ signed int rlc_um_get_pdu_infos(
       li_length_in_bytes = li_length_in_bytes ^ 3;
 
       if (li_length_in_bytes  == 2) {
-        AssertFatal( total_sizeP >= ((uint64_t)(&e_li_p->b2) - (uint64_t)header_pP),
-                     "DECODING PDU TOO FAR PDU size %d", total_sizeP);
+        //AssertFatal( total_sizeP >= ((uint64_t)(&e_li_p->b2) - (uint64_t)header_pP),
+        //             "DECODING PDU TOO FAR PDU size %d", total_sizeP);
+        if (total_sizeP < ((uint64_t)(&e_li_p->b2) - (uint64_t)header_pP))
+          return -1;
         pdu_info_pP->li_list[pdu_info_pP->num_li] = ((uint16_t)(e_li_p->b1 << 4)) & 0x07F0;
         pdu_info_pP->li_list[pdu_info_pP->num_li] |= (((uint8_t)(e_li_p->b2 >> 4)) & 0x000F);
         li_to_read = e_li_p->b1 & 0x80;
         pdu_info_pP->header_size  += 2;
       } else {
-        AssertFatal( total_sizeP >= ((uint64_t)(&e_li_p->b3) - (uint64_t)header_pP),
-                     "DECODING PDU TOO FAR PDU size %d", total_sizeP);
+        //AssertFatal( total_sizeP >= ((uint64_t)(&e_li_p->b3) - (uint64_t)header_pP),
+        //             "DECODING PDU TOO FAR PDU size %d", total_sizeP);
+        if (total_sizeP < ((uint64_t)(&e_li_p->b3) - (uint64_t)header_pP))
+          return -1;
         pdu_info_pP->li_list[pdu_info_pP->num_li] = ((uint16_t)(e_li_p->b2 << 8)) & 0x0700;
         pdu_info_pP->li_list[pdu_info_pP->num_li] |=  e_li_p->b3;
         li_to_read = e_li_p->b2 & 0x08;
@@ -100,10 +105,12 @@ signed int rlc_um_get_pdu_infos(
         pdu_info_pP->header_size  += 1;
       }
 
-      AssertFatal( pdu_info_pP->num_li <= RLC_UM_SEGMENT_NB_MAX_LI_PER_PDU,
-                   PROTOCOL_RLC_UM_CTXT_FMT"[GET PDU INFO]  SN %04d TOO MANY LIs ",
-                   PROTOCOL_RLC_UM_CTXT_ARGS(ctxt_pP, rlc_pP),
-                   pdu_info_pP->sn);
+      //AssertFatal( pdu_info_pP->num_li <= RLC_UM_SEGMENT_NB_MAX_LI_PER_PDU,
+      //             PROTOCOL_RLC_UM_CTXT_FMT"[GET PDU INFO]  SN %04d TOO MANY LIs ",
+      //             PROTOCOL_RLC_UM_CTXT_ARGS(ctxt_pP, rlc_pP),
+      //            pdu_info_pP->sn);
+      if (pdu_info_pP->num_li > RLC_UM_SEGMENT_NB_MAX_LI_PER_PDU)
+        return -1;
 
       sum_li += pdu_info_pP->li_list[pdu_info_pP->num_li];
       pdu_info_pP->num_li = pdu_info_pP->num_li + 1;
@@ -121,6 +128,12 @@ signed int rlc_um_get_pdu_infos(
   }
 
   pdu_info_pP->payload_size = total_sizeP - pdu_info_pP->header_size;
+
+  /* We should have strictly more bytes than sum_li because the
+   * size of the last SDU is not stored in the PDU's header.
+   * If that's not the case, return -1.
+   */
+  if (pdu_info_pP->payload_size <= sum_li) return -1;
 
   if (pdu_info_pP->payload_size > sum_li) {
     pdu_info_pP->hidden_size = pdu_info_pP->payload_size - sum_li;
@@ -954,6 +967,8 @@ rlc_um_receive_process_dar (
   // -else:
   //      -place the received UMD PDU in the reception buffer.
 
+  rlc_um_pdu_info_t pdu_info;
+
   rlc_sn_t sn = -1;
   signed int in_window;
 
@@ -965,6 +980,14 @@ rlc_um_receive_process_dar (
     sn = pdu_pP->b1 & 0x1F;
   } else {
     free_mem_block(pdu_mem_pP);
+  }
+
+  /* reject malformed packets */
+  if (rlc_um_get_pdu_infos(ctxt_pP, rlc_pP, pdu_pP, tb_sizeP, &pdu_info, rlc_pP->rx_sn_length) != 0) {
+    LOG_W(RLC, PROTOCOL_RLC_UM_CTXT_FMT" dropping bad packet\n",
+          PROTOCOL_RLC_UM_CTXT_ARGS(ctxt_pP, rlc_pP));
+    free_mem_block(pdu_mem_pP);
+    return;
   }
 
   RLC_UM_MUTEX_LOCK(&rlc_pP->lock_dar_buffer, ctxt_pP, rlc_pP);
