@@ -59,6 +59,7 @@ Description Defines internal private data handled by EPS Session
 
 /* Total number of active EPS bearers */
 #define ESM_DATA_EPS_BEARER_TOTAL   11
+#define ESM_SAP_BUFFER_SIZE 4096
 
 /****************************************************************************/
 /************************  G L O B A L    T Y P E S  ************************/
@@ -179,6 +180,7 @@ typedef struct esm_data_context_s {
   } pdn[ESM_DATA_PDN_MAX+1];
 
   esm_ebr_data_t ebr;
+  uint8_t send_buffer[ESM_SAP_BUFFER_SIZE];
 } esm_data_context_t;
 
 /*
