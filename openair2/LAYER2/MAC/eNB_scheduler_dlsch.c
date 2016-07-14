@@ -458,6 +458,8 @@ schedule_ue_spec(
   static int32_t          tpc_accumulated=0;
   UE_sched_ctrl           *ue_sched_ctl;
   int i;
+  
+  int                   sid; //Slice ID
 
   if (UE_list->head==-1) {
     return;
@@ -486,6 +488,14 @@ schedule_ue_spec(
     eNB->eNB_stats[CC_id].total_available_prbs +=  total_nb_available_rb[CC_id];
     eNB->eNB_stats[CC_id].dlsch_bytes_tx=0;
     eNB->eNB_stats[CC_id].dlsch_pdus_tx=0;
+
+    for(sid=0;sid<eNB->slice_active;sid++){
+      eNB->eNB_stats[CC_id].slice_dlsch_bytes_tx[sid] = 0;
+      eNB->eNB_stats[CC_id].slice_dlsch_pdus_tx[sid] = 0;
+      eNB->eNB_stats[CC_id].slice_dlsch_mcs[sid] = 0;
+      eNB->eNB_stats[CC_id].slice_dlsch_active_ue[sid] = 0;
+    }
+
   }
 
   /// CALLING Pre_Processor for downlink scheduling (Returns estimation of RBs required by each UE and the allocation on sub-band)
@@ -572,7 +582,11 @@ schedule_ue_spec(
       */
       eNB_UE_stats->dlsch_mcs1 = cqi_to_mcs[eNB_UE_stats->DL_cqi[0]];
       eNB_UE_stats->dlsch_mcs1 = cmin(eNB_UE_stats->dlsch_mcs1, openair_daq_vars.target_ue_dl_mcs);
+		
 
+      sid = UE_list->UE_template[CC_id][UE_id].slice_id;
+      eNB->eNB_stats[CC_id].slice_dlsch_active_ue[sid]++;
+      eNB->eNB_stats[CC_id].slice_dlsch_mcs[sid] += eNB_UE_stats->dlsch_mcs1; 
 
 #ifdef EXMIMO
 
@@ -1476,7 +1490,41 @@ schedule_ue_spec(
       if (frame_parms[CC_id]->frame_type == TDD) {
         set_ul_DAI(module_idP,UE_id,CC_id,frameP,subframeP,frame_parms);
       }
+	
+	eNB->eNB_stats[CC_id].slice_obs_counter++;
+    for(sid = 0; sid<eNB->slice_active; sid++) {
+      if(eNB->eNB_stats[CC_id].slice_dlsch_active_ue[sid] == 0) {
+        //No active UE in this group
+        eNB->eNB_stats[CC_id].slice_dlsch_mcs[sid] = -1;
+      } else {
+        eNB->eNB_stats[CC_id].slice_dlsch_mcs[sid]= eNB->eNB_stats[CC_id].slice_dlsch_mcs[sid] / eNB->eNB_stats[CC_id].slice_dlsch_active_ue[sid];
+        //push_front(&eNB_mac_inst[i].eNB_stats[CC_id].slice_dlsch_mcs_list[sid],eNB->eNB_stats[CC_id].slice_dlsch_mcs_list[sid]);
+}
+      eNB->eNB_stats[CC_id].slice_dlsch_bitrate[sid]= eNB->eNB_stats[CC_id].slice_dlsch_bytes_tx[sid]*8 *1000;
+      LOG_D(MAC,"Frame %d, subframeP %d: Slice: %d, bitrate = %f kbps\n",frameP,subframeP,sid,((float)eNB->eNB_stats[CC_id].slice_dlsch_bitrate[sid])/1024);
+      //push_front(&eNB_mac_inst[i].eNB_stats[CC_id].slice_dlsch_bitrate_list[sid],eNB->eNB_stats[CC_id].slice_dlsch_bitrate_list[sid]);
+      //push_front(&eNB_mac_inst[i].eNB_stats[CC_id].slice_dlsch_active_ue_list[sid],eNB->eNB_stats[CC_id].slice_dlsch_active_ue_list[sid]);
+    }
 
+    if(eNB->eNB_stats[CC_id].slice_obs_counter == eNB->slice_obs_window){
+        //Reset the counter
+        eNB->eNB_stats[CC_id].slice_obs_counter = 0;
+        for(sid = 0; sid<eNB->slice_active;sid++){
+          // Report
+          eNB->eNB_stats[CC_id].slice_dlsch_mean_mcs[sid] = calculate_average(&eNB->eNB_stats[CC_id].slice_dlsch_mcs[sid]);
+          eNB->eNB_stats[CC_id].slice_dlsch_mean_bitrate[sid] = calculate_average(&eNB->eNB_stats[CC_id].slice_dlsch_bitrate[sid]);
+          eNB->eNB_stats[CC_id].slice_dlsch_mean_active_ue[sid] = calculate_average(&eNB->eNB_stats[CC_id].slice_dlsch_active_ue[sid]);
+
+          LOG_D(MAC,"Frame %d, subframeP %d: Slice: %d, av. bitrate = %f kbps\n",frameP,subframeP,sid,((float)eNB->eNB_stats[CC_id].slice_dlsch_mean_bitrate[sid])/1024);
+          // Clear the lists
+          //del(&eNB_mac_inst[i].eNB_stats[CC_id].slice_dlsch_bitrate_list[sid]);
+          //del(&eNB->eNB_stats[CC_id].slice_dlsch_mcs_list[sid]);
+          //del(&eNB->eNB_stats[CC_id].slice_dlsch_bitrate_list[sid]);
+          //del(&eNB->eNB_stats[CC_id].slice_dlsch_active_ue_list[sid]);
+
+        }
+      }	
+	
     } // UE_id loop
   }  // CC_id loop
 

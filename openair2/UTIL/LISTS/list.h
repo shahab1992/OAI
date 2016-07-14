@@ -111,5 +111,6 @@ public_list2( void   del         (struct list*);         )
 public_list2( void   totable     (double*, struct list*);)
 public_list2( int compare (const void * a, const void * b);)
 public_list2( int32_t calculate_median(struct list *loc_list);)
+public_list2( double calculate_average(struct list *loc_list);)
 
 #endif

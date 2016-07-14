@@ -127,6 +127,8 @@ int mac_top_init(int eMBMS_active, char *uecap_xer, uint8_t cba_group_active, ui
   int CC_id;
   int list_el;
   UE_list_t *UE_list;
+	
+  int sid, slice_active;
 
   LOG_I(MAC,"[MAIN] Init function start:Nb_UE_INST=%d\n",NB_UE_INST);
 
@@ -181,6 +183,27 @@ int mac_top_init(int eMBMS_active, char *uecap_xer, uint8_t cba_group_active, ui
 
     UE_list->next[list_el]=-1;
     UE_list->next_ul[list_el]=-1;
+
+	// needs to be set from the main
+	// use this for testing
+    eNB_mac_inst[Mod_id].slice_active = 1;
+    eNB_mac_inst[Mod_id].slice_obs_window = 100;
+
+    for(sid=0;sid<eNB_mac_inst[Mod_id].slice_active;sid++)   {
+      eNB_mac_inst[Mod_id].slice_info[sid].slice_id = sid;
+      eNB_mac_inst[Mod_id].slice_info[sid].slice_min_GB = 100;
+      eNB_mac_inst[Mod_id].slice_info[sid].slice_max_GB = 10000;
+      eNB_mac_inst[Mod_id].slice_info[sid].slice_bitrate_Req = 5000;
+
+      if(eNB_mac_inst[Mod_id].slice_info[sid].slice_min_GB == 0) {
+        eNB_mac_inst[Mod_id].slice_info[sid].slice_ServeType = BestEffort;
+      } else if(eNB_mac_inst[Mod_id].slice_info[sid].slice_max_GB == 0) {
+        eNB_mac_inst[Mod_id].slice_info[sid].slice_ServeType = BE_MinGuaranteed;
+      } else{
+        eNB_mac_inst[Mod_id].slice_info[sid].slice_ServeType = Guaranteed;
+      }
+
+    }
 
 #ifdef PHY_EMUL
     Mac_rlc_xface->Is_cluster_head[Mod_id]=2;//0: MR, 1: CH, 2: not CH neither MR
@@ -320,6 +343,14 @@ int mac_top_init(int eMBMS_active, char *uecap_xer, uint8_t cba_group_active, ui
         // initiallize the eNB to UE statistics
         memset (&eNB_mac_inst[i].UE_list.eNB_UE_stats[CC_id][j],0,sizeof(eNB_UE_STATS));
       }
+	
+	 /*
+	 for(sid = 0; sid<eNB_mac_inst[Mod_id].slice_active;sid++){
+        initialize(&eNB_mac_inst[i].eNB_stats[CC_id].slice_dlsch_bitrate_list[sid]);
+        initialize(&eNB_mac_inst[i].eNB_stats[CC_id].slice_dlsch_mcs_list[sid]);
+        initialize(&eNB_mac_inst[i].eNB_stats[CC_id].slice_dlsch_active_ue_list[gid]);
+      }
+	*/
     }
 
 

@@ -511,6 +511,9 @@ int UE_PCCID(module_id_t mod_idP,int ue_idP);
 rnti_t UE_RNTI(module_id_t mod_idP, int ue_idP);
 
 
+void determine_slice_RBs(eNB_MAC_INST* eNB, int CC_id);
+
+
 void ulsch_scheduler_pre_processor(module_id_t module_idP, int frameP, sub_frame_t subframeP, uint16_t *first_rb, uint8_t  aggregattion);
 void store_ulsch_buffer(module_id_t module_idP, int frameP, sub_frame_t subframeP);
 void sort_ue_ul (module_id_t module_idP,int frameP, sub_frame_t subframeP);

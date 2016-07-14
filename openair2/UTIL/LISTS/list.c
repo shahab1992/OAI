@@ -451,3 +451,18 @@ int32_t calculate_median(struct list *loc_list)
 
   return median;
 }
+
+double calculate_average(struct list *loc_list) {
+  int count = 0;
+  double average = 0;
+  struct node *x;
+  for(x = loc_list->head;x!=NULL;x = x->next){
+    count++;
+    average += x->val;
+  }
+
+  if(count > 0){
+    average = average / ((double)count);
+  }
+  return average;
+}

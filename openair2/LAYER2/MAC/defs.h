@@ -143,6 +143,17 @@
 #define LCID_EMPTY 0
 #define LCID_NOT_EMPTY 1
 
+#define NUM_SLICE_TYPES 3
+#define MAX_NUM_SLICES 4
+#define MAX_SLICE_WINDOW 100 //subframe
+#define SLICE_OBSERVATION_PERIOD 2
+
+typedef enum {
+   Guaranteed,
+   BE_MinGuaranteed,
+   BestEffort
+} SERVETYPE_t;
+
 /* 
  * eNB part 
  */ 
@@ -462,6 +473,21 @@ typedef struct {
   //
   uint32_t total_ulsch_pdus_rx;
   
+
+  /// slice-specific stattistic
+  int32_t slice_dlsch_bitrate[MAX_NUM_SLICES]; 
+  uint32_t slice_dlsch_bytes_tx[MAX_NUM_SLICES];
+  int32_t slice_dlsch_pdus_tx[MAX_NUM_SLICES];
+  int32_t slice_dlsch_mcs[MAX_NUM_SLICES];  //Average MCs per user group
+  int32_t slice_dlsch_active_ue[MAX_NUM_SLICES]; //In order to calculate the average MSC;
+  uint32_t slice_obs_counter;
+  double slice_dlsch_mean_mcs[MAX_NUM_SLICES];
+  double slice_dlsch_mean_bitrate[MAX_NUM_SLICES];
+  double slice_dlsch_mean_active_ue[MAX_NUM_SLICES];
+  struct list  slice_dlsch_listg_bitrate_list[MAX_NUM_SLICES];
+  struct list slice_dlsch_mcs_list[MAX_NUM_SLICES];
+  struct list slice_dlsch_active_ue_list[MAX_NUM_SLICES];
+
 } eNB_STATS;
 /*! \brief eNB statistics for the connected UEs*/
 typedef struct {
@@ -701,6 +727,9 @@ typedef struct {
   uint32_t pucch_tpc_tx_frame;
   uint32_t pucch_tpc_tx_subframe;
 
+  /// slice id to which this ue belongs to
+  uint8_t slice_id;
+
 #ifdef LOCALIZATION
   eNB_UE_estimated_distances distance;
 #endif
@@ -883,6 +912,21 @@ typedef struct {
   uint8_t group_mcs[NUM_MAX_CBA_GROUP];
 #endif
 } COMMON_channels_t;
+
+/*! \brief slice specific information required by the MAC scheduler */ 
+typedef struct {
+  uint8_t     slice_id;
+  SERVETYPE_t slice_ServeType;
+  float       slice_min_GB; // Minimum guaranteed bit rate to the VNO
+  float       slice_max_GB; // Maximum guaranteed bit rate to the VNO
+  float       slice_bitrate_Req;  //Given data rate from VRRM
+  int         slice_N_RB_DL[MAX_NUM_CCs]; //equivalant of fran_parans[CC_id]->N_RB_DL
+  float       slice_bitrate_assigned;
+  float       slice_bitrate_average;
+  int         slice_RB_assigned;
+  int         slice_RB_average;
+} SLICE_INFO;
+
 /*! \brief top level eNB MAC structure */ 
 typedef struct {
   ///
@@ -903,6 +947,12 @@ typedef struct {
   //  uint8_t lcid_active[NB_RB_MAX];
   /// eNB stats
   eNB_STATS eNB_stats[MAX_NUM_CCs];
+  /// slice active flag
+  int slice_active;
+  /// the length of observation period
+  uint32_t slice_obs_window; 
+  /// slice specific info
+  SLICE_INFO slice_info[MAX_NUM_SLICES]; 
   // MAC function execution peformance profiler
   /// processing time of eNB scheduler 
   time_stats_t eNB_scheduler;
