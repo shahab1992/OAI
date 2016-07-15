@@ -90,12 +90,13 @@ int slot_fep_ul_ufmc(LTE_DL_FRAME_PARMS *frame_parms,
 		     unsigned char l,
 		     unsigned char Ns,
 		     unsigned char eNB_id,
-		     int no_prefix,
-		     unsigned int delay_estimation);
+		     int no_prefix);
 
 void normal_prefix_mod(int32_t *txdataF,int32_t *txdata,uint8_t nsymb,LTE_DL_FRAME_PARMS *frame_parms);
 
 void do_OFDM_mod(int32_t **txdataF, int32_t **txdata, uint32_t frame,uint16_t next_slot, LTE_DL_FRAME_PARMS *frame_parms);
+
+void remove_7_5_kHz_ul(PHY_VARS_eNB *phy_vars_eNB,uint8_t subframe,uint16_t delay);
 
 void remove_7_5_kHz(PHY_VARS_eNB *phy_vars_eNB,uint8_t subframe);
 

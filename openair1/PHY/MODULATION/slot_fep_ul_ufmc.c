@@ -36,10 +36,9 @@ int slot_fep_ul_ufmc(LTE_DL_FRAME_PARMS *frame_parms,
                 unsigned char l,
                 unsigned char Ns,
                 unsigned char eNB_id,
-                int no_prefix,
-		unsigned int delay_estimation)
+                int no_prefix)
 {
-  // printf("\n slot_fep_ul_ufmc args:\n l=%d,Ns=%d,eNB_id=%d,delay_estimation=%d,offset=%d\n",l,Ns,eNB_id,delay_estimation,((frame_parms->samples_per_tti>>1)*Ns));
+  // printf("\n slot_fep_ul_ufmc args:\n l=%d,Ns=%d,eNB_id=%d,offset=%d\n",l,Ns,eNB_id,((frame_parms->samples_per_tti>>1)*Ns));
 #ifdef DEBUG_FEP
   char fname[40], vname[40];
 #endif
@@ -48,7 +47,7 @@ int slot_fep_ul_ufmc(LTE_DL_FRAME_PARMS *frame_parms,
   unsigned int nb_prefix_samples = (no_prefix ? 0 : frame_parms->nb_prefix_samples);
   unsigned int nb_prefix_samples0 = (no_prefix ? 0 : frame_parms->nb_prefix_samples0);
   //  unsigned int subframe_offset;
-  unsigned int slot_offset= (delay_estimation%8)==0 ? delay_estimation : delay_estimation+8-(delay_estimation%8);
+  unsigned int slot_offset;
 
   void (*dft)(int16_t *,int16_t *, int);
 
@@ -80,12 +79,11 @@ int slot_fep_ul_ufmc(LTE_DL_FRAME_PARMS *frame_parms,
 
   if (no_prefix) {
     //    subframe_offset = frame_parms->ofdm_symbol_size * frame_parms->symbols_per_tti * (Ns>>1);
-    slot_offset += (frame_parms->ofdm_symbol_size * (frame_parms->symbols_per_tti>>1) * (Ns%2));
+    slot_offset = (frame_parms->ofdm_symbol_size * (frame_parms->symbols_per_tti>>1) * (Ns%2));
   } else {
     //    subframe_offset = frame_parms->samples_per_tti * (Ns>>1);
-    slot_offset += ((frame_parms->samples_per_tti>>1) * (Ns%2));
+    slot_offset = ((frame_parms->samples_per_tti>>1) * (Ns%2));
   }
-  
 
   if (l<0 || l>=7-frame_parms->Ncp) {
     LOG_E(PHY,"slot_fep: l must be between 0 and %d\n",7-frame_parms->Ncp);

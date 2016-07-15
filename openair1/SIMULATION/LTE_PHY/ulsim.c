@@ -56,6 +56,8 @@
 extern unsigned short dftsizes[33];
 extern short *ul_ref_sigs[30][2][33];
 extern short ul_ref_sigs_ufmc[30][2][33][2][2048<<1];//u,v,MSC_RS,cyclic_shift,dft size
+extern short ul_ref_sigs_ufmc_7_5kHz[30][2][33][2][2048<<1];//u,v,MSC_RS,cyclic_shift,dft size
+
 
 PHY_VARS_eNB *PHY_vars_eNB;
 PHY_VARS_UE *PHY_vars_UE;
@@ -94,10 +96,8 @@ int main(int argc, char **argv)
   double channelx,channely;
   double sigma2, sigma2_dB=10,SNR,SNR2,snr0=-2.0,snr1,SNRmeas,rate,saving_bler=0;
   double input_snr_step=.2,snr_int=30;
-  double blerr;
   double uncoded_ber,avg_ber[4]={0,0,0,0};
   short *uncoded_ber_bit=NULL;
-
 
   int **txdata;
 
@@ -164,6 +164,7 @@ int main(int argc, char **argv)
   uint8_t control_only_flag = 0;
   int delay = 0;
   unsigned int delay_est = 0;
+  int counter_delay=4;
   double maxDoppler = 0.0;
   uint8_t srs_flag = 0;
   uint8_t ufmc_flag=0;
@@ -210,6 +211,7 @@ int main(int argc, char **argv)
     switch (c) {
     case 'u':
       ufmc_flag = 1;
+      printf("\n #### UFMC enabled ####\n");
       break;  
     
     case 'a':
@@ -476,8 +478,6 @@ int main(int argc, char **argv)
       break;
     }
   }
-
-  int drs_gen[12*2*nb_rb*n_frames];//mux with another variable in order to consider the frame number
 
   lte_param_init(1,
 		 n_rx,
@@ -791,7 +791,8 @@ int main(int argc, char **argv)
   PHY_vars_UE->frame_tx = (PHY_vars_UE->frame_tx+1)&1023;
   if (ufmc_flag==1){
     ufmc_init(&PHY_vars_eNB->lte_frame_parms);
-    generate_drs_ufmc(PHY_vars_eNB,0,AMP,subframe,0);
+    // generate_drs_ufmc(PHY_vars_eNB,0,AMP,subframe,0);
+    generate_drs_ufmc_7_5kHz(PHY_vars_eNB,0,AMP,subframe,0);
   }
   
   for (ch_realization=0; ch_realization<n_ch_rlz; ch_realization++) {
@@ -1076,7 +1077,6 @@ int main(int argc, char **argv)
 	      }
 	      
 	      //write_output("txsigOUT.m","txsOUT", &txdata[0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],2*frame_parms->samples_per_tti,1,1);
-
 #ifndef OFDMA_ULSCH
                apply_7_5_kHz(PHY_vars_UE,PHY_vars_UE->lte_ue_common_vars.txdata[aa],subframe<<1);
                apply_7_5_kHz(PHY_vars_UE,PHY_vars_UE->lte_ue_common_vars.txdata[aa],1+(subframe<<1));
@@ -1094,14 +1094,13 @@ int main(int argc, char **argv)
             }*/
           }  // input_fd == NULL
 
-
           tx_lev_dB = (unsigned int) dB_fixed_times10(tx_lev);
 
           if (n_frames==1) {
             write_output("txsig0UL.m","txs0", &txdata[0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],2*frame_parms->samples_per_tti,1,1);
             //        write_output("txsig1UL.m","txs1", &txdata[1][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],2*frame_parms->samples_per_tti,1,1);
           }
-
+          
           //AWGN
           //Set target wideband RX noise level to N0
           sigma2_dB = N0;//10*log10((double)tx_lev)  +10*log10(PHY_vars_UE->lte_frame_parms.ofdm_symbol_size/(PHY_vars_UE->lte_frame_parms.N_RB_DL*12)) - SNR;
@@ -1134,17 +1133,17 @@ int main(int argc, char **argv)
 
           if (awgn_flag == 0) {
             if (UE2eNB->max_Doppler == 0) {
-	      /*if(ufmc_flag==1){
+	      if(ufmc_flag==1){
 		//printf("Multipath_UFMC_channel with length=%d and delay=%d\n",(int)UE2eNB->channel_length,(int)UE2eNB->channel_offset);
 		multipath_ufmc_channel(UE2eNB,s_re,s_im,r_re,r_im,
                                 PHY_vars_eNB->lte_frame_parms.samples_per_tti,hold_channel);
 		ch_out_length=PHY_vars_eNB->lte_frame_parms.samples_per_tti+(int)UE2eNB->channel_length+(int)UE2eNB->channel_offset-1;
 		// printf("ch_out_length=%d\n",ch_out_length);
-	      }else{*/
+	      }else{
 		multipath_channel(UE2eNB,s_re,s_im,r_re,r_im,
                                 PHY_vars_eNB->lte_frame_parms.samples_per_tti,hold_channel);
 		ch_out_length=PHY_vars_eNB->lte_frame_parms.samples_per_tti;
-	      //}
+	      }
             } else {
 	      if(ufmc_flag==1){
 		printf("\nWARNING!!!! multipath_UFMC_tv_channel WOULD be implemented\n");
@@ -1161,11 +1160,10 @@ int main(int argc, char **argv)
 
           for (i=0; i<ch_out_length; i++) {
             for (aa=0; aa<PHY_vars_eNB->lte_frame_parms.nb_antennas_rx; aa++) {
-              ((short*) &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe])[2*i] = (short) ((tx_gain*r_re[aa][i]) + sqrt(sigma2/2)*gaussdouble(0.0,1.0)); //(short) (tx_gain*r_re[aa][i]); 
-              ((short*) &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe])[2*i+1] = (short) (tx_gain*r_im[aa][i]) ;//(short) ((tx_gain*r_im[aa][i]) + (iqim*tx_gain*r_re[aa][i]) + sqrt(sigma2/2)*gaussdouble(0.0,1.0));//(short) (tx_gain*r_im[aa][i]);
+              ((short*) &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe])[2*i] = (short) ((tx_gain*r_re[aa][i]) + sqrt(sigma2/2)*gaussdouble(0.0,1.0)); // (short) (tx_gain*r_re[aa][i]);//
+              ((short*) &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][aa][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe])[2*i+1] = (short) ((tx_gain*r_im[aa][i]) + (iqim*tx_gain*r_re[aa][i]) + sqrt(sigma2/2)*gaussdouble(0.0,1.0));//(short) (tx_gain*r_im[aa][i]);//
             }
           }
-          //write_output("channel_output_Rx.m","ch_out_Rx",&PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],ch_out_length,1,1);
 
           if (n_frames==1) {
             printf("rx_level Null symbol %f\n",10*log10((double)signal_energy((int*)
@@ -1187,13 +1185,24 @@ int main(int argc, char **argv)
             //    write_output("rxsig0UL.m","rxs0", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],PHY_vars_eNB->lte_frame_parms.samples_per_tti,1,1);
             //write_output("rxsig1UL.m","rxs1", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],PHY_vars_eNB->lte_frame_parms.samples_per_tti,1,1);
           }
+          
+          if (ufmc_flag==1){
+	    // timing synchronizarion using correlator
+	    delay_est=rx_pusch_ufmc_sync_7_5kHz(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata
+	    // delay_est=rx_pusch_ufmc_sync(PHY_vars_eNB,0,AMP,subframe,0); //(delay estimation from rxdata_7_5kHz)
+	    // printf("#### Value of estimated delay = %d - ",delay_est);
+	    delay_est = (delay_est%8)==0 ? delay_est : delay_est+8-(delay_est%8);
+	    // printf("Delay set to %d \n",delay_est);
+	  }
 
 #ifndef OFDMA_ULSCH
-	  remove_7_5_kHz(PHY_vars_eNB,subframe<<1);
-	  remove_7_5_kHz(PHY_vars_eNB,1+(subframe<<1));
-          // write_output("rxsig0_75.m","rxs0_75", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],ch_out_length,1,1);
-          // write_output("rxsig1_75.m","rxs1_75", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],ch_out_length,1,1);
-
+	  if (ufmc_flag==1){
+	    remove_7_5_kHz_ul(PHY_vars_eNB,subframe<<1,delay_est);
+	    remove_7_5_kHz_ul(PHY_vars_eNB,1+(subframe<<1),delay_est);
+	  }else{
+	    remove_7_5_kHz(PHY_vars_eNB,subframe<<1);
+	    remove_7_5_kHz(PHY_vars_eNB,1+(subframe<<1));
+	  }
 #endif
 
           start_meas(&PHY_vars_eNB->phy_proc_rx);
@@ -1203,17 +1212,7 @@ int main(int argc, char **argv)
                                   0,
                                   1);
 	  // write_output("rxsig2.m","rxsig2", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],ch_out_length,1,1);
-	  // write_output("rxsig2all.m","rxsig2all", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][0],PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe*2,1,1);
-	  //write_output("rxsig2_75all_m.m","rxsig2_75all", &PHY_vars_eNB->lte_eNB_common_vars.rxdata_7_5kHz[0][0][0],PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe*2,1,1);
-	  
-	  if (ufmc_flag==1){
-	    // timing synchronizarion using correlator
-	    // delay_est=rx_pusch_ufmc_sync(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata
-	    delay_est=rx_pusch_ufmc_sync_7_5kHz(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata_7_5kHz
-	    //printf("delay_est=%d\n",delay_est);
-	    delay_est=0;
-	  }
-	  	  
+	  // write_output("rxsig_75all_m.m","rxsig_75", &PHY_vars_eNB->lte_eNB_common_vars.rxdata_7_5kHz[0][0][0],PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe*2,1,1);
 	  
           for (l=subframe*PHY_vars_UE->lte_frame_parms.symbols_per_tti; l<((1+subframe)*PHY_vars_UE->lte_frame_parms.symbols_per_tti); l++) {
 	    if (ufmc_flag==1){
@@ -1222,8 +1221,7 @@ int main(int argc, char **argv)
                         l%(PHY_vars_eNB->lte_frame_parms.symbols_per_tti/2),
                         l/(PHY_vars_eNB->lte_frame_parms.symbols_per_tti/2),
                         0,
-                        0,
-			delay_est);
+                        0);
 	    }else{
 	      slot_fep_ul(&PHY_vars_eNB->lte_frame_parms,
                         &PHY_vars_eNB->lte_eNB_common_vars,
@@ -1256,7 +1254,7 @@ int main(int argc, char **argv)
 	    }
 	    else
 	      uncoded_ber_bit[i] = 0;
-	  
+	    
 	  uncoded_ber/=coded_bits_per_codeword;
 	  avg_ber[round] += uncoded_ber;
 	
@@ -1408,7 +1406,7 @@ int main(int argc, char **argv)
         push_front(&time_vector_rx_demod, t_rx_demod);
         push_front(&time_vector_rx_dec, t_rx_dec);
 
-
+	counter_delay++;
       }   //trials
 
       double table_tx[time_vector_tx.size];
@@ -1764,7 +1762,6 @@ int main(int argc, char **argv)
 
     //write_output("chestim_f.m","chestf",PHY_vars_eNB->lte_eNB_pusch_vars[0]->drs_ch_estimates[0][0],300*12,2,1);
     // write_output("chestim_t.m","chestt",PHY_vars_eNB->lte_eNB_pusch_vars[0]->drs_ch_estimates_time[0][0], (frame_parms->ofdm_symbol_size)*2,2,1);
-
   }//ch realization
 
   fclose(bler_fd);

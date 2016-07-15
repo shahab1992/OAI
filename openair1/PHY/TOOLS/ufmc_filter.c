@@ -121,6 +121,7 @@ Vector Multiplication SIMD
 ***************************************************************************/
 
 static short reflip[8]  __attribute__((aligned(16))) = {1,-1,1,-1,1,-1,1,-1};  
+short conjug75[8]__attribute__((aligned(16))) = {-1,1,-1,1,-1,1,-1,1};
 
 void multcmplx(int16_t *out,int16_t *fact1,int16_t *fact2,int16_t lIN){
   /*!\fn void multcmplx_add(int16_t *out,int16_t *fact1,int16_t *fact2,int16_t lIN)
@@ -163,6 +164,40 @@ The function implemented is : \f$\mathbf{out} = \mathbf{fact1} * \mathbf{fact2}\
     inX+=1;
     vec+=1;
   } 
+}
+
+
+void mux_7_5(int32_t*out,int32_t*in,int32_t*shift,uint16_t len){
+   /*!\fn void mux_7_5(int32_t*out,int32_t*in,int32_t*shift,uint16_t len)
+This function performs same operation of apply_7_5_kHz in PHY/MOLDULATIN
+@param out Output vector (Q1.15) in the format  |Re0  Im0|, |Re1 Im1|,......,|Re(N-1) Im(N-1)|
+@param in input vector (Q1.15) in the format  |Re0  Im0|, |Re1 Im1|,......,|Re(N-1) Im(N-1)|
+@param shift shifting vector (Q1.15) in the format  |Re0  Im0|, |Re1 Im1|,......,|Re(N-1) Im(N-1)|
+@param N Length of x WARNING: N>=8
+\f$
+*/
+  __m128i *txptr128,*kHz7_5ptr128,*outptr128,mmtmp_re,mmtmp_im,mmtmp_re2,mmtmp_im2;
+  txptr128 = (__m128i *)in;
+  kHz7_5ptr128 = (__m128i *)shift;
+  outptr128 = (__m128i *)out;
+  uint32_t i;
+  for (i=0; i<(len>>2); i++) {
+    mmtmp_re = _mm_madd_epi16(*txptr128,*kHz7_5ptr128);
+    // Real part of complex multiplication (note: 7_5kHz signal is conjugated for this to work)
+    mmtmp_im = _mm_shufflelo_epi16(*kHz7_5ptr128,_MM_SHUFFLE(2,3,0,1));
+    mmtmp_im = _mm_shufflehi_epi16(mmtmp_im,_MM_SHUFFLE(2,3,0,1));
+    mmtmp_im = _mm_sign_epi16(mmtmp_im,*(__m128i*)&conjug75[0]);
+    mmtmp_im = _mm_madd_epi16(mmtmp_im,txptr128[0]);
+    mmtmp_re = _mm_srai_epi32(mmtmp_re,15);
+    mmtmp_im = _mm_srai_epi32(mmtmp_im,15);
+    mmtmp_re2 = _mm_unpacklo_epi32(mmtmp_re,mmtmp_im);
+    mmtmp_im2 = _mm_unpackhi_epi32(mmtmp_re,mmtmp_im);
+
+    outptr128[0] = _mm_packs_epi32(mmtmp_re2,mmtmp_im2);
+    txptr128++;
+    kHz7_5ptr128++;
+    outptr128++;
+  }
 }
 
 void multcmplx_add(int16_t *out,int16_t *fact1,int16_t *fact2,int16_t lIN){
