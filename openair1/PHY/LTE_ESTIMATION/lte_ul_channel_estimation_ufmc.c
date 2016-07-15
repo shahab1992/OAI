@@ -40,7 +40,6 @@ This section deals with basic functions for OFDM Modulation.
 #include "PHY/extern.h"
 #include "defs.h"
 #include "PHY/sse_intrin.h"
-//#include "PHY/MODULATION/kHz_7_5.h"
 
 //#define DEBUG_DRS
 

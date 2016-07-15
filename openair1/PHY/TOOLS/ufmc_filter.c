@@ -615,7 +615,7 @@ void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
   ii_complx_UpFilter(&in[0],&out2[0], size, &hFIR[0] , lFIR, Up_factor);
   //write_output("FIR_out.m","fir",out2, lOUT2>>1,1,1);
   // Modulation
-  memset(out,0,lOUT2*sizeof(int16_t));
+  //memset(out,0,lOUT2*sizeof(int16_t));
   multcmplx_add(&out[0],&out2[0],&mod_vec[n_rb][0],lOUT2>>1);
 }
 
