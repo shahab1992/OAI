@@ -123,6 +123,23 @@ typedef struct {
 } usim_keys_t;
 
 /*
+ * List of last used Sequence Numbers SQN
+ */
+#define USIM_API_AK_SIZE 6
+#define USIM_API_SQN_SIZE USIM_API_AK_SIZE
+#define USIM_API_SQNMS_SIZE USIM_API_SQN_SIZE
+
+typedef struct {
+  /* Highest sequence number the USIM has ever accepted */
+  uint8_t sqn_ms[USIM_API_SQNMS_SIZE];
+  /* List of the last used sequence numbers   */
+#define USIM_API_SQN_LIST_SIZE  32
+  uint8_t n_sqns;
+  uint32_t sqn[USIM_API_SQN_LIST_SIZE];
+} usim_sqn_data_t;
+
+
+/*
  * EPS NAS Security Context
  * ------------------------
  * TODO: To be encoded as BER-TLV
@@ -341,6 +358,7 @@ typedef struct {
   usim_epsloci_t epsloci;
   /* Non-Access Stratum configuration       */
   usim_nasconfig_t nasconfig;
+  usim_sqn_data_t usim_sqn_data;
 } usim_data_t;
 
 /****************************************************************************/
@@ -355,7 +373,7 @@ int usim_api_read(usim_data_t* data);
 
 int usim_api_write(const usim_data_t* data);
 
-int usim_api_authenticate(uint8_t usim_api_k[USIM_API_K_SIZE], const OctetString* rand_pP, const OctetString* autn_pP,
+int usim_api_authenticate(usim_data_t *usim_data, const OctetString* rand_pP, const OctetString* autn_pP,
                           OctetString* auts, OctetString* res,
                           OctetString* ck, OctetString* ik);
 
