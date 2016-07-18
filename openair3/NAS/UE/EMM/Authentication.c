@@ -164,6 +164,7 @@ int emm_proc_authentication_request(nas_user_t *user, int native_ksi, int ksi,
 
   int rc = RETURNerror;
   authentication_data_t *authentication_data = user->authentication_data;
+  uint8_t *key = user->usim_data.keys.usim_api_k;
   emm_timers_t *emm_timers = user->emm_data->emm_timers;
 
   LOG_TRACE(INFO, "EMM-PROC  - Authentication requested ksi type = %s, ksi = %d", native_ksi ? "native" : "mapped", ksi);
@@ -222,7 +223,7 @@ int emm_proc_authentication_request(nas_user_t *user, int native_ksi, int ksi,
        * of the core network by means of the received AUTN parameter and
        * request the USIM to compute RES, CK and IK for given RAND
        */
-      rc = usim_api_authenticate(rand, autn, &auts, &res, &ck, &ik);
+      rc = usim_api_authenticate(key, rand, autn, &auts, &res, &ck, &ik);
     }
 
     if (rc != RETURNok) {
