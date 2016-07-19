@@ -56,6 +56,7 @@ Description Defines the detach related EMM procedure executed by the
 #include "nas_timer.h"
 
 #include "emmData.h"
+#include "emm_timers.h"
 
 #include "emm_sap.h"
 #include "esm_sap.h"
@@ -82,10 +83,6 @@ static const char *_emm_detach_type_str[] = {
  *      Internal data handled by the detach procedure in the UE
  * --------------------------------------------------------------------------
  */
-/*
- * Timer handlers
- */
-void *_emm_detach_t3421_handler(void *);
 
 /*
  * Abnormal case detach procedures
@@ -203,7 +200,7 @@ int emm_proc_detach_request(void *args)
 
   if ( !emm_detach_data->switch_off ) {
     /* Start T3421 timer */
-    emm_timers->T3421.id = nas_timer_start(emm_timers->T3421.sec, _emm_detach_t3421_handler, user);
+    emm_timers->T3421.id = nas_timer_start(emm_timers->T3421.sec, emm_detach_t3421_handler, user);
     LOG_TRACE(INFO, "EMM-PROC  - Timer T3421 (%d) expires in %ld seconds",
               emm_timers->T3421.id, emm_timers->T3421.sec);
   }
@@ -379,7 +376,7 @@ int emm_proc_detach_release(void *args)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-void *_emm_detach_t3421_handler(void *args)
+void *emm_detach_t3421_handler(void *args)
 {
   LOG_FUNC_IN;
 
@@ -426,7 +423,7 @@ void *_emm_detach_t3421_handler(void *args)
 
     if (rc != RETURNerror) {
       /* Start T3421 timer */
-      emm_timers->T3421.id = nas_timer_start(emm_timers->T3421.sec, _emm_detach_t3421_handler, user);
+      emm_timers->T3421.id = nas_timer_start(emm_timers->T3421.sec, emm_detach_t3421_handler, user);
       LOG_TRACE(INFO, "EMM-PROC  - Timer T3421 (%d) expires in %ld "
                 "seconds", emm_timers->T3421.id, emm_timers->T3421.sec);
     }

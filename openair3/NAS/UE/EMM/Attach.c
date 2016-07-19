@@ -66,6 +66,7 @@ Description Defines the attach related EMM procedure executed by the
 #include "nas_timer.h"
 
 #include "emmData.h"
+#include "emm_timers.h"
 
 #include "emm_sap.h"
 #include "esm_sap.h"
@@ -97,9 +98,7 @@ static const char *_emm_attach_type_str[] = {
 /*
  * Timer handlers
  */
-void *_emm_attach_t3410_handler(void *);
-static void *_emm_attach_t3411_handler(void *);
-static void *_emm_attach_t3402_handler(void *);
+static void *_emm_attach_t3411_handler(void *args);
 
 /*
  * Abnormal case attach procedure
@@ -258,7 +257,7 @@ int emm_proc_attach(nas_user_t *user, emm_proc_attach_type_t type)
     }
 
     /* Start T3410 timer */
-    emm_timers->T3410.id = nas_timer_start(emm_timers->T3410.sec, _emm_attach_t3410_handler, user);
+    emm_timers->T3410.id = nas_timer_start(emm_timers->T3410.sec, emm_attach_t3410_handler, user);
     LOG_TRACE(INFO,"EMM-PROC  - Timer T3410 (%d) expires in %ld seconds",
               emm_timers->T3410.id, emm_timers->T3410.sec);
     /* Stop T3402 and T3411 timers if running */
@@ -998,7 +997,7 @@ int emm_proc_attach_set_detach(void *nas_user)
  **      Others:    T3410                                      **
  **                                                                        **
  ***************************************************************************/
-void *_emm_attach_t3410_handler(void *args)
+void *emm_attach_t3410_handler(void *args)
 {
   LOG_FUNC_IN;
 
