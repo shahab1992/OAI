@@ -18,26 +18,6 @@
 #include "aka_functions.h"
 #include "nas_log.h"
 
-/*--------- Operator Variant Algorithm Configuration Field --------*/
-/*------- Insert your value of OP here -------*/
-/* PFT OP used currently in HSS (OPENAIRHSS/auc/kdf.c) */
-#define OAI_LTEBOX
-
-#ifdef OAI_LTEBOX
-//1006020f0a478bf6b699f15c062e42b3
-/*u8 OP[16] = {0xb3, 0x42, 0x2e, 0x06, 0x5c, 0xf1, 0x99, 0xb6,
-             0xf6, 0x8b, 0x47, 0x0a, 0x0f, 0x02, 0x06, 0x10
-	     };*/
-u8 OP[16] = {0x10, 0x06, 0x02, 0x0f, 0x0a, 0x47, 0x8b, 0xf6,
-             0xb6, 0x99, 0xf1, 0x5c, 0x06, 0x2e, 0x42, 0xb3
-};
-#else
-u8 OP[16] = {0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-             0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11
-            };
-#endif
-/*------- Insert your value of OP here -------*/
-
 /*-------------------------------------------------------------------
  *                            Algorithm f1
  *-------------------------------------------------------------------
@@ -48,7 +28,7 @@ u8 OP[16] = {0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
  *
  *-----------------------------------------------------------------*/
 void f1    ( u8 k_pP[16], u8 rand_pP[16], u8 sqn_pP[6], u8 amf_pP[2],
-             u8 mac_a_pP[8] )
+             u8 mac_a_pP[8], const u8 op[16])
 {
   u8 op_c[16];
   u8 temp[16];
@@ -57,7 +37,7 @@ void f1    ( u8 k_pP[16], u8 rand_pP[16], u8 sqn_pP[6], u8 amf_pP[2],
   u8 rijndaelInput[16];
   u8 i;
   RijndaelKeySchedule( k_pP );
-  ComputeOPc( op_c );
+  ComputeOPc(op, op_c);
 
   for (i=0; i<16; i++)
     rijndaelInput[i] = rand_pP[i] ^ op_c[i];
@@ -103,7 +83,7 @@ void f1    ( u8 k_pP[16], u8 rand_pP[16], u8 sqn_pP[6], u8 amf_pP[2],
  *
  *-----------------------------------------------------------------*/
 void f2345 ( u8 k_pP[16], u8 rand_pP[16],
-             u8 res_pP[8], u8 ck_pP[16], u8 ik_pP[16], u8 ak_pP[6] )
+             u8 res_pP[8], u8 ck_pP[16], u8 ik_pP[16], u8 ak_pP[6],const u8 op[16])
 {
   u8 op_c[16];
   u8 temp[16];
@@ -121,7 +101,7 @@ void f2345 ( u8 k_pP[16], u8 rand_pP[16],
             rand_pP[8],rand_pP[9],rand_pP[10],rand_pP[11],rand_pP[12],rand_pP[13],rand_pP[14],rand_pP[15]);
 
   RijndaelKeySchedule( k_pP );
-  ComputeOPc( op_c );
+  ComputeOPc(op, op_c);
 
   for (i=0; i<16; i++)
     rijndaelInput[i] = rand_pP[i] ^ op_c[i];
@@ -204,7 +184,7 @@ void f2345 ( u8 k_pP[16], u8 rand_pP[16],
  *
  *-----------------------------------------------------------------*/
 void f1star( u8 k_pP[16], u8 rand_pP[16], u8 sqn_pP[6], u8 amf_pP[2],
-             u8 mac_s_pP[8] )
+             u8 mac_s_pP[8],const u8 op[16])
 {
   u8 op_c[16];
   u8 temp[16];
@@ -213,7 +193,7 @@ void f1star( u8 k_pP[16], u8 rand_pP[16], u8 sqn_pP[6], u8 amf_pP[2],
   u8 rijndaelInput[16];
   u8 i;
   RijndaelKeySchedule( k_pP );
-  ComputeOPc( op_c );
+  ComputeOPc(op, op_c);
 
   for (i=0; i<16; i++)
     rijndaelInput[i] = rand_pP[i] ^ op_c[i];
@@ -259,7 +239,7 @@ void f1star( u8 k_pP[16], u8 rand_pP[16], u8 sqn_pP[6], u8 amf_pP[2],
  *
  *-----------------------------------------------------------------*/
 void f5star( u8 k_pP[16], u8 rand_pP[16],
-             u8 ak_pP[6] )
+             u8 ak_pP[6], const u8 op[16])
 {
   u8 op_c[16];
   u8 temp[16];
@@ -267,7 +247,7 @@ void f5star( u8 k_pP[16], u8 rand_pP[16],
   u8 rijndaelInput[16];
   u8 i;
   RijndaelKeySchedule( k_pP );
-  ComputeOPc( op_c );
+  ComputeOPc(op, op_c);
 
   for (i=0; i<16; i++)
     rijndaelInput[i] = rand_pP[i] ^ op_c[i];
@@ -295,17 +275,17 @@ void f5star( u8 k_pP[16], u8 rand_pP[16],
  * Function to compute OPc from OP and K. Assumes key schedule has
     already been performed.
  *-----------------------------------------------------------------*/
-void ComputeOPc( u8 op_c_pP[16] )
+void ComputeOPc(const u8 op[16], u8 op_c_pP[16])
 {
   u8 i;
   LOG_TRACE(DEBUG,
-            "USIM-API  - ComputeOPc : OP[0..15]=%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
-            OP[0],OP[1],OP[2], OP[3], OP[4], OP[5], OP[6], OP[7],
-            OP[8],OP[9],OP[10],OP[11],OP[12],OP[13],OP[14],OP[15]);
-  RijndaelEncrypt( OP, op_c_pP );
+            "USIM-API  - ComputeOPc : op[0..15]=%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+            op[0],op[1],op[2], op[3], op[4], op[5], op[6], op[7],
+            op[8],op[9],op[10],op[11],op[12],op[13],op[14],op[15]);
+  RijndaelEncrypt( op, op_c_pP );
 
   for (i=0; i<16; i++)
-    op_c_pP[i] ^= OP[i];
+    op_c_pP[i] ^= op[i];
 
   return;
 } /* end of function ComputeOPc */
@@ -463,7 +443,7 @@ void MixColumn(u8 state[4][4])
  * 16-byte output (using round keys already derived from 16-byte
  * key).
  *-----------------------------------------------------------------*/
-void RijndaelEncrypt( u8 input[16], u8 output[16] )
+void RijndaelEncrypt(const u8 input[16], u8 output[16] )
 {
   u8 state[4][4];
   int i, r;
