@@ -237,7 +237,7 @@ int EmmRegisteredInitiated(nas_user_t *user, const emm_reg_t *evt)
      * any message transfered by EMM common procedures requested
      * by the network.
      */
-    rc = emm_proc_lowerlayer_success();
+    rc = emm_proc_lowerlayer_success(user->lowerlayer_data);
     break;
 
   case _EMMREG_LOWERLAYER_FAILURE:
@@ -247,7 +247,7 @@ int EmmRegisteredInitiated(nas_user_t *user, const emm_reg_t *evt)
      * any message transfered by EMM common procedures requested
      * by the network.
      */
-    rc = emm_proc_lowerlayer_failure(FALSE);
+    rc = emm_proc_lowerlayer_failure(user->lowerlayer_data, FALSE);
     break;
 
   case _EMMREG_LOWERLAYER_RELEASE:
@@ -256,7 +256,7 @@ int EmmRegisteredInitiated(nas_user_t *user, const emm_reg_t *evt)
      * Accept, Attach Reject, or any message transfered by EMM common
      * procedures requested by the network, is received.
      */
-    rc = emm_proc_lowerlayer_release();
+    rc = emm_proc_lowerlayer_release(user->lowerlayer_data);
     break;
 
   default:
