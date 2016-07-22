@@ -1616,6 +1616,7 @@ add_executable(lte-softmodem
   ${OPENAIR_TARGETS}/ARCH/COMMON/common_lib.c
   ${OPENAIR1_DIR}/SIMULATION/ETH_TRANSPORT/netlink_init.c
   ${OPENAIR3_DIR}/NAS/UE/nas_ue_task.c
+  ${OPENAIR_DIR}/common/utils/utils.c
   ${GTPU_need_ITTI}
   ${HW_SOURCE}
   ${TRANSPORT_SOURCE}  
@@ -1755,6 +1756,7 @@ add_executable(oaisim
   ${OPENAIR2_DIR}/RRC/NAS/rb_config.c
   ${OPENAIR2_DIR}/UTIL/OMG/sumo.c
   ${OPENAIR3_DIR}/NAS/UE/nas_ue_task.c
+  ${OPENAIR_DIR}/common/utils/utils.c
   ${GTPU_need_ITTI}
   ${OPENAIR_TARGETS}/COMMON/create_tasks.c
   ${HW_SOURCE}
