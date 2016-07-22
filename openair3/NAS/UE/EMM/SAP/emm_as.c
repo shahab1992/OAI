@@ -104,7 +104,7 @@ static const char *_emm_as_primitive_str[] = {
  * Functions executed to process EMM procedures upon receiving
  * data from the network
  */
-static int _emm_as_recv(nas_user_t *user, unsigned int ueid, const char *msg, int len,
+static int _emm_as_recv(nas_user_t *user, const char *msg, int len,
                         int *emm_cause);
 
 static int _emm_as_establish_cnf(nas_user_t *user, const emm_as_establish_t *msg, int *emm_cause);
@@ -201,15 +201,12 @@ int emm_as_send(nas_user_t *user, const emm_as_t *msg)
   int emm_cause = EMM_CAUSE_SUCCESS;
   emm_as_primitive_t primitive = msg->primitive;
 
-  uint32_t ueid = user->ueid;
-
   LOG_TRACE(INFO, "EMMAS-SAP - Received primitive %s (%d)",
             _emm_as_primitive_str[primitive - _EMMAS_START - 1], primitive);
 
   switch (primitive) {
   case _EMMAS_DATA_IND:
     rc = _emm_as_data_ind(user, &msg->u.data, &emm_cause);
-    ueid = msg->u.data.ueid;
     break;
 
 
@@ -271,7 +268,7 @@ int emm_as_send(nas_user_t *user, const emm_as_t *msg)
     LOG_TRACE(WARNING, "EMMAS-SAP - Received EMM message is not valid "
               "(cause=%d)", emm_cause);
     /* Return an EMM status message */
-    rc = emm_proc_status(user, ueid, emm_cause);
+    rc = emm_proc_status(user, emm_cause);
   }
 
   if (rc != RETURNok) {
@@ -311,7 +308,7 @@ int emm_as_send(nas_user_t *user, const emm_as_t *msg)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-static int _emm_as_recv(nas_user_t *user, unsigned int ueid, const char *msg, int len,
+static int _emm_as_recv(nas_user_t *user, const char *msg, int len,
                         int *emm_cause)
 {
   LOG_FUNC_IN;
@@ -343,7 +340,7 @@ static int _emm_as_recv(nas_user_t *user, unsigned int ueid, const char *msg, in
 
   switch (emm_msg->header.message_type) {
   case EMM_STATUS:
-    rc = emm_recv_status(ueid, &emm_msg->emm_status, emm_cause);
+    rc = emm_recv_status(user->ueid, &emm_msg->emm_status, emm_cause);
     break;
 
   case IDENTITY_REQUEST:
@@ -448,7 +445,7 @@ static int _emm_as_data_ind(nas_user_t *user, const emm_as_data_t *msg, int *emm
         } else if (header.protocol_discriminator ==
                    EPS_MOBILITY_MANAGEMENT_MESSAGE) {
           /* Process EMM data */
-          rc = _emm_as_recv(user, msg->ueid, plain_msg, bytes, emm_cause);
+          rc = _emm_as_recv(user, plain_msg, bytes, emm_cause);
         } else if (header.protocol_discriminator ==
                    EPS_SESSION_MANAGEMENT_MESSAGE) {
           const OctetString data = {bytes, (uint8_t *)plain_msg};

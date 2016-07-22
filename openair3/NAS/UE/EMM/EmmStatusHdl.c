@@ -122,7 +122,7 @@ int emm_proc_status_ind(unsigned int ueid, int emm_cause)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int emm_proc_status(nas_user_t *user, unsigned int ueid, int emm_cause)
+int emm_proc_status(nas_user_t *user, int emm_cause)
 {
   LOG_FUNC_IN;
 
@@ -139,7 +139,7 @@ int emm_proc_status(nas_user_t *user, unsigned int ueid, int emm_cause)
    */
   emm_sap.primitive = EMMAS_STATUS_IND;
   emm_sap.u.emm_as.u.status.emm_cause = emm_cause;
-  emm_sap.u.emm_as.u.status.ueid = ueid;
+  emm_sap.u.emm_as.u.status.ueid = user->ueid;
 
   emm_sap.u.emm_as.u.status.guti = user->emm_data->guti;
   sctx = user->emm_data->security;
