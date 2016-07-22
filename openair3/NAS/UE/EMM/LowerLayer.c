@@ -95,7 +95,6 @@ static struct {
  ** Description: Notify the EPS Mobility Management entity that data have  **
  **      been successfully delivered to the network                **
  **                                                                        **
- ** Inputs:  ueid:      UE lower layer identifier                  **
  **      Others:    None                                       **
  **                                                                        **
  ** Outputs:     None                                                      **
@@ -103,7 +102,7 @@ static struct {
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int lowerlayer_success(nas_user_t *user, unsigned int ueid)
+int lowerlayer_success(nas_user_t *user)
 {
   LOG_FUNC_IN;
 
@@ -111,7 +110,7 @@ int lowerlayer_success(nas_user_t *user, unsigned int ueid)
   int rc;
 
   emm_sap.primitive = EMMREG_LOWERLAYER_SUCCESS;
-  emm_sap.u.emm_reg.ueid = ueid;
+  emm_sap.u.emm_reg.ueid = user->ueid;
   rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN (rc);
@@ -124,7 +123,6 @@ int lowerlayer_success(nas_user_t *user, unsigned int ueid)
  ** Description: Notify the EPS Mobility Management entity that lower la-  **
  **      yers failed to deliver data to the network                **
  **                                                                        **
- ** Inputs:  ueid:      UE lower layer identifier                  **
  **      Others:    None                                       **
  **                                                                        **
  ** Outputs:     None                                                      **
@@ -132,7 +130,7 @@ int lowerlayer_success(nas_user_t *user, unsigned int ueid)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int lowerlayer_failure(nas_user_t *user, unsigned int ueid)
+int lowerlayer_failure(nas_user_t *user)
 {
   LOG_FUNC_IN;
 
@@ -140,7 +138,7 @@ int lowerlayer_failure(nas_user_t *user, unsigned int ueid)
   int rc;
 
   emm_sap.primitive = EMMREG_LOWERLAYER_FAILURE;
-  emm_sap.u.emm_reg.ueid = ueid;
+  emm_sap.u.emm_reg.ueid = user->ueid;
   rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN (rc);
@@ -198,7 +196,7 @@ int lowerlayer_release(nas_user_t *user, int cause)
   user->emm_data->ecm_status = ECM_IDLE;
 
   emm_sap.primitive = EMMREG_LOWERLAYER_RELEASE;
-  emm_sap.u.emm_reg.ueid = 0;
+  emm_sap.u.emm_reg.ueid = user->ueid;
   rc = emm_sap_send(user, &emm_sap);
 
   LOG_FUNC_RETURN (rc);
@@ -211,7 +209,6 @@ int lowerlayer_release(nas_user_t *user, int cause)
  ** Description: Notify the EPS Session Management entity that data have   **
  **      been received from lower layers                           **
  **                                                                        **
- ** Inputs:  ueid:      UE lower layer identifier                  **
  **      data:      Data transfered from lower layers          **
  **      Others:    None                                       **
  **                                                                        **
@@ -220,7 +217,7 @@ int lowerlayer_release(nas_user_t *user, int cause)
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int lowerlayer_data_ind(nas_user_t *user, unsigned int ueid, const OctetString *data)
+int lowerlayer_data_ind(nas_user_t *user, const OctetString *data)
 {
   esm_sap_t esm_sap;
   int rc;
@@ -230,7 +227,7 @@ int lowerlayer_data_ind(nas_user_t *user, unsigned int ueid, const OctetString *
 
   esm_sap.primitive = ESM_UNITDATA_IND;
   esm_sap.is_standalone = TRUE;
-  esm_sap.ueid = ueid;
+  esm_sap.ueid = user->ueid;
 
   esm_sap.recv = data;
   rc = esm_sap_send(user, &esm_sap);
@@ -245,7 +242,6 @@ int lowerlayer_data_ind(nas_user_t *user, unsigned int ueid, const OctetString *
  ** Description: Notify the EPS Mobility Management entity that data have  **
  **      to be transfered to lower layers                          **
  **                                                                        **
- ** Inputs:  ueid:      UE lower layer identifier                  **
  **          data:      Data to be transfered to lower layers      **
  **      Others:    None                                       **
  **                                                                        **
@@ -254,7 +250,7 @@ int lowerlayer_data_ind(nas_user_t *user, unsigned int ueid, const OctetString *
  **      Others:    None                                       **
  **                                                                        **
  ***************************************************************************/
-int lowerlayer_data_req(nas_user_t *user, unsigned int ueid, const OctetString *data)
+int lowerlayer_data_req(nas_user_t *user, const OctetString *data)
 {
   LOG_FUNC_IN;
 
@@ -265,7 +261,7 @@ int lowerlayer_data_req(nas_user_t *user, unsigned int ueid, const OctetString *
 
   emm_sap.primitive = EMMAS_DATA_REQ;
   emm_sap.u.emm_as.u.data.guti = user->emm_data->guti;
-  emm_sap.u.emm_as.u.data.ueid = 0;
+  emm_sap.u.emm_as.u.data.ueid = user->ueid;
   sctx = user->emm_data->security;
 
   emm_sap.u.emm_as.u.data.NASinfo = 0;
