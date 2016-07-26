@@ -107,6 +107,16 @@ int main (int argc, const char* argv[])
 
   unsigned char gen_data;
 
+  /* Get USIM application pathname */
+  char* path = memory_get_path(USIM_API_NVRAM_DIRNAME,
+                               USIM_API_NVRAM_FILENAME);
+
+  if (path == NULL) {
+    fprintf(stderr, "USIM-API  - Failed to get USIM pathname");
+    free(path);
+    exit(EXIT_FAILURE);
+  }
+
   /*
    * Read command line parameters
    */
@@ -422,7 +432,7 @@ int main (int argc, const char* argv[])
     /*
      * Write USIM application data
      */
-    rc = usim_api_write(&usim_data);
+    rc = usim_api_write(path, &usim_data);
 
     if (rc != RETURNok) {
       perror("ERROR\t: usim_api_write() failed");
@@ -434,7 +444,7 @@ int main (int argc, const char* argv[])
    * Read USIM application data
    */
   memset(&usim_data, 0, sizeof(usim_data_t));
-  rc = usim_api_read(&usim_data);
+  rc = usim_api_read(path, &usim_data);
 
   if (rc != RETURNok) {
     perror("ERROR\t: usim_api_read() failed");
@@ -450,7 +460,6 @@ int main (int argc, const char* argv[])
   /*
    * Display USIM file location
    */
-  char* path = memory_get_path("USIM_DIR", ".usim.nvram");
   printf("\nUSIM data file: %s\n", path);
   free(path);
 
