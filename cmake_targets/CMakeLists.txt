@@ -514,6 +514,7 @@ set(HWLIB_USRP_SOURCE
   ${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/usrp_lib.cpp
   )
 add_library(oai_usrpdevif MODULE ${HWLIB_USRP_SOURCE} )
+add_dependencies(oai_usrpdevif Boost_FOUND)
 
 include_directories("${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/")
 set (option_HWBLADERFLIB_lib "-l bladerf")
@@ -540,55 +541,55 @@ add_library(oai_eth_transpro MODULE ${TPLIB_ETHERNET_SOURCE} )
 
 # RF devices / transport protocols settings
 ######################################################################
-if (${RF_BOARD} STREQUAL "EXMIMO")
-  set(DRIVER2013)
-  include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/")
-  include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/DEFS/")
-  set(HW_SOURCE ${HW_SOURCE}
-    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/openair0_lib.c
-    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/gain_control.c)
-  set(option_HW_lib "-rdynamic -ldl")
+#if (${RF_BOARD} STREQUAL "EXMIMO")
+#  set(DRIVER2013)
+#  include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/")
+#  include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/DEFS/")
+#  set(HW_SOURCE ${HW_SOURCE}
+#    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/openair0_lib.c
+#    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/gain_control.c)
+#  set(option_HW_lib "-rdynamic -ldl")
 
-elseif (${RF_BOARD} STREQUAL "OAI_USRP")
-  include_directories("${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/")
-  include_directories("/opt/include/uhd")
-  set(HW_SOURCE ${HW_SOURCE}
-    ${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/usrp_lib.cpp)
-  LINK_DIRECTORIES("/opt/lib")
-  set(option_HW_lib "-luhd -rdynamic -ldl")
+#elseif (${RF_BOARD} STREQUAL "OAI_USRP")
+#  include_directories("${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/")
+#  include_directories("/opt/include/uhd")
+#  set(HW_SOURCE ${HW_SOURCE}
+#    ${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/usrp_lib.cpp)
+#  LINK_DIRECTORIES("/opt/lib")
+#  set(option_HW_lib "-luhd -rdynamic -ldl")
 
-elseif (${RF_BOARD} STREQUAL "OAI_BLADERF")
-  include_directories("${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/")
-  include_directories("${OPENAIR2_DIR}/UTIL/LOG")
-  include_directories("/usr/include")
-  set(HW_SOURCE ${HW_SOURCE}
-    ${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/bladerf_lib.c
-    )
-  LINK_DIRECTORIES("/usr/lib/x86_64-linux-gnu")
+#elseif (${RF_BOARD} STREQUAL "OAI_BLADERF")
+#  include_directories("${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/")
+#  include_directories("${OPENAIR2_DIR}/UTIL/LOG")
+#  include_directories("/usr/include")
+#  set(HW_SOURCE ${HW_SOURCE}
+#    ${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/bladerf_lib.c
+#    )
+#  LINK_DIRECTORIES("/usr/lib/x86_64-linux-gnu")
+#
+#  set(option_HW_lib "bladeRF -rdynamic -ldl")
 
-  set(option_HW_lib "bladeRF -rdynamic -ldl")
-
-elseif (${RF_BOARD} STREQUAL "OAI_LMSSDR")
+#elseif (${RF_BOARD} STREQUAL "OAI_LMSSDR")
   include_directories("${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB")
   include_directories("${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/lmsSDR")
   include_directories("${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/lms7002m")
   include_directories("${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/Si5351C")
   include_directories("${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/lmsSDR/LMS_StreamBoard")
-  LINK_DIRECTORIES("/usr/lib/x86_64-linux-gnu")
-  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/lmsSDR")
-  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/lms7002m")
-  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/Si5351C")
-  set(HW_SOURCE ${HW_SOURCE} ${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/lms_lib.cpp)
-  set(option_HW_lib "-lLMS_SDR -lLMS7002M -lSi5351C -rdynamic -ldl")
+#  LINK_DIRECTORIES("/usr/lib/x86_64-linux-gnu")
+#  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/lmsSDR")
+#  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/lms7002m")
+#  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/Si5351C")
+#  set(HW_SOURCE ${HW_SOURCE} ${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/lms_lib.cpp)
+#  set(option_HW_lib "-lLMS_SDR -lLMS7002M -lSi5351C -rdynamic -ldl")
 
-elseif (${RF_BOARD} STREQUAL "CPRIGW")
-  set(HW_SOURCE ${HW_SOURCE}
-    ${OPENAIR_TARGETS}/ARCH/CPRIGW/USERSPACE/LIB/cprigw_lib.c
-    )
-  include_directories("${OPENAIR_TARGETS}/ARCH/CPRIGW/USERSPACE/LIB/")
-  set(option_HW_lib "-rdynamic dl")
+#elseif (${RF_BOARD} STREQUAL "CPRIGW")
+#  set(HW_SOURCE ${HW_SOURCE}
+#    ${OPENAIR_TARGETS}/ARCH/CPRIGW/USERSPACE/LIB/cprigw_lib.c
+#    )
+#  include_directories("${OPENAIR_TARGETS}/ARCH/CPRIGW/USERSPACE/LIB/")
+#  set(option_HW_lib "-rdynamic dl")
   
-endif (${RF_BOARD} STREQUAL "EXMIMO")
+#endif (${RF_BOARD} STREQUAL "EXMIMO")
 
 
 if (${TRANSP_PRO} STREQUAL "ETHERNET")
@@ -1514,10 +1515,10 @@ pkg_search_module(CRYPTO libcrypto REQUIRED)
 include_directories(${CRYPTO_INCLUDE_DIRS})
 
 #use native cmake method as this package is not in pkg-config
-if (${RF_BOARD} STREQUAL "OAI_USRP")
-  find_package(Boost REQUIRED)
+#if (${RF_BOARD} STREQUAL "OAI_USRP")
+  find_package(Boost)
   include_directories(${LIBBOOST_INCLUDE_DIR})
-endif (${RF_BOARD} STREQUAL "OAI_USRP")
+#endif (${RF_BOARD} STREQUAL "OAI_USRP")
 
 pkg_search_module(OPENPGM openpgm-5.1 openpgm-5.2)
 if(NOT ${OPENPGM_FOUND})
@@ -1618,7 +1619,7 @@ add_executable(lte-softmodem
   ${OPENAIR1_DIR}/SIMULATION/ETH_TRANSPORT/netlink_init.c
   ${OPENAIR3_DIR}/NAS/UE/nas_ue_task.c
   ${GTPU_need_ITTI}
-  ${HW_SOURCE}
+  #${HW_SOURCE}
   ${TRANSPORT_SOURCE}  
   ${RTAI_SOURCE}
   ${XFORMS_SOURCE}
@@ -1632,9 +1633,9 @@ target_link_libraries (lte-softmodem -ldl
   -Wl,--end-group )
 
 target_link_libraries (lte-softmodem ${LIBXML2_LIBRARIES})
-target_link_libraries (lte-softmodem pthread m ${CONFIG_LIBRARIES} rt crypt ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES} ${NETTLE_LIBRARIES} sctp ${option_HW_lib} ${option_TP_lib} ${XFORMS_LIBRARIES} ) 
-target_link_libraries (lte-softmodem ${LIBBOOST_LIBRARIES} -lboost_system) #Added manually as it is not found for some reason for USRP
-target_link_libraries (lte-softmodem ${LIB_LMS_LIBRARIES})
+target_link_libraries (lte-softmodem pthread m ${CONFIG_LIBRARIES} rt crypt ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES} ${NETTLE_LIBRARIES} sctp ${XFORMS_LIBRARIES} ) 
+#target_link_libraries (lte-softmodem ${LIBBOOST_LIBRARIES} -lboost_system) #Added manually as it is not found for some reason for USRP
+#target_link_libraries (lte-softmodem ${LIB_LMS_LIBRARIES})
 target_link_libraries (lte-softmodem ${T_LIB})
 
 # lte-softmodem-nos1 is both eNB and UE implementation
