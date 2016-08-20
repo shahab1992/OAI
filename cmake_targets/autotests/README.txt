@@ -98,6 +98,7 @@ Obj.#   Case#   Test#	Description
 01      51      05      pbchsim (TBD)
 01      51      06      mbmssim (TBD)
 
+01      52      00      oaisim S1 test with OAI EPC
 
 01      55              lte-softmodem tests with USRP B210 RF as eNB and ALU EPC w/ Bandrich COTS UE for TX/1RX, 2TX/2RX
 01      55      00      Band 7 FDD 5MHz UL Throughput (UDP) for 300 sec for 1TX/1RX 

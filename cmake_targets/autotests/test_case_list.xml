@@ -926,6 +926,95 @@
       <nruns>3</nruns>
     </testCase>
 
+  <testCase id="015200" >
+    <class>lte-softmodem</class>
+    <desc>oaisim test w/ S1 with OAI EPC on remote machine</desc>
+    <eNB>calisson</eNB>
+    <UE>stevens</UE>
+    <EPC>nano</EPC>
+    <TimeOut_cmd>390</TimeOut_cmd>
+    <eNB_working_dir>/tmp</eNB_working_dir>
+    <eNB_config_file>targets/PROJECTS/GENERIC-LTE-EPC/CONF/enb.band7.generic.oaisim.local_mme.conf tracking_area_code \"1\"
+                     targets/PROJECTS/GENERIC-LTE-EPC/CONF/enb.band7.generic.oaisim.local_mme.conf  mobile_country_code \"208\"
+                     targets/PROJECTS/GENERIC-LTE-EPC/CONF/enb.band7.generic.oaisim.local_mme.conf  mobile_network_code \"93\"
+                     targets/PROJECTS/GENERIC-LTE-EPC/CONF/enb.band7.generic.oaisim.local_mme.conf  mme_ip_address "ipv4=\"10.10.10.62\";ipv6=\"192:168:30::17\";active=\"yes\";preference=\"ipv4\";"
+                     targets/PROJECTS/GENERIC-LTE-EPC/CONF/enb.band7.generic.oaisim.local_mme.conf  ENB_INTERFACE_NAME_FOR_S1_MME       \"eth1\"
+                     targets/PROJECTS/GENERIC-LTE-EPC/CONF/enb.band7.generic.oaisim.local_mme.conf  ENB_IPV4_ADDRESS_FOR_S1_MME          \"10.10.10.82/24\"
+                     targets/PROJECTS/GENERIC-LTE-EPC/CONF/enb.band7.generic.oaisim.local_mme.conf  ENB_INTERFACE_NAME_FOR_S1U          \"eth1\"
+                     targets/PROJECTS/GENERIC-LTE-EPC/CONF/enb.band7.generic.oaisim.local_mme.conf  ENB_IPV4_ADDRESS_FOR_S1U           \"10.10.10.82/24\"
+                     targets/PROJECTS/GENERIC-LTE-EPC/CONF/enb.band7.generic.oaisim.local_mme.conf  ENB_PORT_FOR_S1U                     2152</eNB_config_file>
+    <eNB_compile_prog>$OPENAIR_DIR/cmake_targets/build_oai</eNB_compile_prog>
+    <eNB_compile_prog_args>--oaisim -c</eNB_compile_prog_args>
+    <eNB_pre_exec>sleep 15; $OPENAIR_DIR/cmake_targets/autotests/tools/free_mem.bash; ifconfig ; cp $OPENAIR_DIR/targets/PROJECTS/GENERIC-LTE-EPC/CONF/enb.band7.generic.oaisim.local_mme.conf $OPENAIR_TESTDIR/enb.conf</eNB_pre_exec>
+    <eNB_pre_exec_args></eNB_pre_exec_args>
+    <eNB_main_exec> sudo -E $OPENAIR_DIR/cmake_targets/tools/run_enb_ue_virt_s1</eNB_main_exec>
+    <eNB_main_exec_args>  </eNB_main_exec_args>
+    <eNB_traffic_exec></eNB_traffic_exec>
+    <eNB_traffic_exec_args></eNB_traffic_exec_args>
+    <eNB_search_expr_true></eNB_search_expr_true>
+    <eNB_search_expr_false></eNB_search_expr_false>
+    <eNB_terminate_missing_procs>False</eNB_terminate_missing_procs>
+
+    <UE_working_dir>/tmp</UE_working_dir>
+    <UE_config_file></UE_config_file>
+    <UE_compile_prog></UE_compile_prog>
+    <UE_compile_prog_args></UE_compile_prog_args>
+    <UE_pre_exec></UE_pre_exec>
+    <UE_pre_exec_args></UE_pre_exec_args>
+    <UE_main_exec></UE_main_exec>
+    <UE_main_exec_args></UE_main_exec_args>
+    <UE_traffic_exec></UE_traffic_exec>
+    <UE_traffic_exec_args></UE_traffic_exec_args>
+    <UE_search_expr_true></UE_search_expr_true>
+    <UE_search_expr_false></UE_search_expr_false>
+    <UE_terminate_missing_procs>False</UE_terminate_missing_procs>
+    <UE_stop_script></UE_stop_script>
+
+    <EPC_working_dir>/tmp</EPC_working_dir>
+    <EPC_config_file>ETC/hss.conf MYSQL_user \"root\"
+                     ETC/hss.conf MYSQL_pass \"linux\"
+                     ETC/hss.conf OPERATOR_key  \"1006020f0a478bf6b699f15c062e42b3\"
+                     ETC/mme.conf GUMMEI_LIST "{MCC=\"208\";MNC=\"93\";MME_GID=\"4\";MME_CODE=\"1\";}"
+                     ETC/mme.conf TAI_LIST "{MCC=\"208\";MNC=\"93\";TAC=\"1\";}" 
+                     ETC/mme.conf  MME_INTERFACE_NAME_FOR_S1_MME \"eth0\"
+                     ETC/mme.conf  MME_IPV4_ADDRESS_FOR_S1_MME  \"10.10.10.62/24\"
+                     ETC/mme.conf  MME_INTERFACE_NAME_FOR_S11_MME   \"lo\"
+                     ETC/mme.conf MME_IPV4_ADDRESS_FOR_S11_MME        \"127.0.11.1/8\"
+                     ETC/mme.conf MME_PORT_FOR_S11_MME                   2123
+                     ETC/mme.conf  SGW_IPV4_ADDRESS_FOR_S11           \"127.0.11.2/8\"
+                     ETC/mme.conf  OUTPUT \"CONSOLE\"
+                     ETC/mme.conf  HSS_HOSTNAME \"nano\"
+                     ETC/mme_fd.conf Identity \"nano.openair4G.eur\"
+                     ETC/mme_fd.conf Realm \"openair4G.eur\"
+                     ETC/mme_fd.conf ConnectPeer \"nano.openair4G.eur\"
+                     ETC/hss_fd.conf Identity \"nano.openair4G.eur\"
+                     ETC/hss_fd.conf Realm \"openair4G.eur\"
+                     ETC/spgw.conf SGW_INTERFACE_NAME_FOR_S11              \"lo\"
+                     ETC/spgw.conf SGW_IPV4_ADDRESS_FOR_S11                \"127.0.11.2/8\"
+                     ETC/spgw.conf SGW_IPV4_ADDRESS_FOR_S1U_S12_S4_UP      \"192.168.12.62/24\"
+                     ETC/spgw.conf SGW_IPV4_PORT_FOR_S1U_S12_S4_UP         2152
+                     ETC/spgw.conf PGW_IPV4_ADDRESS_FOR_SGI              \"192.168.12.62/24\"
+                     ETC/spgw.conf IPV4_LIST \"192.172.0.0/24\",\"192.172.1.0/24\" </EPC_config_file>
+    <EPC_compile_prog>sudo mkdir -p /usr/local/etc/oai/freeDiameter; sudo cp -vf $OPENAIRCN_DIR/ETC/mme.conf /usr/local/etc/oai/ ; sudo cp -vf $OPENAIRCN_DIR/ETC/mme_fd.conf /usr/local/etc/oai/freeDiameter; sudo cp $OPENAIRCN_DIR/ETC/spgw.conf /usr/local/etc/oai -vf; $OPENAIRCN_DIR/SCRIPTS/check_mme_s6a_certificate /usr/local/etc/oai/freeDiameter/ nano.openair4G.eur; $OPENAIRCN_DIR/SCRIPTS/build_mme -c ; $OPENAIRCN_DIR/SCRIPTS/build_spgw -c ;  </EPC_compile_prog>
+    <EPC_compile_prog_args></EPC_compile_prog_args>
+    <HSS_compile_prog>sudo mkdir -p /usr/local/etc/oai/freeDiamter; sudo cp -vf $OPENAIRCN_DIR/ETC/hss.conf /usr/local/etc/oai ; sudo cp -vf $OPENAIRCN_DIR/ETC/hss_fd.conf /usr/local/etc/oai/freeDiameter ; $OPENAIRCN_DIR/SCRIPTS/check_hss_s6a_certificate /usr/local/etc/oai/freeDiameter/ nano.openair4G.eur;  $OPENAIRCN_DIR/SCRIPTS/build_hss -c </HSS_compile_prog>
+    <HSS_compile_prog_args></HSS_compile_prog_args>
+c
+    <EPC_pre_exec>$OPENAIR_DIR/cmake_targets/autotests/tools/free_mem.bash ; sudo -E ifconfig eth0 add 192.172.0.1</EPC_pre_exec>
+    <EPC_pre_exec_args></EPC_pre_exec_args>
+    <EPC_main_exec>sleep 10;$OPENAIRCN_DIR/TEST/autotests/tools/run_epc  </EPC_main_exec>
+    <EPC_main_exec_args>  </EPC_main_exec_args>
+    <HSS_main_exec> $OPENAIRCN_DIR/SCRIPTS/run_hss  --export-db $OPENAIRCN_TESTDIR/hss_export.db  </HSS_main_exec>
+    <HSS_main_exec_args></HSS_main_exec_args>
+    <EPC_traffic_exec></EPC_traffic_exec>
+    <EPC_traffic_exec_args></EPC_traffic_exec_args>
+    <EPC_search_expr_true></EPC_search_expr_true>
+    <EPC_search_expr_false></EPC_search_expr_false>
+    <EPC_terminate_missing_procs>False</EPC_terminate_missing_procs>
+    <tags>OAISIM.S1.OAI_EPC_remote.5MHz.FDD.Band_7.UL.1TX.1RX</tags>
+    <nruns>10</nruns>
+   </testCase>
+
   <testCase id="015500" >
     <class>lte-softmodem</class>
     <desc></desc>
