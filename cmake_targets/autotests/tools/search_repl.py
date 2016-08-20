@@ -60,6 +60,9 @@ elif keyword == 'IPV4_LIST' or keyword=='GUMMEI_LIST' or keyword == 'TAI_LIST':
 elif keyword == 'rrh_gw_config':
    replacement_text = keyword + ' =  ( { ' + replacement_text + ' } ) ; '
    string = re.sub(r"rrh_gw_config\s*=\s*\(([^\$]+?)\)\s*;", replacement_text, string, re.M)
+elif keyword == 'ConnectPeer':
+   replacement_text = keyword + ' = \"' + replacement_text + '\"'
+   string = re.sub(r"%s\s*=\s*\"(.+?)\"" % keyword , replacement_text, string, re.M)
 else :
    replacement_text = keyword + ' =  ' + replacement_text + ' ; '
    string = re.sub(r"%s\s*=\s*([^\$]+?)\s*;" % keyword , replacement_text, string, re.M)   
