@@ -205,7 +205,7 @@ static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp,
     time_avg=(time_diff+time_avg) /2.0;
 
    //prints statics of uhd every 10 seconds
-   if ( loop % (10 * ((int)device->openair0_cfg[0].sample_rate /(int)device->openair0_cfg[0].samples_per_packet )) ==0)
+   if ( loop % (10 * ((int)device->openair0_cfg[0].sample_rate /(int)nsamps )) ==0)
      LOG_I(HW,"usrp_write: min(ns)=%d, max(ns)=%d, avg(ns)=%d\n", (int)time_min, (int)time_max,(int)time_avg);
 
    loop++;
@@ -322,7 +322,7 @@ static int trx_usrp_read(openair0_device *device, openair0_timestamp *ptimestamp
     time_avg=(time_diff+time_avg) /2.0;
 
   //prints statics of uhd every 10 seconds
-  if ( loop % (10 * ((int)device->openair0_cfg[0].sample_rate /(int)device->openair0_cfg[0].samples_per_packet )) ==0)
+  if ( loop % (10 * ((int)device->openair0_cfg[0].sample_rate /(int)nsamps )) ==0)
      LOG_I(HW,"usrp_read: min(ns)=%d, max(ns)=%d, avg(ns)=%d\n", (int)time_min, (int)time_max,(int)time_avg);
 
   loop++;
