@@ -212,20 +212,44 @@ static void *UE_thread_synch(void *arg)
   printf("UE_thread_sync in with PHY_vars_UE %p\n",arg);
   printf("waiting for sync (UE_thread_synch) \n");
 
-#ifndef DEADLINE_SCHEDULER
+#ifdef DEADLINE_SCHEDULER
+  struct sched_attr attr;
+  unsigned int flags = 0;
+
+  attr.size = sizeof(attr);
+  attr.sched_flags = 0;
+  attr.sched_nice = 0;
+  attr.sched_priority = 0;
+
+  /* This creates a 1ms reservation every 10ms period*/
+  attr.sched_policy   = SCHED_DEADLINE;
+  attr.sched_runtime  = 900000;  // each tx thread requires .5ms to finish its job
+  attr.sched_deadline = 1000000; // each tx thread will finish within 1ms
+  attr.sched_period   = 1000000; // each tx thread has a period of 1ms from the starting point
+
+
+  if (sched_setattr(0, &attr, flags) < 0 ) {
+    perror("[SCHED] UE_thread_synch: sched_setattr failed\n");
+    exit_fun("Nothing to add");
+  }else {
+    LOG_I(HW,"[SCHED][UE] UE_thread_synch deadline thread %ld started on CPU %d\n",
+          gettid(),sched_getcpu());
+  }
+
+#else
   int policy, s, j;
   struct sched_param sparam;
   char cpu_affinity[1024];
   cpu_set_t cpuset;
 
-  /* Set affinity mask to include CPUs 1 to MAX_CPUS */
-  /* CPU 0 is reserved for UHD threads */
+  /* Set affinity mask to include CPUs 0 to MAX_CPUS -1 for UE synch threads*/
+  /* CPU CPU_MAX is reserved for UHD threads */
   CPU_ZERO(&cpuset);
 
   #ifdef CPU_AFFINITY
   if (get_nprocs() >2)
   {
-    for (j = 1; j < get_nprocs(); j++)
+    for (j = 0; j < get_nprocs()-1; j++)
       CPU_SET(j, &cpuset);
 
     s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
@@ -246,14 +270,14 @@ static void *UE_thread_synch(void *arg)
     exit_fun("Error getting processor affinity ");
   }
   memset(cpu_affinity, 0 , sizeof(cpu_affinity));
-  for (j = 0; j < CPU_SETSIZE; j++)
-  if (CPU_ISSET(j, &cpuset))
-  {  
-     char temp[1024];
-     sprintf(temp, " CPU_%d ", j);    
-     strcat(cpu_affinity, temp);
+  for (j = 0; j < CPU_SETSIZE; j++){
+    if (CPU_ISSET(j, &cpuset))
+    {  
+       char temp[1024];
+       sprintf(temp, " CPU_%d ", j);    
+       strcat(cpu_affinity, temp);
+    }
   }
-
   memset(&sparam, 0 , sizeof (sparam));
   sparam.sched_priority = sched_get_priority_max(SCHED_FIFO)-1;
   policy = SCHED_FIFO ; 
@@ -720,6 +744,9 @@ static void *UE_thread_tx(void *arg)
   if (sched_setattr(0, &attr, flags) < 0 ) {
     perror("[SCHED] UE_thread_tx thread: sched_setattr failed\n");
     return &UE_thread_tx_retval;
+  }else {
+    LOG_I(HW,"[SCHED][UE] UE_thread_tx thread %ld started on CPU %d\n",
+          gettid(),sched_getcpu());
   }
 
 #else
@@ -728,14 +755,14 @@ static void *UE_thread_tx(void *arg)
   char cpu_affinity[1024];
   cpu_set_t cpuset;
 
-  /* Set affinity mask to include CPUs 1 to MAX_CPUS */
-  /* CPU 0 is reserved for UHD threads */
+  /* Set affinity mask to include CPUs 0 to MAX_CPUS-1 */
+  /* CPU CPU_MAX is reserved for UHD threads */
   CPU_ZERO(&cpuset);
 
   #ifdef CPU_AFFINITY
   if (get_nprocs() >2)
   {
-    for (j = 1; j < get_nprocs(); j++)
+    for (j = 0; j < get_nprocs()-1; j++)
       CPU_SET(j, &cpuset);
 
     s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
@@ -756,14 +783,14 @@ static void *UE_thread_tx(void *arg)
     exit_fun("Error getting processor affinity ");
   }
   memset(cpu_affinity, 0 , sizeof(cpu_affinity));
-  for (j = 0; j < CPU_SETSIZE; j++)
-  if (CPU_ISSET(j, &cpuset))
-  {  
-     char temp[1024];
-     sprintf(temp, " CPU_%d ", j);    
-     strcat(cpu_affinity, temp);
+  for (j = 0; j < CPU_SETSIZE; j++){
+    if (CPU_ISSET(j, &cpuset))
+    {  
+      char temp[1024];
+      sprintf(temp, " CPU_%d ", j);    
+      strcat(cpu_affinity, temp);
+    }
   }
-
   memset(&sparam, 0 , sizeof (sparam));
   sparam.sched_priority = sched_get_priority_max(SCHED_FIFO)-1;
   policy = SCHED_FIFO ; 
@@ -938,6 +965,9 @@ static void *UE_thread_rx(void *arg)
   if (sched_setattr(0, &attr, flags) < 0 ) {
     perror("[SCHED] UE_thread_rx : sched_setattr failed\n");
     return &UE_thread_rx_retval;
+  } else{
+    LOG_I(HW,"[SCHED][UE] UE_thread_rx thread %ld started on CPU %d\n",
+          gettid(),sched_getcpu());
   }
 
 #else
@@ -946,14 +976,14 @@ static void *UE_thread_rx(void *arg)
   char cpu_affinity[1024];
   cpu_set_t cpuset;
 
-  /* Set affinity mask to include CPUs 1 to MAX_CPUS */
-  /* CPU 0 is reserved for UHD threads */
+  /* Set affinity mask to include CPUs 0 to MAX_CPUS-1 */
+  /* CPU CPU_MAX is reserved for UHD threads */
   CPU_ZERO(&cpuset);
 
   #ifdef CPU_AFFINITY
   if (get_nprocs() >2)
   {
-    for (j = 1; j < get_nprocs(); j++)
+    for (j = 0; j < get_nprocs()-1; j++)
       CPU_SET(j, &cpuset);
 
     s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
@@ -974,12 +1004,13 @@ static void *UE_thread_rx(void *arg)
     exit_fun("Error getting processor affinity ");
   }
   memset(cpu_affinity, 0 , sizeof(cpu_affinity));
-  for (j = 0; j < CPU_SETSIZE; j++)
-  if (CPU_ISSET(j, &cpuset))
-  {  
-     char temp[1024];
-     sprintf(temp, " CPU_%d ", j);    
-     strcat(cpu_affinity, temp);
+  for (j = 0; j < CPU_SETSIZE; j++){
+    if (CPU_ISSET(j, &cpuset))
+    {  
+       char temp[1024];
+       sprintf(temp, " CPU_%d ", j);    
+       strcat(cpu_affinity, temp);
+    }
   }
 
   memset(&sparam, 0 , sizeof (sparam));
@@ -1253,17 +1284,82 @@ void *UE_thread(void *arg)
   attr.sched_period   = 500000;
 
   if (sched_setattr(0, &attr, flags) < 0 ) {
-    perror("[SCHED] main eNB thread: sched_setattr failed\n");
+    perror("[SCHED] main UE thread: sched_setattr failed\n");
     exit_fun("Nothing to add");
-    return &UE_thread_retval;
   }
-  LOG_I(HW,"[SCHED][eNB] eNB main deadline thread %lu started on CPU %d\n",
+  LOG_I(HW,"[SCHED][UE] UE main deadline thread %lu started on CPU %d\n",
         (unsigned long)gettid(), sched_getcpu());
 
 #else
-  struct sched_param sp;
-  sp.sched_priority = sched_get_priority_max(SCHED_FIFO);
-  pthread_setschedparam(pthread_self(),SCHED_FIFO,&sp);
+  struct sched_param sparam;
+  sparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
+  pthread_setschedparam(pthread_self(),SCHED_FIFO,&sparam);
+  cpu_set_t cpuset;
+  int s, policy,j;
+  char cpu_affinity[1024];
+
+  /* Set affinity mask to include CPUs 0 to MAX_CPUS-1 for UE worker threads */
+  /* CPU CPU_MAX is reserved for UHD threads */
+  CPU_ZERO(&cpuset);
+
+  #ifdef CPU_AFFINITY
+  if (get_nprocs() >2)
+  {
+    CPU_SET(get_nprocs()-1, &cpuset);
+
+    s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+    if (s != 0)
+    {
+      perror( "pthread_setaffinity_np");
+      exit_fun("Error setting processor affinity");
+    }
+  }
+  #endif
+
+
+  /* Check the actual affinity mask assigned to the thread */
+
+  s = pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+  if (s != 0)
+  {
+    perror( "pthread_getaffinity_np");
+    exit_fun("Error getting processor affinity ");
+  }
+  memset(cpu_affinity, 0 , sizeof(cpu_affinity));
+  for (j = 0; j < CPU_SETSIZE; j++){
+    if (CPU_ISSET(j, &cpuset))
+    {  
+       char temp[1024];
+       sprintf(temp, " CPU_%d ", j);    
+       strcat(cpu_affinity, temp);
+    }
+  }
+
+  memset(&sparam, 0 , sizeof (sparam));
+  sparam.sched_priority = sched_get_priority_max(SCHED_FIFO)-1;
+  policy = SCHED_FIFO ; 
+  
+  s = pthread_setschedparam(pthread_self(), policy, &sparam);
+  if (s != 0)
+     {
+     perror("pthread_setschedparam : ");
+     exit_fun("Error setting thread priority");
+     }
+  s = pthread_getschedparam(pthread_self(), &policy, &sparam);
+  if (s != 0)
+   {
+     perror("pthread_getschedparam : ");
+     exit_fun("Error getting thread priority");
+
+   }
+
+  LOG_I( HW, "[SCHED][UE] Started UE main thread on CPU %d TID %ld , sched_policy = %s, priority = %d, CPU Affinity = %s \n", (int)sched_getcpu(), gettid(),
+                   (policy == SCHED_FIFO)  ? "SCHED_FIFO" :
+                   (policy == SCHED_RR)    ? "SCHED_RR" :
+                   (policy == SCHED_OTHER) ? "SCHED_OTHER" :
+                   "???",
+                   (int) sparam.sched_priority, cpu_affinity);
+
 #endif
 #endif
 
@@ -1661,7 +1757,7 @@ void *UE_thread(void *arg)
     perror("[SCHED] main UE thread: sched_setattr failed\n");
     exit_fun("Nothing to add");
   } else {
-    LOG_I(HW,"[SCHED][eNB] eNB main deadline thread %ld started on CPU %d\n",
+    LOG_I(HW,"[SCHED][UE] main deadline thread %ld started on CPU %d\n",
           gettid(),sched_getcpu());
   }
 
@@ -1780,7 +1876,7 @@ void *UE_thread(void *arg)
         VCD_SIGNAL_DUMPER_DUMP_VARIABLE_BY_NAME(VCD_SIGNAL_DUMPER_VARIABLES_DAQ_MBOX, *DAQ_MBOX);
 
         if (ret)
-          LOG_D(HW,"eNB Frame %d, time %llu: rt_sleep_ns returned %d\n",frame, time_in);
+          LOG_D(HW,"UE Frame %d, time %llu: rt_sleep_ns returned %d\n",frame, time_in);
 
         hw_slot = (((((volatile unsigned int *)DAQ_MBOX)[0]+1)%150)<<1)/15;
         //LOG_D(HW,"eNB Frame %d : hw_slot %d, time %llu\n",frame,hw_slot,rt_get_time_ns());

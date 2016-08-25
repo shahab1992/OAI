@@ -1126,15 +1126,17 @@ static void* eNB_thread_tx( void* param )
   cpu_set_t cpuset;
 
   /* Set affinity mask to include CPUs 1 to MAX_CPUS */
-  /* CPU 0 is reserved for UHD threads */
-  /* CPU 1 is reserved for all TX threads */
+  /* CPU CPU_MAX is reserved for UHD threads */
+  /* CPU 0...CPU_MAX-1 is reserved for all TX threads */
+  /* CPU 0...CPU_MAX-1 is reserved for all TX threads */
+
   /* Enable CPU Affinity only if number of CPUs >2 */
   CPU_ZERO(&cpuset);
 
   #ifdef CPU_AFFINITY
   if (get_nprocs() > 2)
   {
-    for (j = 1; j < get_nprocs(); j++)
+    for (j = 0; j < get_nprocs()-1; j++)
         CPU_SET(j, &cpuset);
     s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
     if (s != 0)
@@ -1409,15 +1411,15 @@ static void* eNB_thread_rx( void* param )
   cpu_set_t cpuset;
 
   /* Set affinity mask to include CPUs 1 to MAX_CPUS */
-  /* CPU 0 is reserved for UHD */
-  /* CPU 1 is reserved for all TX threads */
-  /* CPU 2..MAX_CPUS is reserved for all RX threads */
+  /* CPU CPU_MAX is reserved for UHD */
+  /* CPU 0...CPU_MAX-1 is reserved for all TX threads */
+  /* CPU 0..CPU_MAX-1 is reserved for all RX threads */
   /* Set CPU Affinity only if number of CPUs >2 */
   CPU_ZERO(&cpuset);
   #ifdef CPU_AFFINITY
   if (get_nprocs() >2)
   {
-    for (j = 1; j < get_nprocs(); j++)
+    for (j = 0; j < get_nprocs()-1; j++)
        CPU_SET(j, &cpuset);
   
     s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
@@ -1818,12 +1820,12 @@ static void* eNB_thread( void* arg )
   cpu_set_t cpuset;
 
   /* Set affinity mask to include CPUs 1 to MAX_CPUS */
-  /* CPU 0 is reserved for UHD threads */
+  /* CPU CPU_MAX is reserved for UHD threads */
   CPU_ZERO(&cpuset);
   #ifdef CPU_AFFINITY
   if (get_nprocs() >2)
   {
-    for (j = 1; j < get_nprocs(); j++)
+    for (j = 0; j < get_nprocs()-1; j++)
       CPU_SET(j, &cpuset);
 
     s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
@@ -3360,25 +3362,26 @@ int main( int argc, char **argv )
 #endif
   }
 
-#ifndef DEADLINE_SCHEDULER
-
-  /* Currently we set affinity for UHD to CPU 0 for eNB/UE and only if number of CPUS >2 */
+  /*We need to set priority of main thread to SCHED_FIFO (MAX) as this calls UDH_init functions
+    which sets up asynch IO thread priority. So, priority of main() must be set to MAX before any 
+    UHD initialization is carried out.
+    Currently we set affinity for UHD to last CPU for eNB/UE and only if number of CPUS >2 */
   
   cpu_set_t cpuset;
-  int s;
+  int s, policy;
   char cpu_affinity[1024];
+  struct sched_param sparam;
   CPU_ZERO(&cpuset);
   #ifdef CPU_AFFINITY
   if (get_nprocs() > 2)
   {
-    CPU_SET(0, &cpuset);
+    CPU_SET(get_nprocs()-1, &cpuset);
     s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
     if (s != 0)
     {
       perror( "pthread_setaffinity_np");
       exit_fun("Error setting processor affinity");
     }
-    LOG_I(HW, "Setting the affinity of main function to CPU 0, for device library to use CPU 0 only!\n");
   }
   #endif
 
@@ -3399,8 +3402,34 @@ int main( int argc, char **argv )
       strcat(cpu_affinity, temp);
     }
   }
-  LOG_I(HW, "CPU Affinity of main() function is... %s\n", cpu_affinity);
-#endif
+  memset(&sparam, 0 , sizeof (sparam));
+  sparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
+  policy = SCHED_FIFO ; 
+  
+  s = pthread_setschedparam(pthread_self(), policy, &sparam);
+  if (s != 0)
+     {
+     perror("pthread_setschedparam : ");
+     exit_fun("Error setting thread priority");
+     }
+
+  s = pthread_getschedparam(pthread_self(), &policy, &sparam);
+  if (s != 0)
+   {
+     perror("pthread_getschedparam : ");
+     exit_fun("Error getting thread priority");
+
+   }
+
+ LOG_I( HW, "Main() function started on CPU %d TID %ld, sched_policy = %s , priority = %d, CPU Affinity=%s \n", sched_getcpu(),gettid(),
+                   (policy == SCHED_FIFO)  ? "SCHED_FIFO" :
+                   (policy == SCHED_RR)    ? "SCHED_RR" :
+                   (policy == SCHED_OTHER) ? "SCHED_OTHER" :
+                   "???",
+                   sparam.sched_priority, cpu_affinity );
+
+
+
 
   /* device host type is set*/
   openair0.host_type = BBU_HOST;
