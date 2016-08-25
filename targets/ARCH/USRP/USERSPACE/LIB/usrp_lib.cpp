@@ -45,7 +45,7 @@
 #include <complex>
 #include <fstream>
 #include <cmath>
-
+#include "UTIL/LOG/log_extern.h"
 #include "common_lib.h"
 #ifdef __SSE4_1__
 #  include <smmintrin.h>
@@ -172,6 +172,11 @@ static void trx_usrp_end(openair0_device *device)
 */ 
 static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp, void **buff, int nsamps, int cc, int flags)
 {
+  static long long int loop=0;
+  static long time_min=0, time_max=0, time_avg=0;
+  struct timespec tp_start, tp_end;
+  long time_diff;
+  clock_gettime(CLOCK_MONOTONIC_RAW, &tp_start);
   usrp_state_t *s = (usrp_state_t*)device->priv;
   s->tx_md.time_spec = uhd::time_spec_t::from_ticks(timestamp, s->sample_rate);
   if(flags)
@@ -188,6 +193,22 @@ static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp,
     s->tx_stream->send(buff[0], nsamps, s->tx_md);
   s->tx_md.start_of_burst = false;
 
+  clock_gettime(CLOCK_MONOTONIC_RAW, &tp_end);
+  time_diff = (tp_end.tv_sec - tp_start.tv_sec) *1E09  + (tp_end.tv_nsec - tp_start.tv_nsec);
+  if  (time_min==0 ||loop==1 || time_min > time_diff)
+    time_min=time_diff;
+  if  (time_max==0 ||loop==1 || time_max < time_diff)
+    time_max=time_diff;
+  if (time_avg ==0 ||loop==1)
+    time_avg= time_diff;
+  else
+    time_avg=(time_diff+time_avg) /2.0;
+
+   //prints statics of uhd every 10 seconds
+   if ( loop % (10 * ((int)device->openair0_cfg[0].sample_rate /(int)device->openair0_cfg[0].samples_per_packet )) ==0)
+     LOG_I(HW,"usrp_write: min(ns)=%d, max(ns)=%d, avg(ns)=%d\n", (int)time_min, (int)time_max,(int)time_avg);
+
+   loop++;
   return 0;
 }
 
@@ -204,6 +225,11 @@ static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp,
 */
 static int trx_usrp_read(openair0_device *device, openair0_timestamp *ptimestamp, void **buff, int nsamps, int cc)
 {
+   static long long int loop=0;
+   static long time_min=0, time_max=0, time_avg=0;
+   struct timespec tp_start, tp_end;
+   long time_diff;
+   clock_gettime(CLOCK_MONOTONIC_RAW, &tp_start);
    usrp_state_t *s = (usrp_state_t*)device->priv;
    int samples_received=0,i,j;
    int nsamps2;  // aligned to upper 32 or 16 byte boundary
@@ -284,6 +310,22 @@ static int trx_usrp_read(openair0_device *device, openair0_timestamp *ptimestamp
   s->rx_timestamp = s->rx_md.time_spec.to_ticks(s->sample_rate);
   *ptimestamp = s->rx_timestamp;
 
+  clock_gettime(CLOCK_MONOTONIC_RAW, &tp_end);
+  time_diff = (tp_end.tv_sec - tp_start.tv_sec) *1E09  + (tp_end.tv_nsec - tp_start.tv_nsec);
+  if  (time_min==0 ||loop==1 || time_min > time_diff)
+    time_min=time_diff;
+  if  (time_max==0 ||loop==1 || time_max < time_diff)
+    time_max=time_diff;
+  if (time_avg ==0 ||loop==1)
+    time_avg= time_diff;
+  else
+    time_avg=(time_diff+time_avg) /2.0;
+
+  //prints statics of uhd every 10 seconds
+  if ( loop % (10 * ((int)device->openair0_cfg[0].sample_rate /(int)device->openair0_cfg[0].samples_per_packet )) ==0)
+     LOG_I(HW,"usrp_read: min(ns)=%d, max(ns)=%d, avg(ns)=%d\n", (int)time_min, (int)time_max,(int)time_avg);
+
+  loop++;
   return samples_received;
 }
 
@@ -763,7 +805,8 @@ extern "C" {
   device->trx_stop_func  = trx_usrp_stop;
   device->trx_set_freq_func = trx_usrp_set_freq;
   device->trx_set_gains_func   = trx_usrp_set_gains;
-  
+  device->openair0_cfg = openair0_cfg;
+
   s->sample_rate = openair0_cfg[0].sample_rate;
   // TODO:
   // init tx_forward_nsamps based usrp_time_offset ex
