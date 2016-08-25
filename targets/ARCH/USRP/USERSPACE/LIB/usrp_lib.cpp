@@ -172,8 +172,8 @@ static void trx_usrp_end(openair0_device *device)
 */ 
 static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp, void **buff, int nsamps, int cc, int flags)
 {
-  static long long int loop=0;
-  static long time_min=0, time_max=0, time_avg=0;
+  static long loop=0;
+  static long time_min=0, time_max=0, time_tot=0;
   struct timespec tp_start, tp_end;
   long time_diff;
   clock_gettime(CLOCK_MONOTONIC_RAW, &tp_start);
@@ -195,24 +195,25 @@ static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp,
 
   clock_gettime(CLOCK_MONOTONIC_RAW, &tp_end);
   time_diff = (tp_end.tv_sec - tp_start.tv_sec) *1E09  + (tp_end.tv_nsec - tp_start.tv_nsec);
-  if  (time_min==0 ||loop==1 || time_min > time_diff)
-    time_min=time_diff;
-  if  (time_max==0 ||loop==1 || time_max < time_diff)
-    time_max=time_diff;
-  if (time_avg ==0 ||loop==1)
-    time_avg= time_diff;
-  else
-    time_avg=(time_diff+time_avg) /2.0;
 
-   //prints statics of uhd every 10 seconds
-   if ( loop % (10 * ((int)device->openair0_cfg[0].sample_rate /(int)nsamps )) ==0){
-     LOG_I(HW,"usrp_write: min(ns)=%d, max(ns)=%d, avg(ns)=%d\n", (int)time_min, (int)time_max,(int)time_avg);
+  if  (time_min==0 || loop==0|| time_min > time_diff)
+    time_min=time_diff;
+  if  ( time_max==0 || loop ==0|| time_max < time_diff)
+    time_max=time_diff;
+  time_tot = time_tot + time_diff;
+
+  //prints statics of uhd every 10 seconds
+  if ((loop!=0) && ( loop % (10 * ((int)device->openair0_cfg[0].sample_rate /(int)nsamps )) ==0)){
+     LOG_I(HW,"usrp_write: min(ns)=%d, max(ns)=%d, avg(ns)=%d\n", 
+          (int)time_min, (int)time_max,(int) ( (long double) time_tot / (long double) loop ));
      time_min=0;
      time_max=0;
-     time_avg=0;
+     time_tot=0;
+     loop=0;
+  } else {
+     loop++;
   }
 
-   loop++;
   return 0;
 }
 
@@ -229,8 +230,8 @@ static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp,
 */
 static int trx_usrp_read(openair0_device *device, openair0_timestamp *ptimestamp, void **buff, int nsamps, int cc)
 {
-   static long long int loop=0;
-   static long time_min=0, time_max=0, time_avg=0;
+   static long loop=0;
+   static long time_min=0, time_max=0, time_tot=0;
    struct timespec tp_start, tp_end;
    long time_diff;
    clock_gettime(CLOCK_MONOTONIC_RAW, &tp_start);
@@ -316,24 +317,23 @@ static int trx_usrp_read(openair0_device *device, openair0_timestamp *ptimestamp
 
   clock_gettime(CLOCK_MONOTONIC_RAW, &tp_end);
   time_diff = (tp_end.tv_sec - tp_start.tv_sec) *1E09  + (tp_end.tv_nsec - tp_start.tv_nsec);
-  if  (time_min==0 ||loop==1 || time_min > time_diff)
+  if  ( time_min==0 || loop==0 || time_min > time_diff)
     time_min=time_diff;
-  if  (time_max==0 ||loop==1 || time_max < time_diff)
+  if  ( time_max==0 || loop==0 ||time_max < time_diff)
     time_max=time_diff;
-  if (time_avg ==0 ||loop==1)
-    time_avg= time_diff;
-  else
-    time_avg=(time_diff+time_avg) /2.0;
+  time_tot = time_tot + time_diff;
 
   //prints statics of uhd every 10 seconds
-  if ( loop % (10 * ((int)device->openair0_cfg[0].sample_rate /(int)nsamps )) ==0){
-     LOG_I(HW,"usrp_read: min(ns)=%d, max(ns)=%d, avg(ns)=%d\n", (int)time_min, (int)time_max,(int)time_avg);
+  if ((loop!=0) && ( loop % (10 * ((int)device->openair0_cfg[0].sample_rate /(int)nsamps )) ==0)){
+     LOG_I(HW,"usrp_read: min(ns)=%d, max(ns)=%d, avg(ns)=%d\n", 
+          (int)time_min, (int)time_max,(int) ( (long double) time_tot / (long double) loop ));
      time_min=0;
      time_max=0;
-     time_avg=0;
+     time_tot=0;
+     loop=0;
+  } else {
+     loop++;
   }
-
-  loop++;
   return samples_received;
 }
 
