@@ -29,9 +29,10 @@
 
 /*! \file pdcp_fifo.c
  * \brief pdcp interface with linux IP interface, have a look at http://man7.org/linux/man-pages/man7/netlink.7.html for netlink
- * \author  Lionel GAUTHIER and Navid Nikaein
- * \date 2009
+ * \author  Navid Nikaein and Lionel GAUTHIER
+ * \date 2009 - 2016
  * \version 0.5
+ * \email navid.nikaein@eurecom.fr
  * \warning This component can be runned only in user-space
  * @ingroup pdcp
  */
@@ -313,6 +314,8 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
   hash_key_t                     key       = HASHTABLE_NOT_A_KEY_VALUE;
   hashtable_rc_t                 h_rc;
   struct pdcp_netlink_element_s* data_p    = NULL;
+  /* avoid gcc warnings */
+  (void)data_p;
   module_id_t                    ue_id     = 0;
   pdcp_t*                        pdcp_p    = NULL;
 # if defined(PDCP_USE_NETLINK_QUEUES)
@@ -482,7 +485,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
             ctxt.enb_flag      = ENB_FLAG_NO;
             ctxt.module_id     = pdcp_read_header_g.inst - oai_emulation.info.nb_enb_local + oai_emulation.info.first_ue_local;
             ctxt.rnti          = pdcp_UE_UE_module_id_to_rnti[ctxt.module_id];
-            rab_id    = pdcp_read_header_g.rb_id;
+            rab_id    = pdcp_read_header_g.rb_id % maxDRB;
           }
 
           CHECK_CTXT_ARGS(&ctxt);
@@ -492,7 +495,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
                   pdcp_read_header_g.inst +  oai_emulation.info.first_enb_local;*/
 #else // OAI_EMU
           pdcp_read_header_g.inst = 0;
-#warning "TO DO CORRCT VALUES FOR ue mod id, enb mod id"
+//#warning "TO DO CORRCT VALUES FOR ue mod id, enb mod id"
           ctxt.frame         = ctxt_cpy.frame;
           ctxt.enb_flag      = ctxt_cpy.enb_flag;
 
@@ -565,7 +568,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
               }
             } else  { // rb_id =0, thus interpreated as broadcast and transported as multiple unicast
               // is a broadcast packet, we have to send this packet on all default RABS of all connected UEs
-#warning CODE TO BE REVIEWED, ONLY WORK FOR SIMPLE TOPOLOGY CASES
+//#warning CODE TO BE REVIEWED, ONLY WORK FOR SIMPLE TOPOLOGY CASES
               for (ue_id = 0; ue_id < NB_UE_INST; ue_id++) {
                 if (oai_emulation.info.eNB_ue_module_id_to_rnti[ctxt_cpy.module_id][ue_id] != NOT_A_RNTI) {
                   ctxt.rnti = oai_emulation.info.eNB_ue_module_id_to_rnti[ctxt_cpy.module_id][ue_id];

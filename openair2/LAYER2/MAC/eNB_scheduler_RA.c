@@ -68,6 +68,7 @@
 
 #include "SIMULATION/TOOLS/defs.h" // for taus
 
+#include "T.h"
 
 void schedule_RA(module_id_t module_idP,frame_t frameP, sub_frame_t subframeP,unsigned char Msg3_subframe)
 {
@@ -251,6 +252,8 @@ void schedule_RA(module_id_t module_idP,frame_t frameP, sub_frame_t subframeP,un
           }
 
 	  if (!CCE_allocation_infeasible(module_idP,CC_id,1,subframeP,2,RA_template->RA_rnti)) {
+	    LOG_D(MAC,"Frame %d: Subframe %d : Adding common DCI for RA_RNTI %x\n",
+                  frameP,subframeP,RA_template->RA_rnti);
 	    add_common_dci(DCI_pdu,
 			   (void*)&RA_template->RA_alloc_pdu1[0],
 			   RA_template->RA_rnti,
@@ -642,6 +645,9 @@ void schedule_RA(module_id_t module_idP,frame_t frameP, sub_frame_t subframeP,un
 		     &eNB->common_channels[CC_id].CCCH_pdu.payload[0],
 		     rrc_sdu_length);
 	      
+              T(T_ENB_MAC_UE_DL_PDU_WITH_DATA, T_INT(module_idP), T_INT(CC_id), T_INT(RA_template->rnti), T_INT(frameP), T_INT(subframeP),
+                T_INT(0 /*harq_pid always 0?*/), T_BUFFER(&eNB->UE_list.DLSCH_pdu[CC_id][0][UE_id].payload[0], TBsize));
+
 	      if (opt_enabled==1) {
 		trace_pdu(1, (uint8_t *)eNB->UE_list.DLSCH_pdu[CC_id][0][(unsigned char)UE_id].payload[0],
 			  rrc_sdu_length, UE_id, 3, UE_RNTI(module_idP, UE_id),
@@ -737,7 +743,10 @@ void initiate_ra_proc(module_id_t module_idP, int CC_id,frame_t frameP, uint16_t
   uint8_t i;
   RA_TEMPLATE *RA_template = (RA_TEMPLATE *)&eNB_mac_inst[module_idP].common_channels[CC_id].RA_template[0];
 
-  LOG_I(MAC,"[eNB %d][RAPROC] CC_id %d Frame %d Initiating RA procedure for preamble index %d\n",module_idP,CC_id,frameP,preamble_index);
+  LOG_D(MAC,"[eNB %d][RAPROC] CC_id %d Frame %d Initiating RA procedure for preamble index %d\n",module_idP,CC_id,frameP,preamble_index);
+
+  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_INITIATE_RA_PROC,1);
+  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_INITIATE_RA_PROC,0);
 
   for (i=0; i<NB_RA_PROC_MAX; i++) {
     if (RA_template[i].RA_active==FALSE) {
@@ -765,7 +774,7 @@ void cancel_ra_proc(module_id_t module_idP, int CC_id, frame_t frameP, rnti_t rn
   RA_TEMPLATE *RA_template = (RA_TEMPLATE *)&eNB_mac_inst[module_idP].common_channels[CC_id].RA_template[0];
 
   MSC_LOG_EVENT(MSC_PHY_ENB, "RA Cancelling procedure ue %"PRIx16" ", rnti);
-  LOG_I(MAC,"[eNB %d][RAPROC] CC_id %d Frame %d Cancelling RA procedure for UE rnti %x\n",module_idP,CC_id,frameP,rnti);
+  LOG_D(MAC,"[eNB %d][RAPROC] CC_id %d Frame %d Cancelling RA procedure for UE rnti %x\n",module_idP,CC_id,frameP,rnti);
 
   for (i=0; i<NB_RA_PROC_MAX; i++) {
     if (rnti == RA_template[i].rnti) {

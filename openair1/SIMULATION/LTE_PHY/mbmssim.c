@@ -38,7 +38,6 @@
 #include "PHY/types.h"
 #include "PHY/defs.h"
 #include "PHY/vars.h"
-#include "MAC_INTERFACE/vars.h"
 #ifdef EMOS
 #include "SCHED/phy_procedures_emos.h"
 #endif
@@ -57,69 +56,7 @@
 PHY_VARS_eNB *PHY_vars_eNB;
 PHY_VARS_UE *PHY_vars_UE;
 
-void lte_param_init(unsigned char N_tx, unsigned char N_rx,unsigned char transmission_mode,uint8_t extended_prefix_flag,lte_frame_type_t frame_type, uint16_t Nid_cell,uint8_t tdd_config,
-                    uint8_t N_RB_DL,uint8_t osf,uint32_t perfect_ce)
-{
 
-  LTE_DL_FRAME_PARMS *lte_frame_parms;
-
-
-  printf("Start lte_param_init\n");
-  PHY_vars_eNB = malloc(sizeof(PHY_VARS_eNB));
-  PHY_vars_UE = malloc(sizeof(PHY_VARS_UE));
-  //PHY_config = malloc(sizeof(PHY_CONFIG));
-  mac_xface = malloc(sizeof(MAC_xface));
-
-  srand(1);
-  randominit(1);
-  set_taus_seed(1);
-
-  lte_frame_parms = &(PHY_vars_eNB->lte_frame_parms);
-
-  lte_frame_parms->N_RB_DL            = N_RB_DL;   //50 for 10MHz and 25 for 5 MHz
-  lte_frame_parms->N_RB_UL            = N_RB_DL;
-  lte_frame_parms->Ncp                = extended_prefix_flag;
-  lte_frame_parms->Nid_cell           = Nid_cell;
-  lte_frame_parms->Nid_cell_mbsfn     = 1;
-  lte_frame_parms->nushift            = Nid_cell%6;
-  lte_frame_parms->nb_antennas_tx     = N_tx;
-  lte_frame_parms->nb_antennas_rx     = N_rx;
-  lte_frame_parms->phich_config_common.phich_resource         = oneSixth;
-  lte_frame_parms->tdd_config         = tdd_config;
-  lte_frame_parms->frame_type         = frame_type;
-  //  lte_frame_parms->Csrs = 2;
-  //  lte_frame_parms->Bsrs = 0;
-  //  lte_frame_parms->kTC = 0;44
-  //  lte_frame_parms->n_RRC = 0;
-  lte_frame_parms->mode1_flag = (transmission_mode == 1)? 1 : 0;
-
-  init_frame_parms(lte_frame_parms,osf);
-
-  //copy_lte_parms_to_phy_framing(lte_frame_parms, &(PHY_config->PHY_framing));
-
-  PHY_vars_UE->is_secondary_ue = 0;
-  PHY_vars_UE->lte_frame_parms = *lte_frame_parms;
-  PHY_vars_eNB->lte_frame_parms = *lte_frame_parms;
-
-  phy_init_lte_top(lte_frame_parms);
-  dump_frame_parms(lte_frame_parms);
-
-  PHY_vars_UE->PHY_measurements.n_adj_cells=2;
-  PHY_vars_UE->PHY_measurements.adj_cell_id[0] = Nid_cell+1;
-  PHY_vars_UE->PHY_measurements.adj_cell_id[1] = Nid_cell+2;
-
-  lte_gold_mbsfn(lte_frame_parms,PHY_vars_UE->lte_gold_mbsfn_table,Nid_cell);
-  lte_gold_mbsfn(lte_frame_parms,PHY_vars_eNB->lte_gold_mbsfn_table,Nid_cell);
-
-  phy_init_lte_ue(PHY_vars_UE,1,0);
-  phy_init_lte_eNB(PHY_vars_eNB,0,0,0);
-
-
-  PHY_vars_UE->perfect_ce = perfect_ce;
-  printf("Done lte_param_init\n");
-
-
-}
 DCI1E_5MHz_2A_M10PRB_TDD_t  DLSCH_alloc_pdu2_1E[2];
 #define UL_RB_ALLOC 0x1ff;
 #define CCCH_RB_ALLOC computeRIV(PHY_vars_eNB->lte_frame_parms.N_RB_UL,0,2)
@@ -128,11 +65,10 @@ int main(int argc, char **argv)
 
   char c;
 
-  int i,l,aa,aarx,k;
+  int i,l,l2,aa,aarx,k;
   double sigma2, sigma2_dB=0,SNR,snr0=-2.0,snr1=0.0;
   uint8_t snr1set=0;
   double snr_step=1,input_snr_step=1;
-  //mod_sym_t **txdataF;
   int **txdata;
   double **s_re,**s_im,**r_re,**r_im;
   double iqim = 0.0;
@@ -173,7 +109,9 @@ int main(int argc, char **argv)
 
   lte_frame_type_t frame_type = FDD;
 
+  uint32_t Nsoft = 1827072;
 
+  /*
 #ifdef XFORMS
   FD_lte_phy_scope_ue *form_ue;
   char title[255];
@@ -183,6 +121,7 @@ int main(int argc, char **argv)
   sprintf (title, "LTE DL SCOPE UE");
   fl_show_form (form_ue->lte_phy_scope_ue, FL_PLACE_HOTSPOT, FL_FULLBORDER, title);
 #endif
+  */
 
   logInit();
   number_of_cards = 1;
@@ -314,7 +253,7 @@ int main(int argc, char **argv)
   if (transmission_mode==2)
     n_tx=2;
 
-  lte_param_init(n_tx,n_rx,transmission_mode,extended_prefix_flag,frame_type,Nid_cell,tdd_config,N_RB_DL,osf,perfect_ce);
+  lte_param_init(n_tx,n_rx,transmission_mode,extended_prefix_flag,frame_type,Nid_cell,tdd_config,N_RB_DL,0,osf,perfect_ce);
 
 
 
@@ -334,7 +273,11 @@ int main(int argc, char **argv)
   else
     sprintf(fname,"embms_awgn_%d_%d.m",mcs,N_RB_DL);
 
-  fd = fopen(fname,"w");
+  if (!(fd = fopen(fname,"w"))) {
+    printf("Cannot open %s, check permissions\n",fname);
+    exit(-1);
+  }
+	
 
   if (awgn_flag==0)
     fprintf(fd,"SNR_%d_%d=[];errs_mch_%d_%d=[];mch_trials_%d_%d=[];\n",
@@ -382,14 +325,14 @@ int main(int argc, char **argv)
                                 0);
 
   // Create transport channel structures for 2 transport blocks (MIMO)
-  PHY_vars_eNB->dlsch_eNB_MCH = new_eNB_dlsch(1,8,N_RB_DL,0);
+  PHY_vars_eNB->dlsch_eNB_MCH = new_eNB_dlsch(1,8,Nsoft,N_RB_DL,0);
 
   if (!PHY_vars_eNB->dlsch_eNB_MCH) {
     printf("Can't get eNB dlsch structures\n");
     exit(-1);
   }
 
-  PHY_vars_UE->dlsch_ue_MCH[0]  = new_ue_dlsch(1,8,MAX_TURBO_ITERATIONS_MBSFN,N_RB_DL,0);
+  PHY_vars_UE->dlsch_ue_MCH[0]  = new_ue_dlsch(1,8,Nsoft,MAX_TURBO_ITERATIONS_MBSFN,N_RB_DL,0);
 
   PHY_vars_eNB->lte_frame_parms.num_MBSFN_config = 1;
   PHY_vars_eNB->lte_frame_parms.MBSFN_config[0].radioframeAllocationPeriod = 0;
@@ -449,7 +392,7 @@ int main(int argc, char **argv)
       //if (trials%100==0)
       //eNB2UE[0]->first_run = 1;
       eNB2UE->first_run = 1;
-      memset(&PHY_vars_eNB->lte_eNB_common_vars.txdataF[0][0][0],0,FRAME_LENGTH_COMPLEX_SAMPLES_NO_PREFIX*sizeof(mod_sym_t));
+      memset(&PHY_vars_eNB->lte_eNB_common_vars.txdataF[0][0][0],0,FRAME_LENGTH_COMPLEX_SAMPLES_NO_PREFIX*sizeof(int32_t));
 
       generate_mch(PHY_vars_eNB,sched_subframe,input_buffer,0);
 
@@ -535,11 +478,25 @@ int main(int argc, char **argv)
 	    }
 	  }
 	}
-	
-	rx_pmch(PHY_vars_UE,
-                0,
-                subframe%10,
-                l);
+
+	if (l==6)
+          for (l2=2;l2<7;l2++)
+	    rx_pmch(PHY_vars_UE,
+		    0,
+		    subframe%10,
+		    l2);
+	if (l==6)
+          for (l2=2;l2<7;l2++)
+	    rx_pmch(PHY_vars_UE,
+		    0,
+		    subframe%10,
+		    l2);
+	if (l==11)
+          for (l2=7;l2<12;l2++)
+	    rx_pmch(PHY_vars_UE,
+		    0,
+		    subframe%10,
+		    l2);
       }
 
       PHY_vars_UE->dlsch_ue_MCH[0]->harq_processes[0]->G = get_G(&PHY_vars_UE->lte_frame_parms,
@@ -580,10 +537,10 @@ int main(int argc, char **argv)
               mcs,N_RB_DL,mcs,N_RB_DL,errs[0],
               mcs,N_RB_DL,mcs,N_RB_DL,trials);
     else
-      fprintf(fd,"SNR_awgn_%d = [SNR_awgn_%d %d]; errs_mch_awgn_%d =[errs_mch_awgn_%f  %d]; mch_trials_awgn_%d =[mch_trials_awgn_%d %d];\n",
-              mcs,N_RB_DL,mcs,N_RB_DL,SNR,
-              mcs,N_RB_DL,mcs,N_RB_DL,errs[0],
-              mcs,N_RB_DL,mcs,N_RB_DL,trials);
+      fprintf(fd,"SNR_awgn_%d = [SNR_awgn_%d %f]; errs_mch_awgn_%d =[errs_mch_awgn_%d  %d]; mch_trials_awgn_%d =[mch_trials_awgn_%d %d];\n",
+              N_RB_DL,N_RB_DL,SNR,
+              N_RB_DL,N_RB_DL,errs[0],
+              N_RB_DL,N_RB_DL,trials);
 
     fflush(fd);
 

@@ -84,6 +84,7 @@
 #define ENB_CONFIG_STRING_NID_CELL                                      "Nid_cell"
 #define ENB_CONFIG_STRING_N_RB_DL                                       "N_RB_DL"
 #define ENB_CONFIG_STRING_CELL_MBSFN                                  "Nid_cell_mbsfn"
+#define ENB_CONFIG_STRING_NB_ANT_PORTS                              "nb_antenna_ports"
 #define ENB_CONFIG_STRING_NB_ANT_TX                                 "nb_antennas_tx"
 #define ENB_CONFIG_STRING_NB_ANT_RX                                 "nb_antennas_rx"
 #define ENB_CONFIG_STRING_TX_GAIN                                       "tx_gain"
@@ -145,6 +146,7 @@
 #define ENB_CONFIG_STRING_UETIMERS_T311                                 "ue_TimersAndConstants_t311"
 #define ENB_CONFIG_STRING_UETIMERS_N310                                 "ue_TimersAndConstants_n310"
 #define ENB_CONFIG_STRING_UETIMERS_N311                                 "ue_TimersAndConstants_n311"
+#define ENB_CONFIG_STRING_UE_TRANSMISSION_MODE                          "ue_TransmissionMode"
 
 #define ENB_CONFIG_STRING_SRB1                                          "srb1_parameters"
 #define ENB_CONFIG_STRING_SRB1_TIMER_POLL_RETRANSMIT                    "timer_poll_retransmit"
@@ -170,6 +172,18 @@
 #define ENB_CONFIG_STRING_ENB_IPV4_ADDR_FOR_S1U         "ENB_IPV4_ADDRESS_FOR_S1U"
 #define ENB_CONFIG_STRING_ENB_PORT_FOR_S1U              "ENB_PORT_FOR_S1U"
 
+#define ENB_CONFIG_STRING_RRH_GW_CONFIG                   "rrh_gw_config"
+#define ENB_CONFIG_STRING_RRH_GW_LOCAL_IF_NAME            "local_if_name"
+#define ENB_CONFIG_STRING_RRH_GW_LOCAL_ADDRESS            "local_address"
+#define ENB_CONFIG_STRING_RRH_GW_REMOTE_ADDRESS           "remote_address"
+#define ENB_CONFIG_STRING_RRH_GW_LOCAL_PORT               "local_port"
+#define ENB_CONFIG_STRING_RRH_GW_REMOTE_PORT              "remote_port"
+#define ENB_CONFIG_STRING_RRH_GW_ACTIVE                   "rrh_gw_active"
+#define ENB_CONFIG_STRING_RRH_GW_TRANSPORT_PREFERENCE     "tr_preference"
+#define ENB_CONFIG_STRING_RRH_GW_RF_TARGET_PREFERENCE     "rf_preference"
+#define ENB_CONFIG_STRING_RRH_GW_IQ_TXSHIFT               "iq_txshift"
+#define ENB_CONFIG_STRING_RRH_GW_TX_SAMPLE_ADVANCE        "tx_sample_advance"
+#define ENB_CONFIG_STRING_RRH_GW_TX_SCHEDULING_ADVANCE    "tx_scheduling_advance"
 
 #define ENB_CONFIG_STRING_ASN1_VERBOSITY                   "Asn1_verbosity"
 #define ENB_CONFIG_STRING_ASN1_VERBOSITY_NONE              "none"
@@ -253,7 +267,7 @@ static const eutra_band_t eutra_bands[] = {
 
 Enb_properties_array_t enb_properties;
 
-static void enb_config_display(void)
+void enb_config_display(void)
 {
   int i,j;
 
@@ -274,6 +288,34 @@ static void enb_config_display(void)
     } else {
       printf( "\tMNC:                \t%02"PRIu16":\n",enb_properties.properties[i]->mnc);
     }
+    
+    for (j=0; j< enb_properties.properties[i]->nb_rrh_gw; j++) {
+      if (enb_properties.properties[i]->rrh_gw_config[j].active == 1 ){
+	printf( "\n\tRRH GW %d config for eNB %u:\n\n", j, i);
+	printf( "\tinterface name :       \t%s:\n",enb_properties.properties[i]->rrh_gw_if_name);
+	printf( "\tlocal address  :       \t%s:\n",enb_properties.properties[i]->rrh_gw_config[j].local_address);
+	printf( "\tlocal port     :       \t%d:\n",enb_properties.properties[i]->rrh_gw_config[j].local_port);
+	printf( "\tremote address :       \t%s:\n",enb_properties.properties[i]->rrh_gw_config[j].remote_address);
+	printf( "\tremote port    :       \t%d:\n",enb_properties.properties[i]->rrh_gw_config[j].remote_port);
+	printf( "\ttx_scheduling_advance :\t%d:\n",enb_properties.properties[i]->rrh_gw_config[j].tx_scheduling_advance);
+	printf( "\ttx_sample_advance :    \t%d:\n",enb_properties.properties[i]->rrh_gw_config[j].tx_sample_advance);
+	printf( "\tiq_txshift :           \t%d:\n",enb_properties.properties[i]->rrh_gw_config[j].iq_txshift);
+	printf( "\ttransport  :           \t%s Ethernet:\n",(enb_properties.properties[i]->rrh_gw_config[j].raw == 1)? "RAW" : "UDP");
+	if (enb_properties.properties[i]->rrh_gw_config[j].exmimo == 1) {
+	  printf( "\tRF target  :           \tEXMIMO:\n\n");
+	} else if (enb_properties.properties[i]->rrh_gw_config[j].usrp_b200 == 1) {
+	  printf( "\tRF target  :           \tUSRP_B200:\n\n");
+	} else if (enb_properties.properties[i]->rrh_gw_config[j].usrp_x300 == 1) {
+	  printf( "\tRF target  :           \tUSRP_X300:\n\n");
+	} else if (enb_properties.properties[i]->rrh_gw_config[j].bladerf == 1) {
+	  printf( "\tRF target  :           \tBLADERF:\n\n");
+	} else if (enb_properties.properties[i]->rrh_gw_config[j].lmssdr == 1) {
+	  printf( "\tRF target  :           \tLMSSDR:\n\n");
+	} else {
+	  printf( "\tRF target  :           \tNONE:\n\n");
+	}
+      }
+    }
 
     for (j=0; j< enb_properties.properties[i]->nb_cc; j++) {
       printf( "\teutra band for CC %d:         \t%"PRId16":\n",j,enb_properties.properties[i]->eutra_band[j]);
@@ -282,6 +324,7 @@ static void enb_config_display(void)
 
       printf( "\n\tCell ID for CC %d:\t%"PRId16":\n",j,enb_properties.properties[i]->Nid_cell[j]);
       printf( "\tN_RB_DL for CC %d:\t%"PRId16":\n",j,enb_properties.properties[i]->N_RB_DL[j]);
+      printf( "\tnb_antenna_ports for CC %d:\t%d:\n",j,enb_properties.properties[i]->nb_antenna_ports[j]);
       printf( "\tnb_antennas_tx for CC %d:\t%d:\n",j,enb_properties.properties[i]->nb_antennas_tx[j]);
       printf( "\tnb_antennas_rx for CC %d:\t%d:\n",j,enb_properties.properties[i]->nb_antennas_rx[j]);
 
@@ -371,6 +414,8 @@ static void enb_config_display(void)
       printf( "\tue_TimersAndConstants_t311 for CC %d:\t%ld:\n",j,enb_properties.properties[i]->ue_TimersAndConstants_t311[j]);
       printf( "\tue_TimersAndConstants_n311 for CC %d:\t%ld:\n",j,enb_properties.properties[i]->ue_TimersAndConstants_n311[j]);
 
+      printf( "\tue_TransmissionMode for CC %d:\t%ld:\n",j,enb_properties.properties[i]->ue_TransmissionMode[j]);
+
     }
 
     for (j=0; j < enb_properties.properties[i]->num_otg_elements; j++) {
@@ -455,15 +500,18 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   config_setting_t *setting_srb1                  = NULL;
   config_setting_t *setting_mme_addresses         = NULL;
   config_setting_t *setting_mme_address           = NULL;
+  config_setting_t *setting_rrh_gws               = NULL;
+  config_setting_t *setting_rrh_gw                = NULL;
   config_setting_t *setting_enb                   = NULL;
   config_setting_t *setting_otg                   = NULL;
-  config_setting_t *subsetting_otg                   = NULL;
+  config_setting_t *subsetting_otg                = NULL;
   int               num_enb_properties            = 0;
   int               enb_properties_index          = 0;
   int               num_enbs                      = 0;
   int               num_mme_address               = 0;
-  int               num_otg_elements              =0;
-  int               num_component_carriers        =0;
+  int               num_rrh_gw                    = 0;
+  int               num_otg_elements              = 0;
+  int               num_component_carriers        = 0;
   int               i                             = 0;
   int               j                             = 0;
   int               parse_errors                  = 0;
@@ -483,6 +531,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   libconfig_int     Nid_cell                      = 0;
   libconfig_int     Nid_cell_mbsfn                = 0;
   libconfig_int     N_RB_DL                       = 0;
+  libconfig_int     nb_antenna_ports              = 0;
   libconfig_int     nb_antennas_tx                = 0;
   libconfig_int     nb_antennas_rx                = 0;
   libconfig_int     tx_gain                       = 0;
@@ -519,9 +568,9 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   const char*       pusch_alpha                   = NULL;
   libconfig_int     pucch_p0_Nominal              = 0;
   libconfig_int     msg3_delta_Preamble           = 0;
-  libconfig_int     ul_CyclicPrefixLength         = 0;
+  //libconfig_int     ul_CyclicPrefixLength         = 0;
   const char*       pucch_deltaF_Format1          = NULL;
-  const char*       pucch_deltaF_Format1a         = NULL;
+  //const char*       pucch_deltaF_Format1a         = NULL;
   const char*       pucch_deltaF_Format1b         = NULL;
   const char*       pucch_deltaF_Format2          = NULL;
   const char*       pucch_deltaF_Format2a         = NULL;
@@ -546,7 +595,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   libconfig_int     ue_TimersAndConstants_t311    = 0;
   libconfig_int     ue_TimersAndConstants_n310    = 0;
   libconfig_int     ue_TimersAndConstants_n311    = 0;
-
+  libconfig_int     ue_TransmissionMode           = 0;
 
 
   libconfig_int     srb1_timer_poll_retransmit    = 0;
@@ -558,10 +607,21 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
 
   libconfig_int     my_int;
 
+
+  char*             if_name                       = NULL;
   char*             ipv4                          = NULL;
+  char*             ipv4_remote                   = NULL;
   char*             ipv6                          = NULL;
   char*             active                        = NULL;
   char*             preference                    = NULL;
+
+  char*             tr_preference                 = NULL;
+  char*             rf_preference                 = NULL;
+  libconfig_int     tx_scheduling_advance         = 0;
+  libconfig_int     tx_sample_advance             = 0;
+  libconfig_int     iq_txshift                    = 0;
+  libconfig_int     local_port                    = 0;
+  libconfig_int     remote_port                   = 0;
   const char*       active_enb[MAX_ENB];
   char*             enb_interface_name_for_S1U    = NULL;
   char*             enb_ipv4_address_for_S1U      = NULL;
@@ -594,6 +654,10 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   char*             udp_log_verbosity             = NULL;
   char*             osa_log_level                 = NULL;
   char*             osa_log_verbosity             = NULL;
+
+  /* for no gcc warnings */
+  (void)astring;
+  (void)my_int;
 
   memset((char*) (enb_properties.properties), 0 , MAX_ENB * sizeof(Enb_properties_t *));
   memset((char*)active_enb,     0 , MAX_ENB * sizeof(char*));
@@ -739,6 +803,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_NID_CELL, &Nid_cell)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_N_RB_DL, &N_RB_DL)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_CELL_MBSFN, &Nid_cell_mbsfn)
+                   && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_NB_ANT_PORTS, &nb_antenna_ports)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_NB_ANT_TX, &nb_antennas_tx)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_NB_ANT_RX, &nb_antennas_rx)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_TX_GAIN, &tx_gain)
@@ -794,6 +859,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_UETIMERS_T311,  &ue_TimersAndConstants_t311)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_UETIMERS_N310,  &ue_TimersAndConstants_n310)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_UETIMERS_N311,  &ue_TimersAndConstants_n311)
+                   && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_UE_TRANSMISSION_MODE,  &ue_TransmissionMode)
 
 #ifdef Rel10
 
@@ -910,7 +976,14 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
 
               enb_properties.properties[enb_properties_index]->nb_antennas_tx[j] = nb_antennas_tx;
 
-              if ((nb_antennas_tx <1) || (nb_antennas_tx > 4))
+              if ((nb_antenna_ports <1) || (nb_antenna_ports > 2))
+                AssertError (0, parse_errors ++,
+                             "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for nb_antenna_ports choice: 1..2 !\n",
+                             lib_config_file_name_pP, i, nb_antenna_ports);
+
+              enb_properties.properties[enb_properties_index]->nb_antenna_ports[j] = nb_antenna_ports;
+
+              if ((nb_antennas_tx <1) || (nb_antennas_tx > 64))
                 AssertError (0, parse_errors ++,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for nb_antennas_tx choice: 1..4 !\n",
                              lib_config_file_name_pP, i, nb_antennas_tx);
@@ -965,7 +1038,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
 
               enb_properties.properties[enb_properties_index]->prach_zero_correlation[j] =prach_zero_correlation;
 
-              if ((prach_zero_correlation <0) || (prach_zero_correlation > 63))
+              if ((prach_zero_correlation <0) || (prach_zero_correlation > 15))
                 AssertError (0, parse_errors ++,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for prach_zero_correlation choice: 0..15!\n",
                              lib_config_file_name_pP, i, prach_zero_correlation);
@@ -1774,6 +1847,35 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 break;
 
               }
+
+	      switch (ue_TransmissionMode) {
+	      case 1:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm1;
+		break;
+	      case 2:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm2;
+		break;
+	      case 3:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm3;
+		break;
+	      case 4:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm4;
+		break;
+	      case 5:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm5;
+		break;
+	      case 6:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm6;
+		break;
+	      case 7:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm7;
+		break;
+	      default:
+                AssertError (0, parse_errors ++,
+                             "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for ue_TransmissionMode choice: 1,2,3,4,5,6,7",
+                             lib_config_file_name_pP, i, ue_TransmissionMode);
+		break;
+	      }
             }
           }
 
@@ -2136,6 +2238,97 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               enb_properties.properties[enb_properties_index]->mme_ip_address[j].ipv6 = 1;
             }
           }
+	  // RRH Config 
+	  setting_rrh_gws = config_setting_get_member (setting_enb, ENB_CONFIG_STRING_RRH_GW_CONFIG);
+	  if ( setting_rrh_gws != NULL) {
+          num_rrh_gw     = config_setting_length(setting_rrh_gws);
+          enb_properties.properties[enb_properties_index]->nb_rrh_gw = 0;
+
+          for (j = 0; j < num_rrh_gw; j++) {
+            setting_rrh_gw = config_setting_get_elem(setting_rrh_gws, j);
+
+            if (  !(
+                   config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_LOCAL_IF_NAME, (const char **)&if_name)
+		   && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_LOCAL_ADDRESS, (const char **)&ipv4)
+                   && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_REMOTE_ADDRESS , (const char **)&ipv4_remote)
+                   && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_LOCAL_PORT, &local_port)
+                   && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_REMOTE_PORT, &remote_port)
+                   && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_ACTIVE, (const char **)&active)
+		   && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_TRANSPORT_PREFERENCE, (const char **)&tr_preference)
+		   && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_RF_TARGET_PREFERENCE, (const char **)&rf_preference)
+		   && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_IQ_TXSHIFT, &iq_txshift) 
+		   && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_TX_SAMPLE_ADVANCE, &tx_sample_advance)
+		   && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_TX_SCHEDULING_ADVANCE, &tx_scheduling_advance)
+                 )
+              ) {
+              AssertError (0, parse_errors ++,
+                           "Failed to parse eNB configuration file %s, %u th enb %u the RRH GW address !\n",
+                           lib_config_file_name_pP, i, j);
+              continue; // FIXME will prevent segfaults below, not sure what happens at function exit...
+            }
+
+            enb_properties.properties[enb_properties_index]->nb_rrh_gw += 1;
+
+	    enb_properties.properties[enb_properties_index]->rrh_gw_if_name = strdup(if_name);
+            enb_properties.properties[enb_properties_index]->rrh_gw_config[j].local_address  = strdup(ipv4);
+            enb_properties.properties[enb_properties_index]->rrh_gw_config[j].remote_address = strdup(ipv4_remote);
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].local_port = local_port;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].remote_port = remote_port;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].iq_txshift = iq_txshift;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].tx_sample_advance = tx_sample_advance;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].tx_scheduling_advance= tx_scheduling_advance;
+
+            if (strcmp(active, "yes") == 0) {
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].active = 1;
+            } 
+
+            if (strcmp(tr_preference, "udp") == 0) {
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].udp = 1;
+            } else if (strcmp(tr_preference, "raw") == 0) {
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].raw = 1;
+            } else {//if (strcmp(preference, "no") == 0) 
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].udp = 1;
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].raw = 1;
+            }
+
+	    if (strcmp(rf_preference, "exmimo") == 0) {
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].exmimo = 1;
+            } else if (strcmp(rf_preference, "usrp_b200") == 0) {
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_b200 = 1;
+	    } else if (strcmp(rf_preference, "usrp_x300") == 0) {
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_x300 = 1;
+            } else if (strcmp(rf_preference, "bladerf") == 0) {
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].bladerf = 1;
+	    } else if (strcmp(rf_preference, "bladerf") == 0) {
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].lmssdr = 1;	      
+            } else {//if (strcmp(preference, "no") == 0) 
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].exmimo = 1;
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_b200 = 1;
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_x300 = 1;
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].bladerf = 1;    
+              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].lmssdr = 1;    
+
+            }
+          }
+	  } else {
+	    enb_properties.properties[enb_properties_index]->nb_rrh_gw = 0;	    
+	    enb_properties.properties[enb_properties_index]->rrh_gw_if_name = "none";
+            enb_properties.properties[enb_properties_index]->rrh_gw_config[j].local_address  = "0.0.0.0";
+            enb_properties.properties[enb_properties_index]->rrh_gw_config[j].remote_address = "0.0.0.0";
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].local_port= 0;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].remote_port= 0;	    
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].active = 0;	    
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].udp = 0;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].raw = 0;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].tx_scheduling_advance = 0;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].tx_sample_advance = 0;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].iq_txshift = 0;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].exmimo = 0;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_b200 = 0;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_x300 = 0;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].bladerf = 0;
+	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].lmssdr = 0;
+	  }
 
           // SCTP SETTING
           enb_properties.properties[enb_properties_index]->sctp_out_streams = SCTP_OUT_STREAMS;

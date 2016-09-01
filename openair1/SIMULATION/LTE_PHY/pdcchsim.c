@@ -34,7 +34,6 @@
 #include "PHY/types.h"
 #include "PHY/defs.h"
 #include "PHY/vars.h"
-#include "MAC_INTERFACE/vars.h"
 
 #ifdef EMOS
 #include "SCHED/phy_procedures_emos.h"
@@ -43,7 +42,6 @@
 #include "SCHED/vars.h"
 #include "LAYER2/MAC/vars.h"
 #include "OCG_vars.h"
-
 
 #ifdef XFORMS
 #include "PHY/TOOLS/lte_phy_scope.h"
@@ -58,18 +56,20 @@ PHY_VARS_UE *PHY_vars_UE;
 #define CCCH_RB_ALLOC computeRIV(PHY_vars_eNB->lte_frame_parms.N_RB_UL,0,2)
 #define DLSCH_RB_ALLOC ((uint16_t)0x1fbf) // igore DC component,RB13
 
+#define msg printf
+
 DCI_PDU DCI_pdu;
 
-DCI_PDU *get_dci(LTE_DL_FRAME_PARMS *lte_frame_parms,uint8_t log2L, uint8_t log2Lcommon, uint8_t format_selector, uint32_t rnti)
+DCI_PDU *get_dci(LTE_DL_FRAME_PARMS *lte_frame_parms,uint8_t log2L, uint8_t log2Lcommon, DCI_format_t format_selector[MAX_NUM_DCI], uint8_t num_dci, uint32_t rnti)
 {
   uint32_t BCCH_alloc_pdu[2];
   uint32_t DLSCH_alloc_pdu[2];
   uint32_t UL_alloc_pdu[2];
 
-  int i;
-  int dci_length_bytes,dci_length;
-  int BCCH_pdu_size_bits, BCCH_pdu_size_bytes;
-  int UL_pdu_size_bits, UL_pdu_size_bytes;
+  int ind;
+  int dci_length_bytes=0,dci_length=0;
+  int BCCH_pdu_size_bits=0, BCCH_pdu_size_bytes=0;
+  int UL_pdu_size_bits=0, UL_pdu_size_bytes=0;
   int mcs = 3;
 
   DCI_pdu.Num_ue_spec_dci = 0;
@@ -361,42 +361,38 @@ DCI_PDU *get_dci(LTE_DL_FRAME_PARMS *lte_frame_parms,uint8_t log2L, uint8_t log2
     }
   }
 
-
-  // add common dci
-  DCI_pdu.dci_alloc[0].dci_length = BCCH_pdu_size_bits;
-  DCI_pdu.dci_alloc[0].L          = log2Lcommon;
-  DCI_pdu.dci_alloc[0].rnti       = SI_RNTI;
-  DCI_pdu.dci_alloc[0].format     = format1A;
-  DCI_pdu.dci_alloc[0].ra_flag    = 0;
-  memcpy((void*)&DCI_pdu.dci_alloc[0].dci_pdu[0], &BCCH_alloc_pdu[0], BCCH_pdu_size_bytes);
-  DCI_pdu.Num_common_dci++;
-  if (lte_frame_parms->N_RB_DL >= 25) {
-  // add ue specific dci
-    DCI_pdu.dci_alloc[1].dci_length = dci_length;
-    DCI_pdu.dci_alloc[1].L          = log2L;
-    DCI_pdu.dci_alloc[1].rnti       = rnti;
-    DCI_pdu.dci_alloc[1].format     = format1;
-    DCI_pdu.dci_alloc[1].ra_flag    = 0;
-    memcpy((void*)&DCI_pdu.dci_alloc[1].dci_pdu[0], &DLSCH_alloc_pdu[0], dci_length_bytes);
-    DCI_pdu.Num_ue_spec_dci++;
-
-    if (lte_frame_parms->N_RB_DL >= 50) {
-      DCI_pdu.dci_alloc[2].dci_length = UL_pdu_size_bits;
-      DCI_pdu.dci_alloc[2].L          = log2L;
-      DCI_pdu.dci_alloc[2].rnti       = rnti;
-      DCI_pdu.dci_alloc[2].format     = format0;
-      DCI_pdu.dci_alloc[2].ra_flag    = 0;
-      memcpy((void*)&DCI_pdu.dci_alloc[0].dci_pdu[0], &UL_alloc_pdu[0], UL_pdu_size_bytes);
-      DCI_pdu.Num_ue_spec_dci++;
-    }
+  for (ind = 0; ind<num_dci; ind++) {
+  if (format_selector[ind]==format1A) {
+    // add common dci
+    DCI_pdu.dci_alloc[ind].dci_length = BCCH_pdu_size_bits;
+    DCI_pdu.dci_alloc[ind].L          = log2Lcommon;
+    DCI_pdu.dci_alloc[ind].rnti       = SI_RNTI;
+    DCI_pdu.dci_alloc[ind].format     = format1A;
+    DCI_pdu.dci_alloc[ind].ra_flag    = 0;
+    memcpy((void*)&DCI_pdu.dci_alloc[0].dci_pdu[0], &BCCH_alloc_pdu[0], BCCH_pdu_size_bytes);
+    DCI_pdu.Num_common_dci++;
   }
 
-
-
-  DCI_pdu.nCCE = 0;
-
-  for (i=0; i<DCI_pdu.Num_common_dci+DCI_pdu.Num_ue_spec_dci; i++) {
-    DCI_pdu.nCCE += (1<<(DCI_pdu.dci_alloc[i].L));
+  if (format_selector[ind]==format1) {
+    // add ue specific dci
+    DCI_pdu.dci_alloc[ind].dci_length = dci_length;
+    DCI_pdu.dci_alloc[ind].L          = log2L;
+    DCI_pdu.dci_alloc[ind].rnti       = rnti;
+    DCI_pdu.dci_alloc[ind].format     = format1;
+    DCI_pdu.dci_alloc[ind].ra_flag    = 0;
+    memcpy((void*)&DCI_pdu.dci_alloc[ind].dci_pdu[0], &DLSCH_alloc_pdu[0], dci_length_bytes);
+    DCI_pdu.Num_ue_spec_dci++;
+  }
+ 
+  if (format_selector[ind]==format0) {
+      DCI_pdu.dci_alloc[ind].dci_length = UL_pdu_size_bits;
+      DCI_pdu.dci_alloc[ind].L          = log2L;
+      DCI_pdu.dci_alloc[ind].rnti       = rnti;
+      DCI_pdu.dci_alloc[ind].format     = format0;
+      DCI_pdu.dci_alloc[ind].ra_flag    = 0;
+      memcpy((void*)&DCI_pdu.dci_alloc[ind].dci_pdu[0], &UL_alloc_pdu[0], UL_pdu_size_bytes);
+      DCI_pdu.Num_ue_spec_dci++;
+  }
   }
   
   return(&DCI_pdu);
@@ -411,7 +407,6 @@ int main(int argc, char **argv)
 
   int i,l,aa;
   double sigma2, sigma2_dB=0,SNR,snr0=-2.0,snr1;
-  //mod_sym_t **txdataF;
 
   int **txdata;
   double **s_re,**s_im,**r_re,**r_im;
@@ -434,7 +429,9 @@ int main(int argc, char **argv)
   //  int8_t interf1=-128,interf2=-128;
   uint8_t dci_cnt=0;
   LTE_DL_FRAME_PARMS *frame_parms;
-  uint8_t log2L=2, log2Lcommon=2, format_selector=0;
+  uint8_t log2L=2, log2Lcommon=2;
+  DCI_format_t format_selector[MAX_NUM_DCI];
+  uint8_t num_dci=0;
   uint8_t numCCE,common_active=0,ul_active=0,dl_active=0;
 
   uint32_t n_trials_common=0,n_trials_ul=0,n_trials_dl=0,false_detection_cnt=0;
@@ -476,6 +473,11 @@ int main(int argc, char **argv)
     rxdata[0] = (int *)malloc16(FRAME_LENGTH_BYTES);
     rxdata[1] = (int *)malloc16(FRAME_LENGTH_BYTES);
   */
+
+
+  logInit();
+
+
   while ((c = getopt (argc, argv, "hapFg:R:c:n:s:x:y:z:L:M:N:I:f:i:S:P:Y")) != -1) {
     switch (c) {
     case 'a':
@@ -619,7 +621,15 @@ int main(int argc, char **argv)
       break;
 
     case 'N':
-      format_selector = atoi(optarg);
+      format_selector[num_dci] = (DCI_format_t) atoi(optarg);
+      if ((format_selector[num_dci]<format0) || (format_selector[num_dci] > format1A)) {
+	printf("only formats 0, 1, and 1A supported for the moment\n");
+	exit(-1);
+      }
+      if (format_selector[num_dci]==format0) ul_active=1;
+      if (format_selector[num_dci]==format1A) common_active=1;
+      if (format_selector[num_dci]==format1) dl_active=1;
+      num_dci++;
       break;
 
     case 'O':
@@ -669,25 +679,27 @@ int main(int argc, char **argv)
       printf("-y Number of TX antennas used in eNB\n");
       printf("-z Number of RX antennas used in UE\n");
       printf("-P Number of interfering PHICH\n");
-      printf("-L log2 of Aggregation level for UE Specific DCI (1,2,4,8)\n");
+      printf("-L log2 of Aggregation level for UE Specific DCI (0,1,2,3)\n");
       printf("-M log2 Aggregation level for Common DCI (4,8)\n");
-      printf("-N Format for UE Spec DCI (0 - format1,\n");
-      printf("                           1 - format1A,\n");
-      printf("                           2 - format1B_2A,\n");
-      printf("                           3 - format1B_4A,\n");
-      printf("                           4 - format1C,\n");
-      printf("                           5 - format1D_2A,\n");
-      printf("                           6 - format1D_4A,\n");
-      printf("                           7 - format2A_2A_L10PRB,\n");
-      printf("                           8 - format2A_2A_M10PRB,\n");
-      printf("                           9 - format2A_4A_L10PRB,\n");
-      printf("                          10 - format2A_4A_M10PRB,\n");
-      printf("                          11 - format2_2A_L10PRB,\n");
-      printf("                          12 - format2_2A_M10PRB,\n");
-      printf("                          13 - format2_4A_L10PRB,\n");
-      printf("                          14 - format2_4A_M10PRB\n");
-      printf("                          15 - format2_2D_M10PRB\n");
-      printf("                          16 - format2_2D_L10PRB\n");
+      printf("-N Format for UE Spec DCI (0 - format0,\n");
+      printf("                           1 - format1,\n");
+      printf("                           2 - format1A,\n");
+      printf("                           3 - format1B_2A,\n");
+      printf("                           4 - format1B_4A,\n");
+      printf("                           5 - format1C,\n");
+      printf("                           6 - format1D_2A,\n");
+      printf("                           7 - format1D_4A,\n");
+      printf("                           8 - format2A_2A_L10PRB,\n");
+      printf("                           9 - format2A_2A_M10PRB,\n");
+      printf("                          10 - format2A_4A_L10PRB,\n");
+      printf("                          11 - format2A_4A_M10PRB,\n");
+      printf("                          12 - format2_2A_L10PRB,\n");
+      printf("                          13 - format2_2A_M10PRB,\n");
+      printf("                          14 - format2_4A_L10PRB,\n");
+      printf("                          15 - format2_4A_M10PRB\n");
+      printf("                          16 - format2_2D_M10PRB\n");
+      printf("                          17 - format2_2D_L10PRB\n");
+      printf("   can be called multiple times to add more than one DCI\n");
       printf("-O Oversampling factor\n");
       printf("-I Cell Id\n");
       printf("-F Input sample stream\n");
@@ -695,11 +707,6 @@ int main(int argc, char **argv)
       break;
     }
   }
-
-
-
-
-  logInit();
 
   if ((transmission_mode>1) && (n_tx==1))
     n_tx=2;
@@ -712,6 +719,7 @@ int main(int argc, char **argv)
                  Nid_cell,
                  tdd_config,
                  N_RB_DL,
+		 0,
                  osf,
                  perfect_ce);
 
@@ -735,7 +743,7 @@ int main(int argc, char **argv)
   printf("SNR0 %f, SNR1 %f\n",snr0,snr1);
 
   frame_parms = &PHY_vars_eNB->lte_frame_parms;
-  get_dci(frame_parms, log2L, log2Lcommon, format_selector, n_rnti);
+  get_dci(frame_parms, log2L, log2Lcommon, format_selector, num_dci, n_rnti);
 
   txdata = PHY_vars_eNB->lte_eNB_common_vars.txdata[eNb_id];
 
@@ -774,8 +782,8 @@ int main(int argc, char **argv)
 
 
 
-  PHY_vars_eNB->ulsch_eNB[0] = new_eNB_ulsch(8,MAX_TURBO_ITERATIONS,N_RB_DL,0);
-  PHY_vars_UE->ulsch_ue[0]   = new_ue_ulsch(8,N_RB_DL,0);
+  PHY_vars_eNB->ulsch_eNB[0] = new_eNB_ulsch(MAX_TURBO_ITERATIONS,N_RB_DL,0);
+  PHY_vars_UE->ulsch_ue[0]   = new_ue_ulsch(N_RB_DL,0);
 
 
   PHY_vars_eNB->proc[subframe].frame_tx    = 0;
@@ -788,6 +796,11 @@ int main(int argc, char **argv)
 
     while (!feof(input_fd)) {
       ret=fscanf(input_fd,"%s %s",input_val_str,input_val_str2);//&input_val1,&input_val2);
+
+      if (ret != 2) {
+        printf("%s:%d:%s: fscanf error, exiting\n", __FILE__, __LINE__, __FUNCTION__);
+        exit(1);
+      }
 
       if ((i%4)==0) {
         ((short*)txdata[0])[i/2] = (short)((1<<15)*strtod(input_val_str,NULL));
@@ -834,7 +847,7 @@ int main(int argc, char **argv)
 
       //    printf("DCI (SF %d): txdataF %p (0 %p)\n",subframe,&PHY_vars_eNB->lte_eNB_common_vars.txdataF[eNb_id][aa][512*14*subframe],&PHY_vars_eNB->lte_eNB_common_vars.txdataF[eNb_id][aa][0]);
       for (aa=0; aa<PHY_vars_eNB->lte_frame_parms.nb_antennas_tx_eNB; aa++) {
-        memset(&PHY_vars_eNB->lte_eNB_common_vars.txdataF[eNb_id][aa][0],0,FRAME_LENGTH_COMPLEX_SAMPLES_NO_PREFIX*sizeof(mod_sym_t));
+        memset(&PHY_vars_eNB->lte_eNB_common_vars.txdataF[eNb_id][aa][0],0,FRAME_LENGTH_COMPLEX_SAMPLES_NO_PREFIX*sizeof(int32_t));
 
         /*
         re_offset = PHY_vars_eNB->lte_frame_parms.first_carrier_offset;
@@ -864,15 +877,14 @@ int main(int argc, char **argv)
 
       if (input_fd == NULL) {
         numCCE=0;
-        n_trials_common++;
-        common_active = 1;
-	if (PHY_vars_eNB->lte_frame_parms.N_RB_DL >= 50) { 
-	  n_trials_ul++;
-	  ul_active = 1;
+        if (common_active==1) { 
+	  n_trials_common++;
 	}
-        if (PHY_vars_eNB->lte_frame_parms.N_RB_DL >= 25) { 
+	if (ul_active==1) { 
+	  n_trials_ul++;
+	}
+        if (dl_active==1) { 
 	  n_trials_dl++;
-	  dl_active = 1; 
 	}
 
         num_pdcch_symbols = get_num_pdcch_symbols(DCI_pdu.Num_common_dci+DCI_pdu.Num_ue_spec_dci,
@@ -918,8 +930,8 @@ int main(int argc, char **argv)
           }
 
           if (n_frames==1)
-            printf("dci %d: rnti 0x%x, format %d, L %d, nCCE %d/%d dci_length %d\n",i,DCI_pdu.dci_alloc[i].rnti, DCI_pdu.dci_alloc[i].format,
-                   DCI_pdu.dci_alloc[i].L, DCI_pdu.dci_alloc[i].firstCCE, numCCE, DCI_pdu.dci_alloc[i].dci_length);
+            printf("dci %d: rnti 0x%x, format %d, L %d (aggreg %d), nCCE %d/%d dci_length %d\n",i,DCI_pdu.dci_alloc[i].rnti, DCI_pdu.dci_alloc[i].format,
+                   DCI_pdu.dci_alloc[i].L, 1<<DCI_pdu.dci_alloc[i].L, DCI_pdu.dci_alloc[i].firstCCE, numCCE, DCI_pdu.dci_alloc[i].dci_length);
 
           if (DCI_pdu.dci_alloc[i].firstCCE==-1)
             exit(-1);
@@ -1236,7 +1248,7 @@ int main(int argc, char **argv)
 
     } //trials
 
-    printf("SNR %f : n_errors_common = %d/%d (%e)\n", SNR,n_errors_common,n_trials_common,(double)n_errors_common/n_trials_common);
+    if (common_active) printf("SNR %f : n_errors_common = %d/%d (%e)\n", SNR,n_errors_common,n_trials_common,(double)n_errors_common/n_trials_common);
     if (ul_active==1) printf("SNR %f : n_errors_ul = %d/%d (%e)\n", SNR,n_errors_ul,n_trials_ul,(double)n_errors_ul/n_trials_ul);
     if (dl_active==1) printf("SNR %f : n_errors_dl = %d/%d (%e)\n", SNR,n_errors_dl,n_trials_dl,(double)n_errors_dl/n_trials_dl);
     printf("SNR %f : n_errors_cfi = %d/%d (%e)\n", SNR,n_errors_cfi,trial,(double)n_errors_cfi/trial);

@@ -21,9 +21,21 @@
 /*--------- Operator Variant Algorithm Configuration Field --------*/
 /*------- Insert your value of OP here -------*/
 /* PFT OP used currently in HSS (OPENAIRHSS/auc/kdf.c) */
+#define OAI_LTEBOX
+
+#ifdef OAI_LTEBOX
+//1006020f0a478bf6b699f15c062e42b3
+/*u8 OP[16] = {0xb3, 0x42, 0x2e, 0x06, 0x5c, 0xf1, 0x99, 0xb6,
+             0xf6, 0x8b, 0x47, 0x0a, 0x0f, 0x02, 0x06, 0x10
+	     };*/
+u8 OP[16] = {0x10, 0x06, 0x02, 0x0f, 0x0a, 0x47, 0x8b, 0xf6,
+             0xb6, 0x99, 0xf1, 0x5c, 0x06, 0x2e, 0x42, 0xb3
+};
+#else
 u8 OP[16] = {0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
              0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11
             };
+#endif
 /*------- Insert your value of OP here -------*/
 
 /*-------------------------------------------------------------------
@@ -294,6 +306,11 @@ void ComputeOPc( u8 op_c_pP[16] )
 
   for (i=0; i<16; i++)
     op_c_pP[i] ^= OP[i];
+  LOG_TRACE(DEBUG,
+            "USIM-API  - OPc[0..15]=%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+            op_c_pP[0],op_c_pP[1],op_c_pP[2], op_c_pP[3], op_c_pP[4], op_c_pP[5], op_c_pP[6], op_c_pP[7],
+            op_c_pP[8],op_c_pP[9],op_c_pP[10],op_c_pP[11],op_c_pP[12],op_c_pP[13],op_c_pP[14],op_c_pP[15]);
+
 
   return;
 } /* end of function ComputeOPc */
