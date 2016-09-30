@@ -385,6 +385,106 @@ uint8_t is_SR_TXOp(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id)
   return(0);
 }
 
+void compute_srs_pos(lte_frame_type_t frameType,int isrs,int *psrsPeriodicity,int *psrsOffset)
+{
+    if(TDD == frameType)
+    {
+        if(isrs<10)
+        {
+            mac_xface->macphy_exit("2 ms SRS periodicity not supported");
+        }
+
+        if((isrs>9)&&(isrs<15))
+        {
+            *psrsPeriodicity=5;
+            *psrsOffset=isrs-10;
+        }
+        if((isrs>14)&&(isrs<25))
+        {
+            *psrsPeriodicity=10;
+            *psrsOffset=isrs-15;
+        }
+        if((isrs>24)&&(isrs<45))
+        {
+            *psrsPeriodicity=20;
+            *psrsOffset=isrs-25;
+        }
+        if((isrs>44)&&(isrs<85))
+        {
+            *psrsPeriodicity=40;
+            *psrsOffset=isrs-45;
+        }
+        if((isrs>84)&&(isrs<165))
+        {
+            *psrsPeriodicity=80;
+            *psrsOffset=isrs-85;
+        }
+        if((isrs>164)&&(isrs<325))
+        {
+            *psrsPeriodicity=160;
+            *psrsOffset=isrs-165;
+        }
+        if((isrs>324)&&(isrs<645))
+        {
+            *psrsPeriodicity=320;
+            *psrsOffset=isrs-325;
+        }
+
+        if(isrs>644)
+        {
+            mac_xface->macphy_exit("Isrs out of range");
+        }
+
+    }
+    else
+    {
+        if(isrs<2)
+        {
+            *psrsPeriodicity=2;
+            *psrsOffset=isrs;
+        }
+        if((isrs>1)&&(isrs<7))
+        {
+            *psrsPeriodicity=5;
+            *psrsOffset=isrs-2;
+        }
+        if((isrs>6)&&(isrs<17))
+        {
+            *psrsPeriodicity=10;
+            *psrsOffset=isrs-7;
+        }
+        if((isrs>16)&&(isrs<37))
+        {
+            *psrsPeriodicity=20;
+            *psrsOffset=isrs-17;
+        }
+        if((isrs>36)&&(isrs<77))
+        {
+            *psrsPeriodicity=40;
+            *psrsOffset=isrs-37;
+        }
+        if((isrs>76)&&(isrs<157))
+        {
+            *psrsPeriodicity=80;
+            *psrsOffset=isrs-77;
+        }
+        if((isrs>156)&&(isrs<317))
+        {
+            *psrsPeriodicity=160;
+            *psrsOffset=isrs-157;
+        }
+        if((isrs>316)&&(isrs<637))
+        {
+            *psrsPeriodicity=320;
+            *psrsOffset=isrs-317;
+        }
+        if(isrs>636)
+        {
+            mac_xface->macphy_exit("Isrs out of range");
+        }
+    }
+}
+
 uint16_t get_n1_pucch(PHY_VARS_UE *ue,
 		      UE_rxtx_proc_t *proc,
                       uint8_t eNB_id,
@@ -1102,6 +1202,9 @@ void ue_pucch_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
   int tx_amp;
   int8_t Po_PUCCH;
 
+  uint8_t isSubframeSRS   = 0; // SRS Cell Occasion
+  uint8_t isSubframeSRSTx = 0; // SRS UE Occasion
+
   bundling_flag = ue->pucch_config_dedicated[eNB_id].tdd_AckNackFeedbackMode;
   
   if ((frame_parms->frame_type==FDD) ||
@@ -1114,6 +1217,65 @@ void ue_pucch_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
     LOG_D(PHY,"[UE] PUCCH 1b\n");
   }
   
+  // check for SRS opportunity
+  if(frame_parms->soundingrs_ul_config_common.enabled_flag)
+  {
+      SOUNDINGRS_UL_CONFIG_DEDICATED *pSoundingrs_ul_config_dedicated=&ue->soundingrs_ul_config_dedicated[eNB_id];
+      LOG_D(PHY," SRS SUBFRAMECONFIG: %d, Isrs: %d \n", frame_parms->soundingrs_ul_config_common.srs_SubframeConfig, pSoundingrs_ul_config_dedicated->srs_ConfigIndex);
+
+      uint8_t  TSFC;
+      uint16_t deltaTSFC; // bitmap
+      uint8_t  srs_SubframeConfig;
+      uint16_t srsPeriodicity;
+      uint16_t srsOffset;
+
+      // table resuming TSFC (Period) and deltaSFC (offset)
+      const uint16_t deltaTSFCTabType1[15][2] = { {1,1},{1,2},{2,2},{1,5},{2,5},{4,5},{8,5},{3,5},{12,5},{1,10},{2,10},{4,10},{8,10},{351,10},{383,10} };      // Table 5.5.3.3-2 3GPP 36.211 FDD
+      const uint16_t deltaTSFCTabType2[14][2] = { {2,5},{6,5},{10,5},{18,5},{14,5},{22,5},{26,5},{30,5},{70,10},{74,10},{194,10},{326,10},{586,10},{210,10} }; // Table 5.5.3.3-2 3GPP 36.211 TDD
+
+      srs_SubframeConfig = frame_parms->soundingrs_ul_config_common.srs_SubframeConfig;
+      if (FDD == frame_parms->frame_type)
+      {
+          // srs_SubframeConfig =< 14
+          deltaTSFC = deltaTSFCTabType1[srs_SubframeConfig][0];
+          TSFC      = deltaTSFCTabType1[srs_SubframeConfig][1];
+      }
+      else
+      {
+          // srs_SubframeConfig =< 13
+          deltaTSFC = deltaTSFCTabType2[srs_SubframeConfig][0];
+          TSFC      = deltaTSFCTabType2[srs_SubframeConfig][1];
+      }
+
+      LOG_D(PHY," ISTDD: %d, TSFC: %d, deltaTSFC: %d, AbsSubframeTX: %d\n", frame_parms->frame_type, TSFC, deltaTSFC, (((int)frame_tx*10)+(int)subframe_tx));
+
+      // Sounding reference signal subframes are the subframes satisfying ns/2 mod TSFC (- deltaTSFC
+      uint16_t tmp = (subframe_tx %  TSFC);
+      if((1<<tmp) & deltaTSFC)
+      {
+          // This is a Sounding reference signal subframes
+          isSubframeSRS = 1;
+      }
+
+
+      compute_srs_pos(frame_parms->frame_type, pSoundingrs_ul_config_dedicated->srs_ConfigIndex, &srsPeriodicity, &srsOffset);
+
+      // transmit SRS if the four following constraints are respected:
+      // - UE is configured to transmit SRS
+      // - SRS are configured in current subframe
+      // - UE is configured to send SRS in this subframe
+      // - CQI is not scheduled in PUCCH transmission  - TO BE ADDED
+      // - simultaneous transmission of SRS and ACKNACK is authorised - TO BE CHECKED
+      if( isSubframeSRS  &&
+              (((10*frame_tx+subframe_tx) % srsPeriodicity) == srsOffset)
+              //(! is_pucch_per_cqi_report))
+      )
+      {
+          isSubframeSRSTx = 1;
+      }
+      LOG_D(PHY," isSubframeSRS: %d, isSubframeSRSTx: %d \n", isSubframeSRS, isSubframeSRSTx);
+  }
+
   // Check for SR and do ACK/NACK accordingly
   if (is_SR_TXOp(ue,proc,eNB_id)==1) {
     LOG_D(PHY,"[UE %d][SR %x] Frame %d subframe %d: got SR_TXOp, Checking for SR for PUSCH from MAC\n",
@@ -1306,8 +1468,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,ui
   }
   	  
   if (ue->UE_mode[eNB_id] == PUSCH) { // check if we need to use PUCCH 1a/1b
-  
-
+      ue_pucch_procedures(ue, proc,eNB_id,abstraction_flag);
   } // UE_mode==PUSCH
 	
   	
