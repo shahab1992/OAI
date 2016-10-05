@@ -53,11 +53,12 @@
 
 #include "PHY/TOOLS/lte_phy_scope.h"
 
+//#include "PHY/TOOLS/txdata_SCFDMA.h"
+
 extern unsigned short dftsizes[33];
 extern short *ul_ref_sigs[30][2][33];
 extern short ul_ref_sigs_ufmc[30][2][33][2][2048<<1];//u,v,MSC_RS,cyclic_shift,dft size
 extern short ul_ref_sigs_ufmc_7_5kHz[30][2][33][2][2048<<1];//u,v,MSC_RS,cyclic_shift,dft size
-
 
 PHY_VARS_eNB *PHY_vars_eNB;
 PHY_VARS_UE *PHY_vars_UE;
@@ -168,6 +169,7 @@ int main(int argc, char **argv)
   double maxDoppler = 0.0;
   uint8_t srs_flag = 0;
   uint8_t ufmc_flag=0;
+  uint8_t interference_flag=0;
   uint32_t ch_out_length=0;
 
   uint8_t N_RB_DL=25,osf=1;
@@ -207,12 +209,20 @@ int main(int argc, char **argv)
 
   logInit();
 
-  while ((c = getopt (argc, argv, "hapZEbm:n:Y:X:x:s:w:e:q:d:D:O:c:r:i:f:y:c:oA:C:R:g:N:l:S:T:QB:PI:LuF")) != -1) {
+  while ((c = getopt (argc, argv, "hapZEbm:n:Y:X:x:s:w:e:d:D:O:c:r:i:f:y:c:oA:C:R:g:N:l:S:T:QB:PI:LuF")) != -1) {
     switch (c) {
     case 'u':
       ufmc_flag = 1;
       printf("\n #### UFMC enabled ####\n");
+      interference_flag = 1;
+      if (interference_flag)
+	printf("\n #### interference enabled ####\n\n");
       break;  
+      
+    case 'U':  //it doesn't work!!!
+      interference_flag = 1;
+      printf("\n #### interference enabled ####\n");
+      break;
     
     case 'a':
       channel_model = AWGN;
@@ -472,7 +482,7 @@ int main(int argc, char **argv)
 
     case 'h':
     default:
-      printf("%s -h(elp) -a(wgn on) -m mcs -n n_frames -s snr0 -t delay_spread -p (extended prefix on) -r nb_rb -f first_rb -c cyclic_shift -o (srs on) -g channel_model [A:M] Use 3GPP 25.814 SCM-A/B/C/D('A','B','C','D') or 36-101 EPA('E'), EVA ('F'),ETU('G') models (ignores delay spread and Ricean factor), Rayghleigh8 ('H'), Rayleigh1('I'), Rayleigh1_corr('J'), Rayleigh1_anticorr ('K'), Rice8('L'), Rice1('M'), -d Channel delay, -D maximum Doppler shift -u (ufmc on)\n",
+      printf("%s -h(elp) -a(wgn on) -m mcs -n n_frames -s snr0 -t delay_spread -p (extended prefix on) -r nb_rb -f first_rb -c cyclic_shift -o (srs on) -g channel_model [A:M] Use 3GPP 25.814 SCM-A/B/C/D('A','B','C','D') or 36-101 EPA('E'), EVA ('F'),ETU('G') models (ignores delay spread and Ricean factor), Rayghleigh8 ('H'), Rayleigh1('I'), Rayleigh1_corr('J'), Rayleigh1_anticorr ('K'), Rice8('L'), Rice1('M'), -d Channel delay, -D maximum Doppler shift -u (ufmc on) -U(interference on)\n",
              argv[0]);
       exit(1);
       break;
@@ -1101,6 +1111,17 @@ int main(int argc, char **argv)
             //        write_output("txsig1UL.m","txs1", &txdata[1][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],2*frame_parms->samples_per_tti,1,1);
           }
           
+          if (interference_flag==1){
+	    mod_interference(&PHY_vars_eNB->lte_frame_parms,
+			    &txdata[0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe], // input array
+			    nb_rb, // number of PRBs
+			    subframe); // number of subframe
+	  
+	    if (n_frames==1) {
+	      write_output("txsig1UL.m","txs1", &txdata[0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],2*frame_parms->samples_per_tti,1,1);
+	    }
+	  }
+          
           //AWGN
           //Set target wideband RX noise level to N0
           sigma2_dB = N0;//10*log10((double)tx_lev)  +10*log10(PHY_vars_UE->lte_frame_parms.ofdm_symbol_size/(PHY_vars_UE->lte_frame_parms.N_RB_DL*12)) - SNR;
@@ -1182,7 +1203,7 @@ int main(int argc, char **argv)
           if (n_frames==1) {
             printf("SNRmeas %f\n",SNRmeas);
 
-            //    write_output("rxsig0UL.m","rxs0", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],PHY_vars_eNB->lte_frame_parms.samples_per_tti,1,1);
+            write_output("rxsig0UL.m","rxs0", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],PHY_vars_eNB->lte_frame_parms.samples_per_tti,1,1);
             //write_output("rxsig1UL.m","rxs1", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],PHY_vars_eNB->lte_frame_parms.samples_per_tti,1,1);
           }
           
@@ -1191,7 +1212,8 @@ int main(int argc, char **argv)
 	    delay_est=rx_pusch_ufmc_sync_7_5kHz(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata
 	    // delay_est=rx_pusch_ufmc_sync(PHY_vars_eNB,0,AMP,subframe,0); //(delay estimation from rxdata_7_5kHz)
 	    // printf("#### Value of estimated delay = %d - ",delay_est);
-	    delay_est = (delay_est%8)==0 ? delay_est : delay_est+8-(delay_est%8);
+	    // delay_est = (delay_est%8)==0 ? delay_est : delay_est+8-(delay_est%8);
+	    delay_est = (delay_est%8)<4 ? delay_est-(delay_est%8) : delay_est+8-(delay_est%8);
 	    // printf("Delay set to %d \n",delay_est);
 	  }
 

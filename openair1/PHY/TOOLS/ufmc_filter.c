@@ -35,7 +35,10 @@
 #include <string.h>
 #include <math.h>
 #include <stdio.h>
+#include "txdata_SCFDMA.h"
 #define PI 3.141592654
+
+// extern int16_t SCFDMA_txdata;
 
 int16_t cos_tab_128[128] = {32767,32727,32609,32412,32137,31785,31356,30851,30272,29621,28897,28105,27244,26318,25329,24278,23169,22004,20787,19519,18204,16845,15446,14009,12539,11038,9511,7961,6392,4807,3211,1607,0,-1607,-3211,-4807,-6392,-7961,-9511,-11038,-12539,-14009,-15446,-16845,-18204,-19519,-20787,-22004,-23169,-24278,-25329,-26318,-27244,-28105,-28897,-29621,-30272,-30851,-31356,-31785,-32137,-32412,-32609,-32727,-32767,-32727,-32609,-32412,-32137,-31785,-31356,-30851,-30272,-29621,-28897,-28105,-27244,-26318,-25329,-24278,-23169,-22004,-20787,-19519,-18204,-16845,-15446,-14009,-12539,-11038,-9511,-7961,-6392,-4807,-3211,-1607,0,1607,3211,4807,6392,7961,9511,11038,12539,14009,15446,16845,18204,19519,20787,22004,23169,24278,25329,26318,27244,28105,28897,29621,30272,30851,31356,31785,32137,32412,32609,32727};
 
@@ -617,6 +620,33 @@ void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
   // Modulation
   //memset(out,0,lOUT2*sizeof(int16_t));
   multcmplx_add(&out[0],&out2[0],&mod_vec[n_rb][0],lOUT2>>1);
+}
+
+void mod_interference(LTE_DL_FRAME_PARMS *frame_parms,
+		      int32_t *in, // input array-->length=(size+lFIR)*2
+		      uint16_t n_rb,
+		      uint16_t subframe_number// subframe number
+)
+{
+  uint16_t i,k,counter=0;
+  //int n_rb = frame_parms->N_RB_UL; //number of resource block
+  
+  int32_t *interference_vec;
+  interference_vec=(uint32_t*)SCFDMA_txdata;
+  
+  // right and left (for the right it is useful to select the first after n_br, for the left I should conj that)
+  for(i=0;i<subframe_number;i++){
+    multcmplx_add(&in[counter],&interference_vec[counter],&mod_vec[n_rb][0],1104); //pay attenction to indexes
+    multcmplx_conj_add(&in[counter],&mod_vec[n_rb][0],&interference_vec[counter],1104);
+    counter+=(frame_parms->nb_prefix_samples0+frame_parms->ofdm_symbol_size);
+    // manage the first MC symbol
+    for(k=0;k<6;k++){// manage the other MC symbols
+      multcmplx_add(&in[counter],&interference_vec[counter],&mod_vec[n_rb][0],1096); //pay attenction to indexes
+      multcmplx_conj_add(&in[counter],&mod_vec[n_rb][0],&interference_vec[counter],1096);
+      counter+=(frame_parms->nb_prefix_samples+frame_parms->ofdm_symbol_size);
+    }
+  }
+  
 }
 
 #ifdef MAIN

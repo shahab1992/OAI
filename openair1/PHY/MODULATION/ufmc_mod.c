@@ -117,6 +117,7 @@ void PHY_UFMC_mod(int *input,                       // pointer to complex input
   static int temp2[2048*2] __attribute__((aligned(16)));
   unsigned short i,j;
   uint16_t fftSizeFixed=64; //CV:We decided to work with singulat PRB: each subband is composed by 12 subcarrier and nb_rb is also the number of UFMC total subbands 
+  int16_t carrierind;
 
 #ifdef DEBUG_OFDM_MOD
   msg("[PHY] OFDM mod (size %d,prefix %d) Symbols %d, input %p, output %p\n",
@@ -164,9 +165,11 @@ void PHY_UFMC_mod(int *input,                       // pointer to complex input
 
     for (j=0;j<ulsch->nb_rb;j++){
       //write_output("input.m","in",&input[(i*fftsize)],fftsize,1,1);
-
-      memcpy(&temp[fftSizeFixed-6],&input[(i*fftsize)+first_carrier+(12*(j+ulsch->first_rb))],6*sizeof(int)); 
-      memcpy(temp,&input[(i*fftsize)+first_carrier+6+(12*(j+ulsch->first_rb))],6*sizeof(int));
+      carrierind=first_carrier+(12*(j+ulsch->first_rb));
+      if (carrierind >= fftsize)
+	carrierind = carrierind-fftsize;
+      memcpy(&temp[fftSizeFixed-6],&input[(i*fftsize)+carrierind],6*sizeof(int)); 
+      memcpy(temp,&input[(i*fftsize)+carrierind+6],6*sizeof(int));
       //write_output("temp.m","tmp",temp,fftSizeFixed,1,1);
 
       idft((int16_t *)temp,(int16_t *)temp1,1); 

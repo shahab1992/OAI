@@ -299,6 +299,7 @@ int rx_pusch_ufmc_sync_7_5kHz(PHY_VARS_eNB *phy_vars_eNB,
     Msc_RS_idx = Msc_idx_ptr - dftsizes;
   else {
     msg("generate_drs_pusch: index for Msc_RS=%d not found\n",Msc_RS);
+    return(-1);
   }
 
 #else
