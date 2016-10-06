@@ -103,12 +103,12 @@ int main(int argc, char **argv)
   uint8_t N0=40;
   uint8_t pucch1_thres=10;
 
-  uint16_t n1_pucch = 0;
+  uint16_t n1_pucch = 16;
   uint16_t n2_pucch = 0;
 
   number_of_cards = 1;
 
-  while ((c = getopt (argc, argv, "har:pf:g:n:s:S:x:y:z:N:F:T:R:")) != -1) {
+  while ((c = getopt (argc, argv, "har:pf:g:n:s:S:x:y:z:N:F:T:R:W:")) != -1) {
     switch (c) {
     case 'a':
       printf("Running AWGN simulation\n");
@@ -199,6 +199,10 @@ int main(int argc, char **argv)
       snr1 = atof(optarg);
       snr1set=1;
       printf("Setting SNR1 to %f\n",snr1);
+      break;
+
+    case 'W':
+      subframe = atoi(optarg);
       break;
 
     case 'p':
@@ -369,7 +373,7 @@ int main(int argc, char **argv)
   pucch_payload = 0;
 
   generate_pucch1x(UE->common_vars.txdataF,
-		   frame_parms,
+		   &UE->frame_parms,
 		   UE->ncs_cell,
 		   pucch_format,
 		   &pucch_config_dedicated,
@@ -448,13 +452,14 @@ int main(int argc, char **argv)
       tx_gain = sqrt(pow(10.0,.1*(N0+SNR))/(double)tx_lev);
 
       if (n_frames==1)
-        printf("sigma2_dB %f (SNR %f dB) tx_lev_dB %f,tx_gain %f (%f dB)\n",sigma2_dB,SNR,10*log10((double)tx_lev),tx_gain,20*log10(tx_gain));
+        printf("sigma2_dB %f (SNR %f dB) tx_lev_dB %f,tx_gain %f (%f dB, %f dB)\n",sigma2_dB,SNR,10*log10((double)tx_lev),tx_gain,20*log10(tx_gain),N0+SNR-10*log10((double)tx_lev));
 
       //AWGN
       sigma2 = pow(10,sigma2_dB/10);
-      //  printf("Sigma2 %f (sigma2_dB %f)\n",sigma2,sigma2_dB);
+      
 
       if (n_frames==1) {
+	printf("Sigma2 %f (sigma2_dB %f)\n",sigma2,sigma2_dB);
         printf("rx_level data symbol %f, tx_lev %f\n",
                10*log10(signal_energy_fp(r_re,r_im,1,OFDM_SYMBOL_SIZE_COMPLEX_SAMPLES,0)),
                10*log10(tx_lev));
@@ -506,6 +511,12 @@ int main(int argc, char **argv)
             }
           }
         }
+
+	if (n_frames==1)
+	  printf("rxsig level %f (%f,%f) dB\n",10*log10(signal_energy(&eNB->common_vars.rxdata[0][0][subframe*eNB->frame_parms.samples_per_tti],
+								      OFDM_SYMBOL_SIZE_COMPLEX_SAMPLES)),
+		 10*log10(signal_energy_fp(r_re,r_im,eNB->frame_parms.nb_antennas_rx,OFDM_SYMBOL_SIZE_COMPLEX_SAMPLES,0)),
+		 20*log10(tx_gain));
 
         remove_7_5_kHz(eNB,subframe<<1);
         remove_7_5_kHz(eNB,1+(subframe<<1));

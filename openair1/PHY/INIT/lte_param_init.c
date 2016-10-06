@@ -84,7 +84,6 @@ void lte_param_init(unsigned char N_tx,
 
   phy_init_lte_ue(UE,1,0);
   phy_init_lte_eNB(eNB,0,0);
-
   generate_pcfich_reg_mapping(&UE->frame_parms);
   generate_phich_reg_mapping(&UE->frame_parms);
 

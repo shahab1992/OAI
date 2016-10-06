@@ -12,7 +12,6 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
     You should have received a copy of the GNU General Public License
     along with OpenAirInterface.The full GNU General Public License is
    included in this distribution in the file called "COPYING". If not,
@@ -75,7 +74,7 @@ void init_ncs_cell(LTE_DL_FRAME_PARMS *frame_parms,uint8_t ncs_cell[20][7])
   uint8_t ns,l,reset=1,i,N_UL_symb;
   uint32_t x1,x2,j=0,s=0;
 
-  N_UL_symb = (frame_parms->Ncp==0) ? 7 : 6;
+  N_UL_symb = (frame_parms->Ncp==NORMAL) ? 7 : 6;
   x2 = frame_parms->Nid_cell;
 
   for (ns=0; ns<20; ns++) {
@@ -139,7 +138,7 @@ void generate_pucch1x(int32_t **txdataF,
   uint32_t z[12*14],*zptr;
   int16_t d0;
   uint8_t ns,N_UL_symb,nsymb,n_oc,n_oc0,n_oc1;
-  uint8_t c = (frame_parms->Ncp==0) ? 3 : 2;
+  uint8_t c = (frame_parms->Ncp==NORMAL) ? 3 : 2;
   uint16_t nprime,nprime0,nprime1;
   uint16_t i,j,re_offset,thres,h;
   uint8_t Nprime_div_deltaPUCCH_Shift,Nprime,d;
@@ -178,7 +177,7 @@ void generate_pucch1x(int32_t **txdataF,
   printf("[PHY] PUCCH: cNcs1/deltaPUCCH_Shift %d, Nprime %d, n1_pucch %d\n",thres,Nprime,n1_pucch);
 #endif
 
-  N_UL_symb = (frame_parms->Ncp==0) ? 7 : 6;
+  N_UL_symb = (frame_parms->Ncp==NORMAL) ? 7 : 6;
 
   if (n1_pucch < thres)
     nprime0=n1_pucch;
@@ -188,7 +187,7 @@ void generate_pucch1x(int32_t **txdataF,
   if (n1_pucch >= thres)
     nprime1= ((c*(nprime0+1))%((12*c/deltaPUCCH_Shift)+1))-1;
   else {
-    d = (frame_parms->Ncp==0) ? 2 : 0;
+    d = (frame_parms->Ncp==NORMAL) ? 2 : 0;
     h= (nprime0+d)%(c*Nprime_div_deltaPUCCH_Shift);
 #ifdef DEBUG_PUCCH_TX
     printf("[PHY] PUCCH: h %d, d %d\n",h,d);
@@ -202,12 +201,12 @@ void generate_pucch1x(int32_t **txdataF,
 
   n_oc0 = nprime0/Nprime_div_deltaPUCCH_Shift;
 
-  if (frame_parms->Ncp==1)
+  if (frame_parms->Ncp==EXTENDED)
     n_oc0<<=1;
 
   n_oc1 = nprime1/Nprime_div_deltaPUCCH_Shift;
 
-  if (frame_parms->Ncp==1)  // extended CP
+  if (frame_parms->Ncp==EXTENDED)  // extended CP
     n_oc1<<=1;
 
 #ifdef DEBUG_PUCCH_TX
@@ -230,7 +229,7 @@ void generate_pucch1x(int32_t **txdataF,
       // Compute n_cs (36.211 p. 18)
       n_cs = ncs_cell[ns][l];
 
-      if (frame_parms->Ncp==0) { // normal CP
+      if (frame_parms->Ncp==NORMAL) { // normal CP
         n_cs = ((uint16_t)n_cs + (nprime*deltaPUCCH_Shift + (n_oc%deltaPUCCH_Shift))%Nprime)%12;
       } else {
         n_cs = ((uint16_t)n_cs + (nprime*deltaPUCCH_Shift + (n_oc>>1))%Nprime)%12;
@@ -245,11 +244,11 @@ void generate_pucch1x(int32_t **txdataF,
         if (l<2) {                                         // data
           W_re=W3_re[n_oc][l];
           W_im=W3_im[n_oc][l];
-        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==0)) { // reference and normal CP
+        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==NORMAL)) { // reference and normal CP
           W_re=W3_re[n_oc][l-2];
           W_im=W3_im[n_oc][l-2];
           refs=1;
-        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==1)) { // reference and extended CP
+        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==EXTENDED)) { // reference and extended CP
           W_re=W4[n_oc][l-2];
           W_im=0;
           refs=1;
@@ -261,11 +260,11 @@ void generate_pucch1x(int32_t **txdataF,
         if (l<2) {                                         // data
           W_re=W4[n_oc][l];
           W_im=0;
-        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==0)) { // reference and normal CP
+        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==NORMAL)) { // reference and normal CP
           W_re=W3_re[n_oc][l-2];
           W_im=W3_im[n_oc][l-2];
           refs=1;
-        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==1)) { // reference and extended CP
+        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==EXTENDED)) { // reference and extended CP
           W_re=W4[n_oc][l-2];
           W_im=0;
           refs=1;
@@ -334,6 +333,7 @@ void generate_pucch1x(int32_t **txdataF,
           case pucch_format2:
           case pucch_format2a:
           case pucch_format2b:
+	  case pucch_format3:
             AssertFatal(1==0,"should not go here\n");
             break;
           } // switch fmt
@@ -345,8 +345,17 @@ void generate_pucch1x(int32_t **txdataF,
         }
 
 #ifdef DEBUG_PUCCH_TX
-        printf("[PHY] PUCCH subframe %d z(%d,%d) => %d,%d, alpha(%d) => %d,%d\n",subframe,l,n,((int16_t *)&zptr[n])[0],((int16_t *)&zptr[n])[1],
-            alpha_ind,alpha_re[alpha_ind],alpha_im[alpha_ind]);
+        printf("[PHY] PUCCH subframe %d ref (%d,%d) z(%d,%d) => %d,%d, (%1.4f,%1.4f) : alpha(%1.4f) => %d,%d\n",
+	       subframe,
+	       ref_re,ref_im,
+	       l,n,
+	       ((int16_t *)&zptr[n])[0],
+	       ((int16_t *)&zptr[n])[1],
+	       ((int16_t *)&zptr[n])[0]/(double)amp,
+	       ((int16_t *)&zptr[n])[1]/(double)amp,
+	       2*3.14159*alpha_ind/12,
+	       alpha_re[alpha_ind],
+	       alpha_im[alpha_ind]);
 #endif
         alpha_ind = (alpha_ind + n_cs)%12;
       } // n
@@ -551,7 +560,7 @@ void generate_pucch2x(int32_t **txdataF,
   printf("[PHY] PUCCH2x: n2_pucch %d\n",n2_pucch);
 #endif
 
-  N_UL_symb = (fp->Ncp==0) ? 7 : 6;
+  N_UL_symb = (fp->Ncp==NORMAL) ? 7 : 6;
 
   for (ns=(subframe<<1),u=u0,v=v0; ns<(2+(subframe<<1)); ns++,u=u1,v=v1) {
 
@@ -659,7 +668,7 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
   int16_t *zptr;
   int16_t rxcomp[NB_ANTENNAS_RX][2*12*14];
   uint8_t ns,N_UL_symb,nsymb,n_oc,n_oc0,n_oc1;
-  uint8_t c = (frame_parms->Ncp==0) ? 3 : 2;
+  uint8_t c = (frame_parms->Ncp==NORMAL) ? 3 : 2;
   uint16_t nprime,nprime0,nprime1;
   uint16_t i,j,re_offset,thres,h,off;
   uint8_t Nprime_div_deltaPUCCH_Shift,Nprime,d;
@@ -674,7 +683,7 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
 
   uint8_t deltaPUCCH_Shift          = frame_parms->pucch_config_common.deltaPUCCH_Shift;
   uint8_t NRB2                      = frame_parms->pucch_config_common.nRB_CQI;
-  uint8_t Ncs1_div_deltaPUCCH_Shift = frame_parms->pucch_config_common.nCS_AN;
+  uint8_t Ncs1_div_deltaPUCCH_Shift = frame_parms->pucch_config_common.nCS_AN/deltaPUCCH_Shift;
 
   uint32_t u0 = (frame_parms->Nid_cell + frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.grouphop[subframe<<1]) % 30;
   uint32_t u1 = (frame_parms->Nid_cell + frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.grouphop[1+(subframe<<1)]) % 30;
@@ -691,26 +700,6 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
     }
     first_call=0;
   }
-  /*
-  switch (frame_parms->N_RB_UL) {
-
-  case 6:
-    sigma2_dB -= 8;
-    break;
-  case 25:
-    sigma2_dB -= 14;
-    break;
-  case 50:
-    sigma2_dB -= 17;
-    break;
-  case 100:
-    sigma2_dB -= 20;
-    break;
-  default:
-    sigma2_dB -= 14;
-  }
-  */  
-
     
   if ((deltaPUCCH_Shift==0) || (deltaPUCCH_Shift>3)) {
     LOG_E(PHY,"[eNB] rx_pucch: Illegal deltaPUCCH_shift %d (should be 1,2,3)\n",deltaPUCCH_Shift);
@@ -741,7 +730,7 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
   if (n1_pucch >= thres)
     nprime1= ((c*(nprime0+1))%((12*c/deltaPUCCH_Shift)+1))-1;
   else {
-    d = (frame_parms->Ncp==0) ? 2 : 0;
+    d = (frame_parms->Ncp==NORMAL) ? 2 : 0;
     h= (nprime0+d)%(c*Nprime_div_deltaPUCCH_Shift);
     nprime1 = (h/c) + (h%c)*Nprime_div_deltaPUCCH_Shift;
   }
@@ -752,12 +741,12 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
 
   n_oc0 = nprime0/Nprime_div_deltaPUCCH_Shift;
 
-  if (frame_parms->Ncp==1)
+  if (frame_parms->Ncp==EXTENDED)
     n_oc0<<=1;
 
   n_oc1 = nprime1/Nprime_div_deltaPUCCH_Shift;
 
-  if (frame_parms->Ncp==1)  // extended CP
+  if (frame_parms->Ncp==EXTENDED)  // extended CP
     n_oc1<<=1;
 
 #ifdef DEBUG_PUCCH_RX
@@ -786,7 +775,7 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
       // Compute n_cs (36.211 p. 18)
       n_cs = eNB->ncs_cell[ns][l];
 
-      if (frame_parms->Ncp==0) { // normal CP
+      if (frame_parms->Ncp==NORMAL) { // normal CP
         n_cs = ((uint16_t)n_cs + (nprime*deltaPUCCH_Shift + (n_oc%deltaPUCCH_Shift))%Nprime)%12;
       } else {
         n_cs = ((uint16_t)n_cs + (nprime*deltaPUCCH_Shift + (n_oc>>1))%Nprime)%12;
@@ -802,11 +791,11 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
         if (l<2) {                                         // data
           W_re=W3_re[n_oc][l];
           W_im=W3_im[n_oc][l];
-        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==0)) { // reference and normal CP
+        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==NORMAL)) { // reference and normal CP
           W_re=W3_re[n_oc][l-2];
           W_im=W3_im[n_oc][l-2];
           refs=1;
-        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==1)) { // reference and extended CP
+        } else if ((l<N_UL_symb-2)&&(frame_parms->Ncp==EXTENDED)) { // reference and extended CP
           W_re=W4[n_oc][l-2];
           W_im=0;
           refs=1;
@@ -938,7 +927,7 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
           stat_re=0;
           stat_im=0;
           off=re<<1;
-          cfo =  (frame_parms->Ncp==0) ? &cfo_pucch_np[14*phase] : &cfo_pucch_ep[12*phase];
+          cfo =  (frame_parms->Ncp==NORMAL) ? &cfo_pucch_np[14*phase] : &cfo_pucch_ep[12*phase];
 
           for (l=0; l<(nsymb>>1); l++) {
             stat_re += (((rxcomp[aa][off]*(int32_t)cfo[l<<1])>>15)     - ((rxcomp[aa][1+off]*(int32_t)cfo[1+(l<<1)])>>15))/nsymb;
@@ -1040,7 +1029,7 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
           stat_ref_re=0;
           stat_ref_im=0;
           off=re<<1;
-          cfo =  (frame_parms->Ncp==0) ? &cfo_pucch_np[14*phase] : &cfo_pucch_ep[12*phase];
+          cfo =  (frame_parms->Ncp==NORMAL) ? &cfo_pucch_np[14*phase] : &cfo_pucch_ep[12*phase];
 
 
           for (l=0; l<(nsymb>>1); l++) {
@@ -1134,7 +1123,7 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
         for (re=0; re<12; re++) {
           chest_re=0;
           chest_im=0;
-          cfo =  (frame_parms->Ncp==0) ? &cfo_pucch_np[14*phase_max] : &cfo_pucch_ep[12*phase_max];
+          cfo =  (frame_parms->Ncp==NORMAL) ? &cfo_pucch_np[14*phase_max] : &cfo_pucch_ep[12*phase_max];
 
           // channel estimate for first slot
           for (l=2; l<(nsymb>>1)-2; l++) {
