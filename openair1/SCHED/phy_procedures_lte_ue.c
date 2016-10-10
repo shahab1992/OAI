@@ -842,7 +842,7 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
 			       frame_tx,
 			       subframe_tx);
   
-  
+  LOG_I(PHY,"UE TX: eNB Id %d, AbsSfnTx %d.%d, MAC Enable %d, Msg3 Active %d \n",eNB_id, frame_tx, subframe_tx, ue->mac_enabled, ue->ulsch_Msg3_active[eNB_id]);
   if (ue->mac_enabled == 1) {
     if ((ue->ulsch_Msg3_active[eNB_id] == 1) &&
 	(ue->ulsch_Msg3_frame[eNB_id] == frame_tx) &&
@@ -877,6 +877,7 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
     }
   }
   
+  LOG_I(PHY,"UE TX: eNB Id %d, Harq Id %d, SFN Scheduling flag %d \n",eNB_id, harq_pid, ue->ulsch[eNB_id]->harq_processes[harq_pid]->subframe_scheduling_flag);
   if (ue->ulsch[eNB_id]->harq_processes[harq_pid]->subframe_scheduling_flag == 1) {
     
     ue->generate_ul_signal[eNB_id] = 1;
@@ -895,8 +896,8 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
     
     
     
-#ifdef DEBUG_PHY_PROC
-    LOG_D(PHY,
+//#ifdef DEBUG_PHY_PROC
+    LOG_I(PHY,
 	  "[UE  %d][PUSCH %d] Frame %d subframe %d Generating PUSCH : first_rb %d, nb_rb %d, round %d, mcs %d, rv %d, cyclic_shift %d (cyclic_shift_common %d,n_DMRS2 %d,n_PRS %d), ACK (%d,%d), O_ACK %d\n",
 	  Mod_id,harq_pid,frame_tx,subframe_tx,
 	  first_rb,nb_rb,
@@ -911,10 +912,10 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
 	  ue->frame_parms.pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[subframe_tx<<1],
 	  ue->ulsch[eNB_id]->o_ACK[0],ue->ulsch[eNB_id]->o_ACK[1],
 	  ue->ulsch[eNB_id]->harq_processes[harq_pid]->O_ACK);
-#endif
+//#endif
     
     if (ack_status > 0) {
-      LOG_D(PHY,"[UE  %d][PDSCH %x] Frame %d subframe %d Generating ACK (%d,%d) for %d bits on PUSCH\n",
+      LOG_I(PHY,"[UE  %d][PDSCH %x] Frame %d subframe %d Generating ACK (%d,%d) for %d bits on PUSCH\n",
 	    Mod_id,
 	    ue->ulsch[eNB_id]->rnti,
 	    frame_tx,subframe_tx,
@@ -992,16 +993,17 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
 				ulsch_input_buffer,
 				input_buffer_length,
 				&access_mode);
+	  LOG_I(PHY,"PUSCH GET SDU FROM MAC !!! \n");
 	}
 	
 #ifdef DEBUG_PHY_PROC
 #ifdef DEBUG_ULSCH
-	LOG_D(PHY,"[UE] Frame %d, subframe %d : ULSCH SDU (TX harq_pid %d)  (%d bytes) : \n",frame_tx,subframe_tx,harq_pid, ue->ulsch[eNB_id]->harq_processes[harq_pid]->TBS>>3);
+	LOG_I(PHY,"[UE] Frame %d, subframe %d : ULSCH SDU (TX harq_pid %d)  (%d bytes) : \n",frame_tx,subframe_tx,harq_pid, ue->ulsch[eNB_id]->harq_processes[harq_pid]->TBS>>3);
 	
 	for (i=0; i<ue->ulsch[eNB_id]->harq_processes[harq_pid]->TBS>>3; i++)
-	  LOG_T(PHY,"%x.",ulsch_input_buffer[i]);
+	  LOG_I(PHY,"%x.",ulsch_input_buffer[i]);
 	
-	LOG_T(PHY,"\n");
+	LOG_I(PHY,"\n");
 #endif
 #endif
       }
@@ -1043,12 +1045,13 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
       if (ue->mac_enabled==1) {
 	pusch_power_cntl(ue,proc,eNB_id,1, abstraction_flag);
 	ue->tx_power_dBm[subframe_tx] = ue->ulsch[eNB_id]->Po_PUSCH;
+	LOG_I(PHY,"PUSCH Power [dBm] %d \n",ue->tx_power_dBm[subframe_tx] );
       }
       else {
 	ue->tx_power_dBm[subframe_tx] = ue->tx_power_max_dBm;
       }
       ue->tx_total_RE[subframe_tx] = nb_rb*12;
-      
+      LOG_I(PHY,"PUSCH Total RE  %d \n",ue->tx_total_RE[subframe_tx] );
 #if defined(EXMIMO) || defined(OAI_USRP) || defined(OAI_BLADERF) || defined(OAI_LMSSDR)
       tx_amp = get_tx_amp(ue->tx_power_dBm[subframe_tx],
 			  ue->tx_power_max_dBm,
@@ -1057,7 +1060,7 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
 #else
       tx_amp = AMP;
 #endif
-      LOG_D(PHY,"[UE  %d][PUSCH %d] Frame %d subframe %d, generating PUSCH, Po_PUSCH: %d dBm (max %d dBm), amp %d\n",
+      LOG_I(PHY,"[UE  %d][PUSCH %d] Frame %d subframe %d, generating PUSCH, Po_PUSCH: %d dBm (max %d dBm), amp %d\n",
 	    Mod_id,harq_pid,frame_tx,subframe_tx,ue->tx_power_dBm[subframe_tx],ue->tx_power_max_dBm, tx_amp);
       start_meas(&ue->ulsch_modulation_stats);
       ulsch_modulation(ue->common_vars.txdataF,
@@ -1872,6 +1875,7 @@ int ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint
 
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_RX_PDCCH, VCD_FUNCTION_OUT);
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_DCI_DECODING, VCD_FUNCTION_IN);
+    LOG_I(PHY,"DCI Decoding for AbsoluteSubframe %d.%d \n",frame_rx,subframe_rx);
     dci_cnt = dci_decoding_procedure(ue,
 				     dci_alloc_rx,
 				     (ue->UE_mode[eNB_id] < PUSCH)? 1 : 0,  // if we're in PUSCH don't listen to common search space,
@@ -1992,9 +1996,9 @@ int ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint
 	
 	// we received a CRNTI, so we're in PUSCH
 	if (ue->UE_mode[eNB_id] != PUSCH) {
-#ifdef DEBUG_PHY_PROC
-	  LOG_D(PHY,"[UE  %d] Frame %d, subframe %d: Received DCI with CRNTI %x => Mode PUSCH\n",ue->Mod_id,frame_rx,subframe_rx,ue->pdcch_vars[eNB_id]->crnti);
-#endif
+//#ifdef DEBUG_PHY_PROC
+	  LOG_I(PHY,"[UE  %d] Frame %d, subframe %d: Received DCI with CRNTI %x => Mode PUSCH\n",ue->Mod_id,frame_rx,subframe_rx,ue->pdcch_vars[eNB_id]->crnti);
+//#endif
 	  //dump_dci(&ue->frame_parms, &dci_alloc_rx[i]);
 	  ue->UE_mode[eNB_id] = PUSCH;
 	  //mac_xface->macphy_exit("Connected. Exiting\n");
@@ -2097,10 +2101,10 @@ int ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint
       }
     } else if( (dci_alloc_rx[i].rnti == ue->pdcch_vars[eNB_id]->crnti) &&
 	       (dci_alloc_rx[i].format == format0)) {
-#ifdef DEBUG_PHY_PROC
-      LOG_D(PHY,"[UE  %d][PUSCH] Frame %d subframe %d: Found rnti %x, format 0, dci_cnt %d\n",
+//#ifdef DEBUG_PHY_PROC
+      LOG_I(PHY,"[UE  %d][PUSCH] Frame %d subframe %d: Found rnti %x, format 0, dci_cnt %d\n",
 	    ue->Mod_id,frame_rx,subframe_rx,dci_alloc_rx[i].rnti,i);
-#endif
+//#endif
 
       ue->ulsch_no_allocation_counter[eNB_id] = 0;
       //dump_dci(&ue->frame_parms,&dci_alloc_rx[i]);
@@ -2119,9 +2123,9 @@ int ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint
 					     eNB_id,
 					     0)==0)) {
 
-#ifdef DEBUG_PHY_PROC
-	LOG_D(PHY,"[UE  %d] Generate UE ULSCH C_RNTI format 0 (subframe %d)\n",ue->Mod_id,subframe_rx);
-#endif
+//#ifdef DEBUG_PHY_PROC
+	LOG_I(PHY,"[UE  %d] Generate UE ULSCH C_RNTI format 0 (subframe %d)\n",ue->Mod_id,subframe_rx);
+//#endif
 
       }
     } else if( (dci_alloc_rx[i].rnti == ue->ulsch[eNB_id]->cba_rnti[0]) &&

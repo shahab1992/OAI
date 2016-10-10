@@ -2865,7 +2865,7 @@ void dci_decoding_procedure0(LTE_UE_PDCCH **pdcch_vars,
           }
         }
 
-        LOG_D(PHY,"DCI decoding CRNTI  [format_c: %d, nCCE[subframe: %d]: %d ]\n",format_c, subframe, pdcch_vars[eNB_id]->nCCE[subframe]);
+        LOG_D(PHY,"DCI decoding CRNTI  [format: %d, nCCE[subframe: %d]: %d ]\n",format_c, subframe, pdcch_vars[eNB_id]->nCCE[subframe]);
         //  memcpy(&dci_alloc[*dci_cnt].dci_pdu[0],dci_decoded_output,sizeof_bytes);
 
 
@@ -2888,12 +2888,12 @@ void dci_decoding_procedure0(LTE_UE_PDCCH **pdcch_vars,
           break;
         }
 
-#ifdef DEBUG_DCI_DECODING
+//#ifdef DEBUG_DCI_DECODING
         LOG_I(PHY,"[DCI search] Found DCI %d rnti %x Aggregation %d length %d format %s in CCE %d (CCEmap %x)\n",
               *dci_cnt,crc,1<<L,sizeof_bits,dci_format_strings[dci_alloc[*dci_cnt-1].format],CCEind,*CCEmap);
         dump_dci(frame_parms,&dci_alloc[*dci_cnt-1]);
 
-#endif
+//#endif
 
         //  if (crc==pdcch_vars[eNB_id]->crnti)
         //    return;

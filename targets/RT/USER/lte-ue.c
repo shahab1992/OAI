@@ -1009,7 +1009,7 @@ void *UE_thread(void *arg) {
 	  UE->rx_offset=0;
 	  UE->proc.proc_rxtx[0].frame_rx++;
 	  UE->proc.proc_rxtx[1].frame_rx++;
-
+	  LOG_I(PHY,"Update Frame Number Frame 0:%d \n", UE->proc.proc_rxtx[0].frame_rx);
 	  // read in first symbol
 	  rxs = UE->rfdevice.trx_read_func(&UE->rfdevice,
 					   &timestamp,
@@ -1032,9 +1032,9 @@ void *UE_thread(void *arg) {
 
       }// start_rx_stream==0
       else {
-	UE->proc.proc_rxtx[0].frame_rx++;
-	UE->proc.proc_rxtx[1].frame_rx++;
-	
+	//UE->proc.proc_rxtx[0].frame_rx++;
+	//UE->proc.proc_rxtx[1].frame_rx++;
+	//LOG_I(PHY,"Update Frame Number Frame:%d \n", UE->proc.proc_rxtx[0].frame_rx);
 	for (int sf=0;sf<10;sf++) {
 	  for (i=0; i<UE->frame_parms.nb_antennas_rx; i++) 
 	    rxp[i] = (void*)&rxdata[i][UE->frame_parms.ofdm_symbol_size+UE->frame_parms.nb_prefix_samples0+(sf*UE->frame_parms.samples_per_tti)];
@@ -1112,6 +1112,11 @@ void *UE_thread(void *arg) {
 	  }
 	  // increment instance count and change proc subframe/frame variables
 	  int instance_cnt_rxtx = ++proc->instance_cnt_rxtx;
+	  if(sf == 0)
+	  {
+		  UE->proc.proc_rxtx[0].frame_rx++;
+		  UE->proc.proc_rxtx[1].frame_rx++;
+	  }
 	  proc->subframe_rx=sf;
 	  proc->subframe_tx=(sf+4)%10;
 	  proc->frame_tx = proc->frame_rx + ((proc->subframe_rx>5)?1:0);

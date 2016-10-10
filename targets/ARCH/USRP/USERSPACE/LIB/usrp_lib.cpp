@@ -586,9 +586,6 @@ extern "C" {
     //  s->usrp->set_rx_subdev_spec(rx_subdev);
     //  s->usrp->set_tx_subdev_spec(tx_subdev);
 
-    // lock mboard clocks
-    s->usrp->set_clock_source("internal");
-    
     //Setting device type to USRP X300/X310 
     device->type=USRP_X300_DEV;
 
@@ -739,6 +736,8 @@ extern "C" {
   // display USRP settings
   std::cout << boost::format("Actual master clock: %fMHz...") % (s->usrp->get_master_clock_rate()/1e6) << std::endl;
   
+  // lock mboard clocks
+  s->usrp->set_clock_source("external");
   sleep(1);
 
   // create tx & rx streamer
