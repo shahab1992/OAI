@@ -59,6 +59,7 @@ extern unsigned short dftsizes[33];
 extern short *ul_ref_sigs[30][2][33];
 extern short ul_ref_sigs_ufmc[30][2][33][2][2048<<1];//u,v,MSC_RS,cyclic_shift,dft size
 extern short ul_ref_sigs_ufmc_7_5kHz[30][2][33][2][2048<<1];//u,v,MSC_RS,cyclic_shift,dft size
+extern int16_t CFO_vec[2560]  __attribute__((aligned(32)));
 
 PHY_VARS_eNB *PHY_vars_eNB;
 PHY_VARS_UE *PHY_vars_UE;
@@ -165,11 +166,17 @@ int main(int argc, char **argv)
   uint8_t control_only_flag = 0;
   int delay = 0;
   unsigned int delay_est = 0;
-  int counter_delay=4;
+  int counter_delay=0;
+  double *delay_arr;
+  double BER[8]={0,0,0,0,0,0,0,0};
+  double rCFO=0.0;
+  double arrCFO[2]={0,0};
   double maxDoppler = 0.0;
   uint8_t srs_flag = 0;
   uint8_t ufmc_flag=0;
   uint8_t interference_flag=0;
+  uint32_t interf_energy=0;
+  int32_t sir=0;
   uint32_t ch_out_length=0;
 
   uint8_t N_RB_DL=25,osf=1;
@@ -206,24 +213,32 @@ int main(int argc, char **argv)
 
   printf("Detected cpu_freq %f GHz\n",cpu_freq_GHz);
 
-
   logInit();
 
-  while ((c = getopt (argc, argv, "hapZEbm:n:Y:X:x:s:w:e:d:D:O:c:r:i:f:y:c:oA:C:R:g:N:l:S:T:QB:PI:LuF")) != -1) {
+  while ((c = getopt (argc, argv, "U:k:hapZEbm:n:Y:X:x:s:w:e:d:D:O:c:r:i:f:y:c:oA:C:R:g:N:l:S:T:QB:PI:LuF")) != -1) {
     switch (c) {
-    case 'u':
+    case 'u': // to enable ufmc mode
       ufmc_flag = 1;
-      printf("\n #### UFMC enabled ####\n");
-      interference_flag = 1;
-      if (interference_flag)
-	printf("\n #### interference enabled ####\n\n");
+      printf("#### UFMC enabled ####\n");
       break;  
       
-    case 'U':  //it doesn't work!!!
-      interference_flag = 1;
-      printf("\n #### interference enabled ####\n");
+    case 'U':  // to enable interference
+      sir = atoi(optarg);
+      if (sir!=0){
+	interference_flag = 1;
+	printf("#### interference enabled with SIR=%d ####\n",sir);
+      }
       break;
     
+    case 'k': // to enable carrier frequency offset
+      rCFO = atof(optarg);
+      arrCFO[0]=rCFO;
+      arrCFO[1]=rCFO;
+      write_output("CFO.m","rCFO",&arrCFO[0],2,1,7);
+      if (rCFO!=0)
+	printf("#### enabled CFO=%f ####\n",rCFO);
+      break;
+      
     case 'a':
       channel_model = AWGN;
       chMod = 1;
@@ -524,7 +539,9 @@ int main(int argc, char **argv)
   frame_parms = &PHY_vars_eNB->lte_frame_parms;
 
   txdata = PHY_vars_UE->lte_ue_common_vars.txdata;
-
+  
+  delay_arr=malloc((n_frames+4)*sizeof(double));
+  memset(delay_arr,0,(n_frames+4)*sizeof(double));
 
   s_re = malloc(2*sizeof(double*));
   s_im = malloc(2*sizeof(double*));
@@ -794,16 +811,21 @@ int main(int argc, char **argv)
 
   uncoded_ber_bit = (short*) malloc(sizeof(short)*coded_bits_per_codeword);
   if (uncoded_ber_bit==NULL) {
-    printf("error allocaing memory\n");
+    printf("error allocating memory\n");
     exit(-1);
   }
 
   PHY_vars_UE->frame_tx = (PHY_vars_UE->frame_tx+1)&1023;
   if (ufmc_flag==1){
     ufmc_init(&PHY_vars_eNB->lte_frame_parms);
-    // generate_drs_ufmc(PHY_vars_eNB,0,AMP,subframe,0);
     generate_drs_ufmc_7_5kHz(PHY_vars_eNB,0,AMP,subframe,0);
   }
+  
+  if (interference_flag==1)
+    interf_energy=interference_init(&PHY_vars_eNB->lte_frame_parms,nb_rb,ufmc_flag);
+    
+  if (rCFO!=0)
+    ii_CreateCFO(rCFO,PHY_vars_eNB->lte_frame_parms.ofdm_symbol_size+PHY_vars_eNB->lte_frame_parms.nb_prefix_samples,CFO_vec);
   
   for (ch_realization=0; ch_realization<n_ch_rlz; ch_realization++) {
 
@@ -1115,7 +1137,8 @@ int main(int argc, char **argv)
 	    mod_interference(&PHY_vars_eNB->lte_frame_parms,
 			    &txdata[0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe], // input array
 			    nb_rb, // number of PRBs
-			    subframe); // number of subframe
+			    interf_energy, // number of subframe
+			    sir); //Signal Interference Ratio 
 	  
 	    if (n_frames==1) {
 	      write_output("txsig1UL.m","txs1", &txdata[0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],2*frame_parms->samples_per_tti,1,1);
@@ -1202,19 +1225,26 @@ int main(int argc, char **argv)
 
           if (n_frames==1) {
             printf("SNRmeas %f\n",SNRmeas);
-
             write_output("rxsig0UL.m","rxs0", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],PHY_vars_eNB->lte_frame_parms.samples_per_tti,1,1);
             //write_output("rxsig1UL.m","rxs1", &PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],PHY_vars_eNB->lte_frame_parms.samples_per_tti,1,1);
           }
+
+          if (rCFO!=0){
+	    ii_applyCFO(&PHY_vars_eNB->lte_eNB_common_vars.rxdata[0][0][PHY_vars_eNB->lte_frame_parms.samples_per_tti*subframe],
+			ch_out_length,&PHY_vars_eNB->lte_frame_parms,CFO_vec);
+	  }
           
-          if (ufmc_flag==1){
+          if (ufmc_flag==1){  
 	    // timing synchronizarion using correlator
 	    delay_est=rx_pusch_ufmc_sync_7_5kHz(PHY_vars_eNB,0,AMP,subframe,0); //Apply to rxdata
 	    // delay_est=rx_pusch_ufmc_sync(PHY_vars_eNB,0,AMP,subframe,0); //(delay estimation from rxdata_7_5kHz)
 	    // printf("#### Value of estimated delay = %d - ",delay_est);
 	    // delay_est = (delay_est%8)==0 ? delay_est : delay_est+8-(delay_est%8);
 	    delay_est = (delay_est%8)<4 ? delay_est-(delay_est%8) : delay_est+8-(delay_est%8);
-	    // printf("Delay set to %d \n",delay_est);
+	    counter_delay++;
+	    if (delay_est>(2*delay)) delay_arr[3]++;
+	    delay_arr[0]=((double)delay_arr[0]/counter_delay)*(counter_delay-1)+((double)delay_est/counter_delay);
+	    delay_arr[trials+4]=(double)delay_est;
 	  }
 
 #ifndef OFDMA_ULSCH
@@ -1427,8 +1457,6 @@ int main(int argc, char **argv)
         push_front(&time_vector_rx_fft, t_rx_fft);
         push_front(&time_vector_rx_demod, t_rx_demod);
         push_front(&time_vector_rx_dec, t_rx_dec);
-
-	counter_delay++;
       }   //trials
 
       double table_tx[time_vector_tx.size];
@@ -1529,6 +1557,15 @@ int main(int argc, char **argv)
              PHY_vars_eNB->PHY_measurements_eNB->n0_power_dB[1]);
 
       effective_rate = ((double)(round_trials[0])/((double)round_trials[0] + round_trials[1] + round_trials[2] + round_trials[3]));
+      
+      BER[0]=(double)avg_ber[0];
+      BER[1]=(double)avg_ber[1];
+      BER[2]=(double)avg_ber[2];
+      BER[3]=(double)avg_ber[3];
+      BER[4]=(double)round_trials[0];
+      BER[5]=(double)round_trials[1];
+      BER[6]=(double)round_trials[2];
+      BER[7]=(double)round_trials[3];
 
       printf("Errors (%d/%d %d/%d %d/%d %d/%d), Pe = (%e,%e,%e,%e) => effective rate %f (%3.1f%%,%f,%f), normalized delay %f (%f), uncoded_ber (%f,%f,%f,%f)\n",
              errs[0],
@@ -1554,6 +1591,8 @@ int main(int argc, char **argv)
 	     avg_ber[1]/round_trials[1],
 	     avg_ber[2]/round_trials[2],
 	     avg_ber[3]/round_trials[3]);
+      
+      
 
       if (cqi_flag >0) {
         printf("CQI errors %d/%d,false positives %d/%d, CQI false negatives %d/%d\n",
@@ -1788,6 +1827,13 @@ int main(int argc, char **argv)
 
   fclose(bler_fd);
   free(uncoded_ber_bit);
+  
+  delay_arr[1]=(double)delay;
+  delay_arr[2]=(double)counter_delay;
+  write_output("delay.m","delay_dump",&delay_arr[0],n_frames+4,1,7);
+  free(delay_arr);
+  
+  write_output("ber_stats.m","ber_stat",&BER[0],8,1,7);
 
   if (test_perf !=0)
     fclose (time_meas_fd);

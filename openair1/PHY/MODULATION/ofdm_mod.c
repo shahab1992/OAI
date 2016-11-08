@@ -43,6 +43,7 @@ This section deals with basic functions for OFDM Modulation.
 
 //#define DEBUG_OFDM_MOD
 
+extern int16_t CFO_vec[2560]  __attribute__((aligned(32)));
 
 void normal_prefix_mod(int32_t *txdataF,int32_t *txdata,uint8_t nsymb,LTE_DL_FRAME_PARMS *frame_parms)
 {
@@ -229,7 +230,7 @@ void PHY_ofdm_mod(int *input,                       /// pointer to complex input
 
     }
 
-
+    //multcmplx((int16_t *)&output[(i*fftsize) + i*nb_prefix_samples],(int16_t *)&output[(i*fftsize) + i*nb_prefix_samples],CFO_vec,fftsize+nb_prefix_samples);
 
   }
 

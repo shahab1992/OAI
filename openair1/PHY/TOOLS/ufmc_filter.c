@@ -405,6 +405,34 @@ The function implemented is : \f$\mathbf{out} = out + (abs(\mathbf{fact1}) ^ 2 )
   return (int32_t)counter/lIN;
 }
 
+void scale_and_add_complex_vector(int16_t *x,
+                                        int16_t alpha,
+                                        int16_t *y,
+                                        uint8_t zero_flag,
+                                        uint32_t N)
+{
+
+  __m128i alpha_128 = _mm_set1_epi16(alpha);
+  __m128i *x_128=(__m128i *)x;
+  __m128i *y_128=(__m128i *)y;
+  int n;
+
+  if (zero_flag == 1)
+    for (n=0; n<N>>2; n++) {
+      y_128[n] = _mm_mullo_epi16(x_128[n],alpha_128);
+    }
+
+  else
+    for (n=0; n<N>>2; n++) {
+      y_128[n] = _mm_adds_epi16(y_128[n],_mm_mullo_epi16(x_128[n],alpha_128));
+    }
+
+  _mm_empty();
+  _m_empty();
+
+}
+
+
 int max_vec(int32_t *in,uint16_t lin){
   /*
    * This function finds the index of maximum value in vector in(integer value) with length lin
@@ -549,6 +577,26 @@ int ii_CreateModvec(uint16_t n_rb,// current resource block index
   return(0);
 }
 
+int16_t CFO_vec[61440]  __attribute__((aligned(32)));
+
+void ii_CreateCFO(double CFO,
+		 uint32_t len_symb_MC,
+		 int16_t *CFO_vec) //output array
+{
+  int16_t i,lOUT=30720; //lOUT can be 15360
+
+  for(i=0;i<lOUT;i++){
+    *(CFO_vec+(i<<1))   = (int16_t)(cos((double)(2*PI*i*(double)CFO/(len_symb_MC)))*((1<<15)-1)); //FFTsize or FFT+L-1
+    *(CFO_vec+(i<<1)+1) = (int16_t)(sin((double)(2*PI*i*(double)CFO/(len_symb_MC)))*((1<<15)-1));
+  }
+}
+
+void ii_applyCFO(int16_t *in,uint32_t lOUT,LTE_DL_FRAME_PARMS *frame_parms,int16_t *CFO_vec)
+{ 
+  int32_t len;
+  len = (lOUT%8)==0 ? lOUT : lOUT+8-(lOUT%8);
+  multcmplx((int16_t *)in,(int16_t *)in,CFO_vec,len);
+}
 
 /***************************************************************************
 UFMC Modulation - Upsampling+Dolph-Chebyshev+FrequencyShilfting
@@ -558,7 +606,6 @@ int16_t hFIR[152]  __attribute__((aligned(32))); // 152 is closest multiple of 8
 
 void ufmc_init(LTE_DL_FRAME_PARMS *frame_parms)
 {
-
   float atten=60;
   uint16_t FFT_size=frame_parms->ofdm_symbol_size;
   uint16_t lFIR=frame_parms->nb_prefix_samples;
@@ -585,10 +632,48 @@ void ufmc_init(LTE_DL_FRAME_PARMS *frame_parms)
   memset(hFIR,0,lFIR_padded*sizeof(int16_t));
   i_cheby_win(hFIR, lFIR_padded, atten);
   write_output("h_filter.m","h_filter",hFIR,lFIR_padded,1,0);
-  for (n_rb=0;n_rb<n_rb_max;n_rb++) {
+  for (n_rb=0;n_rb<n_rb_max+1;n_rb++) {
     ii_CreateModvec(n_rb,first_carrier,FFT_size,lOUT,&mod_vec[n_rb][0]);
     //write_output("mod_vec.m","mod_vec",mod_vec, lOUT>>1,1,1);
   }
+}
+
+int16_t interference_vector[6*7680] __attribute__((aligned(16)));
+int32_t energy_per_prb[25] = {13439,11653,9080,5972,3848,3444,4205,4949,4802,3788,2771,2448,2900,3347,3332,2775,2115,1845,2102,2521,2688,2434,1989,1762,1111};
+
+uint32_t interference_init(LTE_DL_FRAME_PARMS *frame_parms,unsigned char nb_rb, uint8_t ufmc_flag)
+{
+  uint16_t len=frame_parms->nb_prefix_samples+frame_parms->ofdm_symbol_size;
+  uint16_t len0=frame_parms->nb_prefix_samples0+frame_parms->ofdm_symbol_size;
+  uint32_t i,k,counter=0,energy_int=0;
+  int32_t *interference_vec;
+  interference_vec=(uint32_t*)SCFDMA_txdata;
+  memset(interference_vector,0,(frame_parms->samples_per_tti*2)*sizeof(int16_t));
+  
+  if (ufmc_flag==0){
+    for (i=0;i<frame_parms->N_RB_UL+1;i++) {
+      ii_CreateModvec(i,frame_parms->first_carrier_offset,frame_parms->ofdm_symbol_size,len0,&mod_vec[i][0]);
+    }
+  }
+
+  // Creation of the interference signal-->move to ufmc_init
+  for(i=0;i<2;i++){
+    for(k=0;k<7;k++){
+      if (k==0){
+	multcmplx_add(&interference_vector[counter<<1],&interference_vec[counter],&mod_vec[12][0],len0); 
+	multcmplx_add(&interference_vector[counter<<1],&interference_vec[counter],&mod_vec[25+nb_rb][0],len0);
+	counter+=(len0);
+      }else{
+	multcmplx_add(&interference_vector[counter<<1],&interference_vec[counter],&mod_vec[12][0],len);
+	multcmplx_add(&interference_vector[counter<<1],&interference_vec[counter],&mod_vec[25+nb_rb][0],len);
+	counter+=(len);
+      }
+    }  
+  }
+  energy_int = energy_per_prb[nb_rb-1]; // LUT of interference signal energy per PRB
+  // printf("interference energy=%d\n",energy_int);
+ 
+  return energy_int;
 }
 
 void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
@@ -625,28 +710,64 @@ void dolph_cheb(int16_t *in, // input array-->length=(size+lFIR)*2
 void mod_interference(LTE_DL_FRAME_PARMS *frame_parms,
 		      int32_t *in, // input array-->length=(size+lFIR)*2
 		      uint16_t n_rb,
-		      uint16_t subframe_number// subframe number
+		      uint32_t interf_energy,
+		      int32_t sir
 )
 {
-  uint16_t i,k,counter=0;
-  //int n_rb = frame_parms->N_RB_UL; //number of resource block
+  uint32_t i,k,counter=0;
+  int32_t energy_sig=0;
+  int16_t index=frame_parms->first_carrier_offset<<1; //724*2
+  double sir_dec,scale=0,scale2=0;
+  int32_t en_sig[2048] __attribute__((aligned(16)));
+  memset(en_sig,0,2048*sizeof(int32_t));
+  int16_t interference_vector_2[2*frame_parms->samples_per_tti] __attribute__((aligned(16)));
   
-  int32_t *interference_vec;
-  interference_vec=(uint32_t*)SCFDMA_txdata;
-  
-  // right and left (for the right it is useful to select the first after n_br, for the left I should conj that)
-  for(i=0;i<subframe_number;i++){
-    multcmplx_add(&in[counter],&interference_vec[counter],&mod_vec[n_rb][0],1104); //pay attenction to indexes
-    multcmplx_conj_add(&in[counter],&mod_vec[n_rb][0],&interference_vec[counter],1104);
-    counter+=(frame_parms->nb_prefix_samples0+frame_parms->ofdm_symbol_size);
-    // manage the first MC symbol
-    for(k=0;k<6;k++){// manage the other MC symbols
-      multcmplx_add(&in[counter],&interference_vec[counter],&mod_vec[n_rb][0],1096); //pay attenction to indexes
-      multcmplx_conj_add(&in[counter],&mod_vec[n_rb][0],&interference_vec[counter],1096);
-      counter+=(frame_parms->nb_prefix_samples+frame_parms->ofdm_symbol_size);
+  counter=0;
+  // inband input energy calculation 
+  for(i=0;i<2;i++){
+    for(k=0;k<7;k++){
+      if (k==0){
+	memset(&en_sig[0],0,2048*sizeof(int32_t));
+	memcpy(&en_sig[0],&in[counter],(frame_parms->nb_prefix_samples0+frame_parms->ofdm_symbol_size)*sizeof(int32_t));
+	dft2048(&en_sig[0],&en_sig[0],1);
+	energy_sig+=sum_square_abs_cmplx(&en_sig[index],24*n_rb);
+	counter+=(frame_parms->nb_prefix_samples0+frame_parms->ofdm_symbol_size);
+      }else{
+	memset(&en_sig[0],0,2048*sizeof(int32_t));
+	memcpy(&en_sig[0],&in[counter],(frame_parms->nb_prefix_samples+frame_parms->ofdm_symbol_size)*sizeof(int32_t));
+	dft2048(&en_sig[0],&en_sig[0],1);
+	energy_sig+=sum_square_abs_cmplx(&en_sig[index],24*n_rb);
+	counter+=(frame_parms->nb_prefix_samples+frame_parms->ofdm_symbol_size);
+      }
     }
+  }   
+  // write_output("sig.m","prova",prova,(2048*14),1,1);
+  sir_dec=pow(10.0,(double)sir/10);
+  scale=sqrt((double)energy_sig/interf_energy);
+  scale2=(double)sqrt((double)energy_sig/(interf_energy*sir_dec));
+  if (scale2<1){
+    for(i=0;i<(frame_parms->samples_per_tti<<1);i++){
+      interference_vector_2[i]=(int16_t)(interference_vector[i]*scale2);
+    }
+    add_vector16(in,interference_vector_2,in,frame_parms->samples_per_tti);
+    sir_dec = 10*log10((double)energy_sig/(interf_energy*scale2*scale2)); 
+  }else{
+    scale_and_add_complex_vector(interference_vector,(int16_t)scale2,in,0,frame_parms->samples_per_tti);
+    sir_dec = 10*log10((double)energy_sig/(interf_energy*(int16_t)scale2*(int16_t)scale2)); 
   }
+  // printf("SIR=%d (dB) attended SIR=%f (dB) signal energy=%d - interference energy=%d - scale factor=%f(%d)\n",sir,sir_dec,energy_sig,interf_energy,scale2,(int32_t)scale2);
   
+  /*for(i=0;i<(frame_parms->samples_per_tti<<1);i++){
+    interference_vector_2[i]=(int16_t)(interference_vector[i]*(int16_t)scale2);
+  }
+  write_output("interf_scaled.m","inter_scaled",interference_vector,frame_parms->samples_per_tti,1,1);
+    
+  add_vector16(in,interference_vector_2,in,frame_parms->samples_per_tti);
+  write_output("out1.m","out_1",in,15360,1,1);
+  
+  // scale_and_add_complex_vector(interference_vector_2,(int16_t)scale2,in,0,frame_parms->samples_per_tti);
+  // write_output("out2.m","out_2",in,15360,1,1);
+  */
 }
 
 #ifdef MAIN

@@ -97,9 +97,6 @@ void normal_prefix_UFMC_mod(int32_t *txdataF,int32_t *txdata,uint8_t nsymb,LTE_D
   }
 }
 
-extern int16_t mod_vec[100][2560]  __attribute__((aligned(32)));
-
-
 void PHY_UFMC_mod(int *input,                       // pointer to complex input
                   int *output,                      // pointer to complex output
                   int fftsize,                      // FFT_SIZE
@@ -195,6 +192,8 @@ void PHY_UFMC_mod(int *input,                       // pointer to complex input
 		 fftsize,
 		 j+ulsch->first_rb, //current PRB index for filter frequency shifting
 		 first_carrier );  
+      
+      //multcmplx((int16_t *)&output[(i*fftsize) + i*nb_prefix_samples],(int16_t *)&output[(i*fftsize) + i*nb_prefix_samples],&CFO_vec[0],fftsize+nb_prefix_samples);
 
       //write_output("output.m","out",&output[(i*fftsize) + (i*nb_prefix_samples)],(fftsize)+nb_prefix_samples,1,1);
     }

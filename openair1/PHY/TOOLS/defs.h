@@ -412,11 +412,11 @@ void dolph_cheb(int16_t *in, /// input array-->length=(size+lFIR)*2
 		); 
 double interp(double x, double *xs, double *ys, int count);
 void multcmplx_add(int16_t *out,int16_t *fact1,int16_t *fact2,int16_t lIN);
-//void ufmc_init(uint32_t lFIR, int FFT_size, int n_rb_max, int first_carrier);
 void ufmc_init(LTE_DL_FRAME_PARMS *frame_parms);
 int32_t sum_square_abs_cmplx(int16_t *fact,int16_t lIN);
 void multcmplx_conj(int16_t *out,int16_t *fact1,int16_t *fact2,int16_t lIN,uint8_t right_shift);
 int max_vec(int32_t *in,uint16_t lin);
+uint32_t interference_init(LTE_DL_FRAME_PARMS *frame_parms,unsigned char nb_rb,uint8_t ufmc_flag);
 
 /** @} */
 
