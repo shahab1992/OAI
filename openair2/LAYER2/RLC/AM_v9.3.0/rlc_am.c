@@ -53,6 +53,7 @@ rlc_am_get_buffer_occupancy_in_bytes (
   uint32_t header_overhead;
 
   // priority of control trafic
+  rlc_pP->status_buffer_occupancy = 0;
   if (rlc_pP->status_requested) {
     if (rlc_pP->t_status_prohibit.running == 0) {
 #if TRACE_RLC_AM_BO
@@ -64,7 +65,7 @@ rlc_am_get_buffer_occupancy_in_bytes (
       }
 
 #endif
-      return ((15  +  rlc_pP->num_nack_sn*(10+1)  +  rlc_pP->num_nack_so*(15+15+1) + 7) >> 3);
+      rlc_pP->status_buffer_occupancy = ((15  +  rlc_pP->num_nack_sn*(10+1)  +  rlc_pP->num_nack_so*(15+15+1) + 7) >> 3);
     }
   }
 
@@ -340,6 +341,7 @@ rlc_am_get_pdus (
         if (pdu) {
           list_add_tail_eurecom (pdu, &rlc_pP->pdus_to_mac_layer);
           rlc_pP->status_requested = 0;
+          rlc_pP->status_buffer_occupancy = 0;
           rlc_am_start_timer_status_prohibit(ctxt_pP, rlc_pP);
           return;
         }

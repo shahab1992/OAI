@@ -133,11 +133,17 @@
 /*!\brief maximum value for channel quality indicator */
 #define MAX_CQI_VALUE  15
 
-//if value equal oxFFFF means counters are NOT active
+/*!\brief value for indicating BSR Timer is not running */
 #define MAC_UE_BSR_TIMER_NOT_RUNNING   (0xFFFF)
 
 #define LCID_EMPTY 0
 #define LCID_NOT_EMPTY 1
+
+/*!\brief minimum RLC PDU size to be transmitted = min RLC Status PDU or RLC UM PDU SN 5 bits */
+#define MIN_RLC_PDU_SIZE    (2)
+
+/*!\brief minimum MAC data needed for transmitting 1 min RLC PDU size + 1 byte MAC subHeader */
+#define MIN_MAC_HDR_RLC_SIZE    (1 + MIN_RLC_PDU_SIZE)
 
 /* 
  * eNB part 
@@ -224,10 +230,10 @@ typedef struct {
 typedef BSR_SHORT BSR_TRUNCATED;
 /*!\brief  mac control element: long buffer status report for all logical channel group ID*/
 typedef struct {
-  uint32_t Buffer_size3:6;
-  uint32_t Buffer_size2:6;
-  uint32_t Buffer_size1:6;
-  uint32_t Buffer_size0:6;
+  uint8_t Buffer_size3:6;
+  uint8_t Buffer_size2:6;
+  uint8_t Buffer_size1:6;
+  uint8_t Buffer_size0:6;
 } __attribute__((__packed__))BSR_LONG;
 
 #define BSR_LONG_SIZE  (sizeof(BSR_LONG))
@@ -337,14 +343,11 @@ typedef struct {
 #define SHORT_BSR 29
 /*!\brief LCID of long BSR for ULSCH */
 #define LONG_BSR 30
-/*!\brief first level bsr type for ULSCH: Regular BSR,Padding BSR,Periodic BSR*/
-#define BSR_TYPE_FIRST_LEVEL 3
-/*!\brief  first level bsr type states*/
-typedef enum {
-  REGULAR_BSR =0,
-  PADDING_BSR,
-  PERIODIC_BSR
-} UE_FIRST_LEVEL_BSR_TYPE;
+/*!\bitmaps for BSR Triggers */
+#define	BSR_TRIGGER_NONE		(0)			/* No BSR Trigger */
+#define	BSR_TRIGGER_REGULAR		(1)			/* For Regular and ReTxBSR Expiry Triggers */
+#define	BSR_TRIGGER_PERIODIC	(2)			/* For BSR Periodic Timer Expiry Trigger */
+#define	BSR_TRIGGER_PADDING		(4)			/* For Padding BSR Trigger */
 
 
 /*! \brief Downlink SCH PDU Structure */
@@ -956,9 +959,9 @@ typedef struct {
   /// buffer status for each lcgid
   uint8_t  BSR[MAX_NUM_LCGID]; // should be more for mesh topology
   /// keep the number of bytes in rlc buffer for each lcgid
-  uint16_t  BSR_bytes[MAX_NUM_LCGID];
+  int32_t  BSR_bytes[MAX_NUM_LCGID];
   /// after multiplexing buffer remain for each lcid
-  uint16_t  LCID_buffer_remain[MAX_NUM_LCID];
+  int32_t  LCID_buffer_remain[MAX_NUM_LCID];
   /// sum of all lcid buffer size
   uint16_t  All_lcid_buffer_size_lastTTI;
   /// buffer status for each lcid
@@ -972,11 +975,11 @@ typedef struct {
   /// retxBSR-Timer, default value is sf2560
   uint16_t retxBSR_Timer;
   /// retxBSR_SF, number of subframe before triggering a regular BSR
-  int16_t retxBSR_SF; // if value equal oxFFFF means counters are NOT active
+  uint16_t retxBSR_SF;
   /// periodicBSR-Timer, default to infinity
   uint16_t periodicBSR_Timer;
   /// periodicBSR_SF, number of subframe before triggering a periodic BSR
-  int16_t periodicBSR_SF;  // if value equal oxFFFF means counters are NOT active
+  uint16_t periodicBSR_SF;
   /// default value is 0: not configured
   uint16_t sr_ProhibitTimer;
   /// sr ProhibitTime running
@@ -1095,7 +1098,7 @@ typedef struct {
   /// power backoff due to power management (as allowed by P-MPRc) for this cell
   uint8_t power_backoff_db[NUMBER_OF_eNB_MAX];
   /// BSR report falg management
-  uint8_t BSR_reporting_active[BSR_TYPE_FIRST_LEVEL];
+  uint8_t BSR_reporting_active;
   /// retxBSR-Timer expires flag
   uint8_t retxBSRTimer_expires_flag;
   /// periodBSR-Timer expires flag
