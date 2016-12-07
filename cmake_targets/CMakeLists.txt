@@ -1811,6 +1811,22 @@ target_link_libraries (lte-softmodem-nos1 pthread m ${CONFIG_LIBRARIES} rt crypt
 target_link_libraries (lte-softmodem-nos1  ${LIB_LMS_LIBRARIES})
 target_link_libraries (lte-softmodem-nos1 ${T_LIB})
 
+
+# lte-hwlat
+###################################################
+add_executable(lte-hwlat
+  ${HW_SOURCE}
+  ${OPENAIR_TARGETS}/RT/USER/lte-hwlat.c
+  ${OPENAIR_TARGETS}/ARCH/COMMON/common_lib.c
+  )
+target_link_libraries (lte-hwlat
+  -Wl,--start-group
+  -Wl,--end-group )
+
+target_link_libraries (lte-hwlat rt pthread m )
+target_link_libraries (lte-hwlat ${option_HW_lib} )
+
+
 # rrh
 ################################
 #Note: only one RF type (USRP) is currently supported for RRH
