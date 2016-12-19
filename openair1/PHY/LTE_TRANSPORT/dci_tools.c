@@ -4158,13 +4158,18 @@ int generate_ue_dlsch_params_from_dci(int frame,
       }
     }
 
+    // Skip DCI decoding if mcs >=29 and first transmission expected or rnti = SI, P or RA: False Detection
+    if ((mcs > 28) && ((dlsch0_harq->round == 0) || (rnti==si_rnti) || (rnti==p_rnti) || (rnti==ra_rnti))) {
+    	return (-1);
+    }
+
     dlsch0_harq->DCINdi = ndi;
 
     // this a retransmission
     if(dlsch0_harq->round)
     {
-	// compare old TBS to new TBS
-    	if(dlsch0_harq->TBS != TBStable[get_I_TBS(mcs)][NPRB-1])
+	// compare old TBS to new TBS if mcs < 29
+    	if ((mcs < 29) && (dlsch0_harq->TBS != TBStable[get_I_TBS(mcs)][NPRB-1]))
     	{
     		// this is an eNB issue
     		// retransmisison but old and new TBS are different !!!
@@ -4174,13 +4179,17 @@ int generate_ue_dlsch_params_from_dci(int frame,
     	}
     }
 
-    dlsch0_harq->mcs = mcs;
+    if (mcs < 29) {
+        dlsch0_harq->mcs = mcs;
+    }
     if ((rnti==si_rnti) || (rnti==p_rnti) || (rnti==ra_rnti)) {
       dlsch0_harq->TBS = TBStable[mcs][NPRB-1];
       dlsch0_harq->Qm  = 2;
     }
     else {
-      dlsch0_harq->TBS = TBStable[get_I_TBS(mcs)][NPRB-1];
+	  if (mcs < 29) {
+		  dlsch0_harq->TBS = TBStable[get_I_TBS(mcs)][NPRB-1];
+	  }
       dlsch0_harq->Qm  = get_Qm(mcs);
     }
     dlsch[0]->rnti = rnti;
@@ -4482,13 +4491,16 @@ int generate_ue_dlsch_params_from_dci(int frame,
       return(0);
     }
 
-    dlsch0_harq->mcs         = mcs;
+    // Skip DCI decoding if mcs >=29 and first transmission expected : False Detection
+    if ((dlsch0_harq->round == 0) && (mcs > 28)) {
+    	return (-1);
+    }
 
     // this a retransmission
     if(dlsch0_harq->round)
     {
-    	// compare old TBS to new TBS
-    	if(dlsch0_harq->TBS != TBStable[get_I_TBS(mcs)][NPRB-1])
+    	// compare old TBS to new TBS if mcs < 29
+    	if ((mcs < 29) && (dlsch0_harq->TBS != TBStable[get_I_TBS(mcs)][NPRB-1]))
     	{
     		// this is an eNB issue
     		// retransmisison but old and new TBS are different !!!
@@ -4498,13 +4510,15 @@ int generate_ue_dlsch_params_from_dci(int frame,
     	}
     }
 
-    dlsch0_harq->TBS         = TBStable[get_I_TBS(mcs)][NPRB-1];
-    if (mcs <= 28)
-      dlsch0_harq->Qm          = get_Qm(mcs);
-    else if (mcs<=31)
-      dlsch0_harq->Qm          = (mcs-28)<<1;
-    else
-      LOG_E(PHY,"invalid mcs %d\n",mcs);
+    if (mcs < 29) {
+    	dlsch0_harq->mcs         = mcs;
+    	dlsch0_harq->TBS         = TBStable[get_I_TBS(mcs)][NPRB-1];
+    }
+    else if (mcs > 31) {
+    	LOG_E(PHY,"invalid mcs %d\n",mcs);
+    }
+    dlsch0_harq->Qm          = get_Qm(mcs);
+
     //    printf("test: MCS %d, NPRB %d, TBS %d\n",mcs,NPRB,dlsch0_harq->TBS);
     dlsch[0]->current_harq_pid = harq_pid;
 
