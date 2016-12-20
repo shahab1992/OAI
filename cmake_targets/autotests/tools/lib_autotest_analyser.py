@@ -31,8 +31,10 @@
 
 
 import re
-from pylab import *
+# from matplotlib import use
+# use('Agg')
 from matplotlib.font_manager import FontProperties
+from pylab import *
 
 import os
 from jinja2 import Environment, FileSystemLoader
@@ -64,9 +66,9 @@ def do_extract_metrics(args):
 
 	fname 	= args['file']
 	metric 	= args['metric']
-#	print(fname)
-#	print 'metric id = ' + metric['id']
-#	print 'metric regex = ' + metric['regex']
+	print(fname)
+	print 'metric id = ' + metric['id']
+	print 'metric regex = ' + metric['regex']
 
 	count 		= 0
 	mmin 		= 0
