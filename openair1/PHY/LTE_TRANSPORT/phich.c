@@ -1374,13 +1374,13 @@ void rx_phich(PHY_VARS_UE *ue,
       }
     } else {
       //#ifdef DEBUG_PHICH
-      LOG_D(PHY,"[UE  %d][PUSCH %d] Frame %d subframe %d PHICH, received NAK (%d) nseq %d, ngroup %d\n",
+      LOG_I(PHY,"[UE  %d][PUSCH %d] AbsSubFrame %d.%d PHICH, received NAK (%d) nseq %d, ngroup %d,round %d,Mlimit : %d\n",
             ue->Mod_id,harq_pid,
-            proc->frame_rx,
+            proc->frame_rx%1024,
             subframe,
             HI16,
             nseq_PHICH,
-            ngroup_PHICH,
+            ngroup_PHICH,ulsch->harq_processes[harq_pid]->round+1,
             ulsch->Mlimit);
       //#endif
 
@@ -1401,8 +1401,8 @@ void rx_phich(PHY_VARS_UE *ue,
           //ulsch->harq_processes[harq_pid]->subframe_scheduling_flag = 0;
           //ulsch->harq_processes[harq_pid]->round  = 0;
 
-          //LOG_I(PHY,"PUSCH MAX Retransmission acheived ==> flush harq buff (%d) \n",harq_pid);
-          //LOG_I(PHY,"[HARQ-UL harqId: %d] PHICH NACK MAX RETRANS(%d) ==> subframe_scheduling_flag = %d round: %d\n", harq_pid, ulsch->Mlimit, ulsch->harq_processes[harq_pid]->subframe_scheduling_flag, ulsch->harq_processes[harq_pid]->round);
+          LOG_D(PHY,"PUSCH MAX Retransmission acheived ==> flush harq buff (%d) \n",harq_pid);
+          LOG_D(PHY,"[HARQ-UL harqId: %d] PHICH NACK MAX RETRANS(%d) ==> subframe_scheduling_flag = %d round: %d\n", harq_pid, ulsch->Mlimit, ulsch->harq_processes[harq_pid]->subframe_scheduling_flag, ulsch->harq_processes[harq_pid]->round);
       }
       else
       {
@@ -1411,7 +1411,7 @@ void rx_phich(PHY_VARS_UE *ue,
           ulsch->O_RI = 0;
           ulsch->O    = 0;
           ulsch->uci_format = HLC_subband_cqi_nopmi;
-          //LOG_I(PHY,"[HARQ-UL harqId: %d] PHICH NACK ==> subframe_scheduling_flag = %d round: %d\n", harq_pid, ulsch->harq_processes[harq_pid]->subframe_scheduling_flag,ulsch->harq_processes[harq_pid]->round);
+          LOG_D(PHY,"[HARQ-UL harqId: %d] PHICH NACK ==> subframe_scheduling_flag = %d round: %d\n", harq_pid, ulsch->harq_processes[harq_pid]->subframe_scheduling_flag,ulsch->harq_processes[harq_pid]->round);
       }
     }
 #if T_TRACER
@@ -1429,9 +1429,9 @@ void rx_phich(PHY_VARS_UE *ue,
             nseq_PHICH,ngroup_PHICH);
     } else {
       //#ifdef PHICH_DEBUG
-      LOG_D(PHY,"[UE  %d][PUSCH %d] Frame %d subframe %d PHICH, received ACK (%d) nseq %d, ngroup %d\n\n",
+      LOG_I(PHY,"[UE  %d][PUSCH %d] AbsSubFrame %d.%d PHICH, received ACK (%d) nseq %d, ngroup %d\n",
             ue->Mod_id,harq_pid,
-            proc->frame_rx,
+            proc->frame_rx%1024,
             subframe, HI16,
             nseq_PHICH,ngroup_PHICH);
       //#endif

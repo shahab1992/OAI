@@ -50,10 +50,10 @@ int pbch_detection(PHY_VARS_UE *ue, runmode_t mode)
   LTE_DL_FRAME_PARMS *frame_parms=&ue->frame_parms;
   char phich_resource[6];
   
-#ifdef DEBUG_INITIAL_SYNCH
+//#ifdef DEBUG_INITIAL_SYNCH
   LOG_I(PHY,"[UE%d] Initial sync: starting PBCH detection (rx_offset %d)\n",ue->Mod_id,
         ue->rx_offset);
-#endif
+//#endif
 
   for (l=0; l<frame_parms->symbols_per_tti/2; l++) {
 
@@ -83,7 +83,7 @@ int pbch_detection(PHY_VARS_UE *ue, runmode_t mode)
   lte_ue_measurements(ue,
 		      ue->rx_offset,
 		      0,
-		      0);
+		      0,0);
   
   
   if (ue->frame_parms.frame_type == TDD) {
