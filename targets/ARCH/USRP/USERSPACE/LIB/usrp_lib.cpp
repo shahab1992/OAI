@@ -121,6 +121,20 @@ static int trx_usrp_start(openair0_device *device)
 {
   usrp_state_t *s = (usrp_state_t*)device->priv;
 
+  // setup GPIO for TDD, GPIO(0) = ATR_TX, GPIO(1) = ATR_RX
+  //set data direction register (DDR) to output
+  s->usrp->set_gpio_attr("FP0", "DDR", 0xf, 0xf);
+  
+  //set control register to ATR
+  s->usrp->set_gpio_attr("FP0", "CTRL", 0x1, 0xf);
+  
+  //set ATR register
+//  s->usrp->set_gpio_attr("FP0", "ATR_0X", 2, 0xf);
+  s->usrp->set_gpio_attr("FP0", "ATR_RX", 1, 0xf);
+//  s->usrp->set_gpio_attr("FP0", "ATR_TX", 4, 0xf);
+//  s->usrp->set_gpio_attr("FP0", "ATR_XX", 8, 0xf);
+
+
   // init recv and send streaming
   uhd::stream_cmd_t cmd(uhd::stream_cmd_t::STREAM_MODE_START_CONTINUOUS);
   cmd.time_spec = s->usrp->get_time_now() + uhd::time_spec_t(0.05);
@@ -152,6 +166,13 @@ static void trx_usrp_end(openair0_device *device)
   s->tx_md.end_of_burst = true;
   s->tx_stream->send("", 0, s->tx_md);
   s->tx_md.end_of_burst = false;
+
+  // release GPIO 
+  //set data direction register (DDR) to output
+  s->usrp->set_gpio_attr("oaigpio", "DDR", 0x0, 0x3);
+  
+  //set control register to GPIO
+  s->usrp->set_gpio_attr("oaigpio", "CTRL", 0x0, 0x3);
   
 }
 
