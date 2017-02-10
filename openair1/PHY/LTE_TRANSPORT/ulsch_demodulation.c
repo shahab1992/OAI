@@ -723,8 +723,9 @@ void ulsch_extract_rbs_single(int32_t **rxdataF,
   uint8_t aarx;
   int32_t *rxF,*rxF_ext;
 
-  //uint8_t symbol = l+Ns*frame_parms->symbols_per_tti/2;
-  uint8_t symbol = l+((7-frame_parms->Ncp)*(Ns&1)); ///symbol within sub-frame
+  uint8_t symbol     = l+((7-frame_parms->Ncp)*(Ns&3)); //symbol within sub-frame
+  uint8_t symbol_ext = l+((7-frame_parms->Ncp)*(Ns&1)); //symbol within sub-frame
+  // Note: This guarantees that memory for even/odd processing threads does not overlap
 
   for (aarx=0; aarx<frame_parms->nb_antennas_rx; aarx++) {
 
@@ -734,9 +735,10 @@ void ulsch_extract_rbs_single(int32_t **rxdataF,
  
 #ifdef DEBUG_ULSCH
     printf("ulsch_extract_rbs_single: 2*nb_rb1 = %d, 2*nb_rb2 = %d\n",nb_rb1,nb_rb2);
+    printf("ulsch_extract_rbs_single: Ns %d, symbol %d, symbol_ext %d\n",Ns,symbol,symbol_ext);
 #endif
 
-    rxF_ext   = &rxdataF_ext[aarx][(symbol*frame_parms->N_RB_UL*12)];
+    rxF_ext   = &rxdataF_ext[aarx][(symbol_ext*frame_parms->N_RB_UL*12)];
 
     if (nb_rb1) {
       rxF = &rxdataF[aarx][(first_rb*12 + frame_parms->first_carrier_offset + symbol*frame_parms->ofdm_symbol_size)];
@@ -1628,7 +1630,7 @@ void rx_ulsch(PHY_VARS_eNB *eNB,
                              ulsch[UE_id]->harq_processes[harq_pid]->first_rb,
                              ulsch[UE_id]->harq_processes[harq_pid]->nb_rb,
                              l%(frame_parms->symbols_per_tti/2),
-                             l/(frame_parms->symbols_per_tti/2),
+                             (subframe<<1)+(l<<1)/frame_parms->symbols_per_tti,
                              frame_parms);
 
     lte_ul_channel_estimation(eNB,proc,
@@ -1918,7 +1920,7 @@ void rx_ulsch_emul(PHY_VARS_eNB *eNB,
   if (eNB->frame_parms.nb_antennas_rx>1)
     write_output("/tmp/rxsig1.m","rxs1", &eNB->common_vars.rxdata[0][1][0],eNB->frame_parms.samples_per_tti*10,1,1);
 
-  write_output("/tmp/rxsigF0.m","rxsF0", &eNB->common_vars.rxdataF[0][0][0],eNB->frame_parms.ofdm_symbol_size*nsymb,1,1);
+  write_output("/tmp/rxsigF0.m","rxsF0", &eNB->common_vars.rxdataF[0][0][(subframe&1)*eNB->frame_parms.ofdm_symbol_size*eNB->frame_parms.symbols_per_tti],eNB->frame_parms.ofdm_symbol_size*nsymb,1,1);
 
   if (eNB->frame_parms.nb_antennas_rx>1)
     write_output("/tmp/rxsigF1.m","rxsF1", &eNB->common_vars.rxdataF[0][1][0],eNB->frame_parms.ofdm_symbol_size*nsymb,1,1);

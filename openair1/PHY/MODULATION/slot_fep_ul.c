@@ -22,20 +22,22 @@
 #include "PHY/defs.h"
 #include "PHY/extern.h"
 #include "defs.h"
-//#define DEBUG_FEP
+//#define DEBUG_FEP 1
+
 
 int slot_fep_ul(LTE_DL_FRAME_PARMS *frame_parms,
                 LTE_eNB_COMMON *eNB_common_vars,
                 unsigned char l,
                 unsigned char Ns,
                 unsigned char eNB_id,
-                int no_prefix)
-{
+                int no_prefix) {
 #ifdef DEBUG_FEP
   char fname[40], vname[40];
 #endif
   unsigned char aa;
-  unsigned char symbol = l+((7-frame_parms->Ncp)*(Ns&1)); ///symbol within sub-frame
+  unsigned char symbol = l+((7-frame_parms->Ncp)*(Ns&3)); ///symbol within 2 sub-frame
+  // Note: This guarantees that the a 2-thread receiver does not operate on the same memory for even and odd subframes
+ 
   unsigned int nb_prefix_samples = (no_prefix ? 0 : frame_parms->nb_prefix_samples);
   unsigned int nb_prefix_samples0 = (no_prefix ? 0 : frame_parms->nb_prefix_samples0);
   //  unsigned int subframe_offset;
@@ -96,7 +98,7 @@ int slot_fep_ul(LTE_DL_FRAME_PARMS *frame_parms,
   }
 
 #ifdef DEBUG_FEP
-  LOG_D(PHY,"slot_fep: Ns %d offset %d, symbol %d, nb_prefix_samples %d\n",Ns,slot_offset,symbol, nb_prefix_samples);
+  printf("slot_fep: Ns %d offset %d, symbol %d (%d), nb_prefix_samples %d\n",Ns,slot_offset,symbol,l, (l==0) ? nb_prefix_samples0 : nb_prefix_samples);
 #endif
 
   for (aa=0; aa<frame_parms->nb_antennas_rx; aa++) {
@@ -139,7 +141,7 @@ int slot_fep_ul(LTE_DL_FRAME_PARMS *frame_parms,
   }
 
 #ifdef DEBUG_FEP
-  LOG_D(PHY,"slot_fep: done\n");
+  LOG_I(PHY,"slot_fep: done\n");
 #endif
   return(0);
 }

@@ -1336,11 +1336,11 @@ int phy_init_lte_eNB(PHY_VARS_eNB *eNB,
 	for (i=0; i<NB_ANTENNA_PORTS_ENB; i++) {
 	  if (i<fp->nb_antenna_ports_eNB || i==5) {
 	    common_vars->txdataF[eNB_id][i] = (int32_t*)malloc16_clear(fp->ofdm_symbol_size*fp->symbols_per_tti*10*sizeof(int32_t) );
-#ifdef DEBUG_PHY
-	    printf("[openair][LTE_PHY][INIT] common_vars->txdataF[%d][%d] = %p (%lu bytes)\n",
+
+	    LOG_D(PHY,"[INIT] common_vars->txdataF[%d][%d] = %p (%lu bytes)\n",
 		   eNB_id,i,common_vars->txdataF[eNB_id][i],
 		   fp->ofdm_symbol_size*fp->symbols_per_tti*10*sizeof(int32_t));
-#endif
+
 	  }
 	}
       }
@@ -1351,10 +1351,10 @@ int phy_init_lte_eNB(PHY_VARS_eNB *eNB,
 	  // Allocate 10 subframes of I/Q TX signal data (time) if not
 	  common_vars->txdata[eNB_id][i]  = (int32_t*)malloc16_clear( fp->samples_per_tti*10*sizeof(int32_t) );
 
-#ifdef DEBUG_PHY
-	printf("[openair][LTE_PHY][INIT] common_vars->txdata[%d][%d] = %p (%lu bytes)\n",eNB_id,i,common_vars->txdata[eNB_id][i],
+
+	LOG_D(PHY,"[INIT] common_vars->txdata[%d][%d] = %p (%lu bytes)\n",eNB_id,i,common_vars->txdata[eNB_id][i],
 	       fp->samples_per_tti*10*sizeof(int32_t));
-#endif
+
       }
       
       for (i=0; i<NB_ANTENNA_PORTS_ENB; i++) {
@@ -1373,11 +1373,11 @@ int phy_init_lte_eNB(PHY_VARS_eNB *eNB,
 	      for (re=0; re<fp->ofdm_symbol_size; re++) 
 		common_vars->beam_weights[eNB_id][i][j][re] = 0x00007fff/fp->nb_antennas_tx; 
 	    }  
-#ifdef DEBUG_PHY
-	    msg("[openair][LTE_PHY][INIT] lte_common_vars->beam_weights[%d][%d][%d] = %p (%d bytes)\n",
+
+	    LOG_D(PHY,"[INIT] lte_common_vars->beam_weights[%d][%d][%d] = %p (%d bytes)\n",
 		eNB_id,i,j,common_vars->beam_weights[eNB_id][i][j],
 		fp->ofdm_symbol_size*sizeof(int32_t)); 
-#endif
+
 	  }
 	}
       }
@@ -1391,22 +1391,21 @@ int phy_init_lte_eNB(PHY_VARS_eNB *eNB,
 
       for (i=0; i<fp->nb_antennas_rx; i++) {
 	if (eNB->node_function != NGFI_RCC_IF4p5) {
-	  // allocate 2 subframes of I/Q signal data (time) if not an RCC (no time-domain signals)
+	  // allocate 10 subframes of signal data (time) if not an RCC (no time-domain signals)
 	  common_vars->rxdata[eNB_id][i] = (int32_t*)malloc16_clear( fp->samples_per_tti*10*sizeof(int32_t) );
-
-	  if (eNB->node_function != NGFI_RRU_IF5)
-	    // allocate 2 subframes of I/Q signal data (time, 7.5 kHz offset)
-	    common_vars->rxdata_7_5kHz[eNB_id][i] = (int32_t*)malloc16_clear( 2*fp->samples_per_tti*2*sizeof(int32_t) );
+	  LOG_D(PHY,"[LTE_PHY][INIT] common_vars->rxdata[%d][%d] = %p (%lu bytes)\n",eNB_id,i,common_vars->rxdata[eNB_id][i],fp->samples_per_tti*10*sizeof(int32_t));
 	}
-	if (eNB->node_function != NGFI_RRU_IF5)
-	  // allocate 2 subframes of I/Q signal data (frequency)
-	  common_vars->rxdataF[eNB_id][i] = (int32_t*)malloc16_clear(sizeof(int32_t)*(2*fp->ofdm_symbol_size*fp->symbols_per_tti) );
-#ifdef DEBUG_PHY
-	printf("[openair][LTE_PHY][INIT] common_vars->rxdata[%d][%d] = %p (%lu bytes)\n",eNB_id,i,common_vars->rxdata[eNB_id][i],fp->samples_per_tti*10*sizeof(int32_t));
-	if (eNB->node_function != NGFI_RRU_IF5)
-	  printf("[openair][LTE_PHY][INIT] common_vars->rxdata_7_5kHz[%d][%d] = %p (%lu bytes)\n",eNB_id,i,common_vars->rxdata_7_5kHz[eNB_id][i],fp->samples_per_tti*2*sizeof(int32_t));
-#endif
-        common_vars->rxdataF[eNB_id][i] = (int32_t*)malloc16_clear(sizeof(int32_t)*(fp->ofdm_symbol_size*fp->symbols_per_tti) );
+
+	if (eNB->node_function != NGFI_RRU_IF5) {
+	    // allocate 2 subframes of signal data (time, 7.5 kHz offset)
+	    common_vars->rxdata_7_5kHz[eNB_id][i] = (int32_t*)malloc16_clear( 2*fp->samples_per_tti*2*sizeof(int32_t) );
+	    LOG_D(PHY,"[LTE_PHY][INIT] common_vars->rxdata_7_5kHz[%d][%d] = %p (%lu bytes)\n",eNB_id,i,common_vars->rxdata_7_5kHz[eNB_id][i],fp->samples_per_tti*2*sizeof(int32_t));
+	  
+	  // allocate 2 subframes of signal data (frequency)
+	    common_vars->rxdataF[eNB_id][i] = (int32_t*)malloc16_clear(sizeof(int32_t)*(2*fp->ofdm_symbol_size*fp->symbols_per_tti) );
+	    LOG_D(PHY,"[LTE_PHY][INIT] common_vars->rxdataF[%d][%d] = %p (%lu bytes)\n",eNB_id,i,common_vars->rxdataF[eNB_id][i],fp->samples_per_tti*2*sizeof(int32_t));
+	}
+
       }
       
       if ((eNB->node_function != NGFI_RRU_IF4p5)&&(eNB->node_function != NGFI_RRU_IF5)) {
@@ -1455,9 +1454,9 @@ int phy_init_lte_eNB(PHY_VARS_eNB *eNB,
               "nb_antennas_rx too large");
   for (i=0; i<fp->nb_antennas_rx; i++) {
     prach_vars->rxsigF[i] = (int16_t*)malloc16_clear( fp->ofdm_symbol_size*12*2*sizeof(int16_t) );
-#ifdef DEBUG_PHY
-    printf("[openair][LTE_PHY][INIT] prach_vars->rxsigF[%d] = %p\n",i,prach_vars->rxsigF[i]);
-#endif
+
+    LOG_D(PHY,"[INIT] prach_vars->rxsigF[%d] = %p\n",i,prach_vars->rxsigF[i]);
+
   }
   
   if ((eNB->node_function != NGFI_RRU_IF4p5)&&(eNB->node_function != NGFI_RRU_IF5)) {
@@ -1465,9 +1464,9 @@ int phy_init_lte_eNB(PHY_VARS_eNB *eNB,
 		"nb_antennas_rx too large");
     for (i=0; i<fp->nb_antennas_rx; i++) {
       prach_vars->prach_ifft[i] = (int16_t*)malloc16_clear(1024*2*sizeof(int16_t));
-#ifdef DEBUG_PHY
-      printf("[openair][LTE_PHY][INIT] prach_vars->prach_ifft[%d] = %p\n",i,prach_vars->prach_ifft[i]);
-#endif
+
+      LOG_D(PHY,"[INIT] prach_vars->prach_ifft[%d] = %p\n",i,prach_vars->prach_ifft[i]);
+
     }
 
     for (UE_id=0; UE_id<NUMBER_OF_UE_MAX; UE_id++) {

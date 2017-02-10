@@ -46,6 +46,8 @@
 #include "unitary_defs.h"
 
 #include "PHY/TOOLS/lte_phy_scope.h"
+#include "targets/ARCH/ETHERNET/USERSPACE/LIB/ethernet_lib.h"
+
 
 PHY_VARS_eNB *eNB;
 PHY_VARS_UE *UE;
@@ -164,6 +166,33 @@ void fill_ulsch_dci(PHY_VARS_eNB *eNB,void *UL_dci,int first_rb,int nb_rb,int mc
 
 extern void eNB_fep_full(PHY_VARS_eNB *eNB);
 extern void eNB_fep_full_2thread(PHY_VARS_eNB *eNB);
+int subframe=3;
+
+int if4_trx_write(openair0_device *device, int symbol_id,void **buff, int n, int dummy, int flag) {
+
+  int f=eNB->proc.proc_rxtx[subframe&1].frame_rx,sf=eNB->proc.proc_rxtx[subframe&1].subframe_rx;
+  uint16_t pt;
+  uint32_t s;
+  IF4p5_header_t *packet_header=(IF4p5_header_t *)eNB->ifbuffer.rx;
+
+  int frame = ((packet_header->frame_status)>>6)&0xffff;
+  int subframe = ((packet_header->frame_status)>>22)&0x000f;
+
+  if (flag != IF4p5_PULFFT) return 0;
+  // copy transmitted IF4p5 buffer into receive buffer
+  memcpy((void*)eNB->ifbuffer.rx,buff[0],(n<<1)+sizeof_IF4p5_header_t);
+
+
+
+  // clear rxdataF
+  memset((void*)&eNB->common_vars.rxdataF[0][0][(symbol_id + ((subframe&1)*((eNB->frame_parms.Ncp==1) ? 12 : 14)))*eNB->frame_parms.ofdm_symbol_size],
+	 0,
+	 eNB->frame_parms.ofdm_symbol_size<<2);
+  // run receive IF4 which copies back into rxdataF
+  recv_IF4p5(eNB,&f,&sf,&pt,&s);
+
+  return n;
+}
 
 int main(int argc, char **argv)
 {
@@ -205,7 +234,6 @@ int main(int argc, char **argv)
   unsigned short input_buffer_length;
   unsigned int ret;
   unsigned int coded_bits_per_codeword,nsymb;
-  int subframe=3;
   unsigned int tx_lev=0,tx_lev_dB,trials,errs[4]= {0,0,0,0},round_trials[4]= {0,0,0,0};
   uint8_t transmission_mode=1,n_rx=1;
 
@@ -276,6 +304,7 @@ int main(int argc, char **argv)
 
   int threequarter_fs=0;
   int ndi;
+  int if4sim=0;
 
   opp_enabled=1; // to enable the time meas
 
@@ -286,7 +315,7 @@ int main(int argc, char **argv)
 
   logInit();
 
-  while ((c = getopt (argc, argv, "hapZEbm:n:Y:X:x:s:w:e:q:d:D:O:c:r:i:f:y:c:oA:C:R:g:N:l:S:T:QB:PI:LF")) != -1) {
+  while ((c = getopt (argc, argv, "hapZEbm:n:Y:X:x:s:w:e:q:d:D:O:c:r:i:f:y:c:oA:C:R:g:N:l:S:T:QB:PI:LFG")) != -1) {
     switch (c) {
     case 'a':
       channel_model = AWGN;
@@ -437,6 +466,10 @@ int main(int argc, char **argv)
     case 'T':
       tdd_config=atoi(optarg);
       frame_type=TDD;
+      break;
+
+    case 'G':
+      if4sim = 1;
       break;
 
     case 'p':
@@ -776,7 +809,17 @@ int main(int argc, char **argv)
   printf("Rate = %f (mod %d), coded bits %d\n",rate,get_Qm_ul(mcs),coded_bits_per_codeword);
 
 
+  if (if4sim == 1) {
 
+    printf("Running with IF4 in the transmission loop\n");
+    eth_state_t *eth = (eth_state_t*)malloc(sizeof(eth_state_t));
+    memset(eth, 0, sizeof(eth_state_t));
+    eth->flags = ETH_UDP_IF4p5_MODE;
+
+    eNB->ifdevice.priv=eth;
+    eNB->ifdevice.trx_write_func = if4_trx_write;
+    malloc_IF4p5_buffer(eNB);
+  }
   for (ch_realization=0; ch_realization<n_ch_rlz; ch_realization++) {
 
     /*
@@ -1176,6 +1219,9 @@ int main(int argc, char **argv)
 	  eNB->do_prach = NULL;
 
 	  phy_procedures_eNB_common_RX(eNB,proc_rxtx);
+	  if (if4sim==1) {
+	    send_IF4p5(eNB,proc_rxtx->frame_rx,proc_rxtx->subframe_rx,IF4p5_PULFFT,proc_rxtx->subframe_rx);
+	  }
 	  phy_procedures_eNB_uespec_RX(eNB,proc_rxtx,no_relay);
 
 
