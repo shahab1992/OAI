@@ -129,6 +129,11 @@ unsigned short config_frames[4] = {2,9,11,13};
 #include "stats.h"
 #endif
 
+#include "PHY/CUDA/CUDA_define.h"
+
+#include "PHY/CUDA/MODULATION/defs.h"
+#include "PHY/CUDA/INIT/defs.h"
+
 #define FRAME_PERIOD    100000000ULL
 #define DAQ_PERIOD      66667ULL
 
@@ -953,7 +958,9 @@ void do_OFDM_mod_rt(int subframe,PHY_VARS_eNB *phy_vars_eNB)
   int slot_sizeF = (phy_vars_eNB->lte_frame_parms.ofdm_symbol_size)*
                    ((phy_vars_eNB->lte_frame_parms.Ncp==1) ? 6 : 7);
   int len;
-
+#ifdef CUDA
+  static int x = 0;
+#endif
   slot_offset_F = (subframe<<1)*slot_sizeF;
 
   slot_offset = subframe*phy_vars_eNB->lte_frame_parms.samples_per_tti;
@@ -977,7 +984,13 @@ void do_OFDM_mod_rt(int subframe,PHY_VARS_eNB *phy_vars_eNB)
                      6,
                      phy_vars_eNB->lte_frame_parms.nb_prefix_samples,
                      CYCLIC_PREFIX);
-      } else {
+      } 
+	  else {
+#ifdef CUDA
+        
+		idft512ad_cu( (short *)&phy_vars_eNB->lte_eNB_common_vars.txdataF[0][aa][slot_offset_F],(short *)dummy_tx_b, x);
+		x = x%10;
+#else
         normal_prefix_mod(&phy_vars_eNB->lte_eNB_common_vars.txdataF[0][aa][slot_offset_F],
                           dummy_tx_b,
                           7,
@@ -988,6 +1001,7 @@ void do_OFDM_mod_rt(int subframe,PHY_VARS_eNB *phy_vars_eNB)
 			    dummy_tx_b+(phy_vars_eNB->lte_frame_parms.samples_per_tti>>1),
 			    7,
 			    &(phy_vars_eNB->lte_frame_parms));
+#endif
       }
 
       // if S-subframe generate first slot only
@@ -3742,7 +3756,12 @@ int main( int argc, char **argv )
       sleep(1);
       LOG_D(HW,"[lte-softmodem.c] eNB threads created\n");
     }
-
+#ifdef CUDA
+    printf("[CUDA] initial CUDA\n");
+    init_cuda( PHY_vars_eNB_g[0][CC_id], *frame_parms[0] );
+#endif
+	
+	
     printf("Creating main eNB_thread \n");
 #ifdef RTAI
     main_eNB_thread = rt_thread_create(eNB_thread, NULL, PTHREAD_STACK_MIN);
@@ -3910,7 +3929,7 @@ int main( int argc, char **argv )
     terminate_opt();
 
   logClean();
-
+  free_cuda();
   return 0;
 }
 
