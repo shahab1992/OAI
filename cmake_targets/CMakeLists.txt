@@ -28,6 +28,26 @@
 
 cmake_minimum_required (VERSION 2.8)
 
+##############################################
+# Base CUDA setting
+##############################################
+find_package(CUDA)
+message ("cuda include ${CUDA_INCLUDE_DIRS}")
+message ("cud library ${CUDA_LIBRARY_DIRS}")
+
+add_definitions("-L/usr/local/cuda/lib64")
+
+SET(CUDA_NVCC_FLAGS
+  "${CUDA_NVCC_FLAGS};-arch=sm_52;")
+
+# Disable warnings for CUDA
+SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-w;-O3")
+SET(CUDA_VERBOSE_BUILD ON)
+SET(CUDA_HOST_COMPILER "/usr/bin/g++")
+
+SET(CUDA_SEPARABLE_COMPILATION ON)
+
+
 #############################################
 # Base directories, compatible with legacy OAI building
 ################################################
@@ -1610,7 +1630,15 @@ add_definitions(-DASN1_MINIMUM_VERSION=924)
 # lte-softmodem is both eNB and UE implementation
 ###################################################
 
-add_executable(lte-softmodem
+###################################################
+# For CUDA library 
+###################################################
+CUDA_ADD_LIBRARY(PUSCH_CU  
+  ${OPENAIR1_DIR}/PHY/CUDA/MODULATION/lte_dfts.cu
+  ${OPENAIR1_DIR}/PHY/CUDA/INIT/init_cuda.cu
+)
+
+cuda_add_executable(lte-softmodem
   ${rrc_h}
   ${s1ap_h}
   ${OPENAIR_BIN_DIR}/messages_xml.h
@@ -1634,11 +1662,28 @@ add_executable(lte-softmodem
   ${T_SOURCE}
   )
 
+  
+  
+###################################################
+# For link cufft 
+###################################################  
+  
+CUDA_ADD_CUFFT_TO_TARGET(lte-softmodem)
+CUDA_ADD_CUFFT_TO_TARGET(PUSCH_CU)
+
+target_link_libraries (lte-softmodem
+#cudadevrt cudart
+cuda boost_system)  
+
 target_link_libraries (lte-softmodem -ldl
   -Wl,--start-group
-  RRC_LIB S1AP_LIB S1AP_ENB GTPV1U SECU_CN SECU_OSA UTIL HASHTABLE SCTP_CLIENT UDP SCHED_LIB PHY LFDS L2 ${MSC_LIB} ${RAL_LIB} ${NAS_UE_LIB} ${ITTI_LIB} ${MIH_LIB} 
+  RRC_LIB S1AP_LIB S1AP_ENB GTPV1U SECU_CN SECU_OSA UTIL HASHTABLE SCTP_CLIENT UDP SCHED_LIB PHY PUSCH_CU LFDS L2 ${MSC_LIB} ${RAL_LIB} ${NAS_UE_LIB} ${ITTI_LIB} ${MIH_LIB} 
   -Wl,--end-group )
 
+target_link_libraries (lte-softmodem ${LIBXML2_LIBRARIES} cudart -L/usr/local/cuda/lib64)
+target_link_libraries (lte-softmodem ${LIBXML2_LIBRARIES} cudadevrt -L/usr/local/cuda/lib64)  
+  
+  
 target_link_libraries (lte-softmodem ${LIBXML2_LIBRARIES})
 target_link_libraries (lte-softmodem pthread m ${CONFIG_LIBRARIES} rt crypt ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES} ${NETTLE_LIBRARIES} sctp ${option_HW_lib} ${option_TP_lib} ${XFORMS_LIBRARIES} ) 
 target_link_libraries (lte-softmodem ${LIB_LMS_LIBRARIES})
