@@ -1,3 +1,13 @@
+/*! \file slot_fep_ul.cu
+ * \Initilization for CUDA parameters 
+ * \author Shi-Yi Ou
+ * \date 2017
+ * \version 0.1
+ * \company isIP LAB, Department of Computer Science, National Chiao Tung University, Hsinchu, Taiwan
+ * \email: 
+ * \note
+ * \warning
+ */
 #include "defs.h"
 #include "PHY/CUDA/extern.h"
 #include "PHY/LTE_TRANSPORT/extern.h"
