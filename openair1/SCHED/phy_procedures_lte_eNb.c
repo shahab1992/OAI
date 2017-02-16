@@ -70,6 +70,11 @@
 
 //#define DIAG_PHY
 
+#include "PHY/CUDA/CUDA_define.h"
+
+#include "PHY/CUDA/MODULATION/defs.h"
+#include "PHY/CUDA/extern.h"
+
 #define NS_PER_SLOT 500000
 
 #define PUCCH 1
@@ -2716,7 +2721,9 @@ void phy_procedures_eNB_RX(const unsigned char sched_subframe,PHY_VARS_eNB *phy_
 
   if (abstraction_flag == 0) {
     start_meas(&phy_vars_eNB->ofdm_demod_stats);
-
+#ifdef CUDA
+    dft512rm_cu((int16_t *)&phy_vars_eNB->lte_eNB_common_vars.rxdata_7_5kHz[0][0][0], (int16_t *) &phy_vars_eNB->lte_eNB_common_vars.rxdataF[0][0][0],sched_subframe);
+#else
     for (l=0; l<phy_vars_eNB->lte_frame_parms.symbols_per_tti/2; l++) {
 
       slot_fep_ul(&phy_vars_eNB->lte_frame_parms,
@@ -2734,7 +2741,7 @@ void phy_procedures_eNB_RX(const unsigned char sched_subframe,PHY_VARS_eNB *phy_
                   0
                  );
     }
-
+#endif
     stop_meas(&phy_vars_eNB->ofdm_demod_stats);
   }
 
@@ -2859,8 +2866,11 @@ void phy_procedures_eNB_RX(const unsigned char sched_subframe,PHY_VARS_eNB *phy_
       stop_meas(&phy_vars_eNB->ulsch_demodulation_stats);
 
 
-      start_meas(&phy_vars_eNB->ulsch_decoding_stats);
-
+      start_meas(&phy_vars_eNB->ulsch_decoding_stats);/*
+      cudaEvent_t startEvent, stopEvent;
+      cudaEventCreate(&startEvent);
+      cudaEventCreate(&stopEvent);
+      cudaEventRecord(startEvent, 0);*/
       if (abstraction_flag == 0) {
         ret = ulsch_decoding(phy_vars_eNB,
                              i,
@@ -2878,7 +2888,14 @@ void phy_procedures_eNB_RX(const unsigned char sched_subframe,PHY_VARS_eNB *phy_
                                   &rnti);
       }
 
-#endif
+#endif/*
+      float time;
+  cudaEventRecord(stopEvent, 0);
+  cudaEventSynchronize(stopEvent);
+  cudaEventElapsedTime(&time, startEvent, stopEvent);
+  printf("[GPU] end of decoding %f\n",time);
+  cudaEventDestroy(startEvent);
+  cudaEventDestroy(stopEvent);*/
       stop_meas(&phy_vars_eNB->ulsch_decoding_stats);
 
       LOG_D(PHY,"[eNB %d][PUSCH %d] frame %d subframe %d RNTI %x RX power (%d,%d) RSSI (%d,%d) N0 (%d,%d) dB ACK (%d,%d), decoding iter %d\n",
