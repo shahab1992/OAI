@@ -38,6 +38,7 @@
 #include "SIMULATION/TOOLS/defs.h"
 //#define DEBUG_DLSCH_DECODING
  
+extern double cpuf;
 
 void free_ue_dlsch(LTE_UE_DLSCH_t *dlsch)
 {
@@ -341,6 +342,8 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
   printf("Segmentation: C %d, Cminus %d, Kminus %d, Kplus %d\n",harq_process->C,harq_process->Cminus,harq_process->Kminus,harq_process->Kplus);
 #endif
 
+  opp_enabled=1;
+
   for (r=0; r<harq_process->C; r++) {
 
     
@@ -484,6 +487,10 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
 
 
       stop_meas(dlsch_turbo_decoding_stats);
+
+      printf("Segmentation: C %d r %d, dlsch_rate_unmatching_stats %5.3f  dlsch_deinterleaving_stats %5.3f  dlsch_turbo_decoding_stats %5.3f \n",
+              harq_process->C,r,dlsch_rate_unmatching_stats->p_time/(cpuf*1000.0),dlsch_deinterleaving_stats->p_time/(cpuf*1000.0),dlsch_turbo_decoding_stats->p_time/(cpuf*1000.0));
+
     }
 #else
     if ((harq_process->C == 1) ||  

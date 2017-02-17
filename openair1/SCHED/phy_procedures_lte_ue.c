@@ -74,6 +74,7 @@ fifo_dump_emos_UE emos_dump_UE;
 #define NS_PER_SLOT 500000
 
 extern int oai_exit;
+extern double cpuf;
 
 
 
@@ -2197,6 +2198,9 @@ void phy_procedures_UE_TX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,ui
       
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_UE_TX, VCD_FUNCTION_OUT);
   stop_meas(&ue->phy_proc_tx);
+  printf("------FULL TX PROC : %5.2f ------\n",ue->phy_proc_tx.p_time/(cpuf*1000.0));
+
+
 }
 
 void phy_procedures_UE_S_TX(PHY_VARS_UE *ue,uint8_t eNB_id,uint8_t abstraction_flag,relaying_type_t r_type)
@@ -3371,6 +3375,7 @@ void ue_dlsch_procedures(PHY_VARS_UE *ue,
 	return;
       }
     }
+    opp_enabled=1;
 
     if (abstraction_flag == 0) {
 
@@ -3405,6 +3410,10 @@ void ue_dlsch_procedures(PHY_VARS_UE *ue,
 			   pdsch==PDSCH?1:0,
 			   dlsch0->harq_processes[harq_pid]->TBS>256?1:0);
       stop_meas(&ue->dlsch_decoding_stats);
+
+      printf("ue->dlsch_decoding_stats %5.3f  ue->dlsch_unscrambling_stats %5.3f \n",
+              (ue->dlsch_decoding_stats.p_time)/(cpuf*1000.0),(ue->dlsch_unscrambling_stats.p_time)/(cpuf*1000.0));
+
     }
 	
     else {
@@ -3548,6 +3557,7 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
              ue->frame_parms.samples_per_tti * 4));
 
   start_meas(&ue->phy_proc_rx);
+  start_meas(&ue->generic_stat);
 
   pmch_flag = is_pmch_subframe(frame_rx,subframe_rx,&ue->frame_parms) ? 1 : 0;
 
@@ -3734,6 +3744,9 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
     }
   } // not an S-subframe
 
+  stop_meas(&ue->generic_stat);
+  printf("from start until pdsch proc %5.2f \n",ue->generic_stat.p_time/(cpuf*1000.0));
+
   // run pbch procedures if subframe is 0
   if (subframe_rx == 0)
     ue_pbch_procedures(eNB_id,ue,proc,abstraction_flag);
@@ -3741,6 +3754,8 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
   // do procedures for C-RNTI
   if (ue->dlsch[eNB_id][0]->active == 1) {
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PDSCH_PROC, VCD_FUNCTION_IN);
+    start_meas(&ue->pdsch_procedures_stat);
+
     ue_pdsch_procedures(ue,
 			proc,
 			eNB_id,
@@ -3750,6 +3765,9 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
 			1+(ue->frame_parms.symbols_per_tti>>1),
 			ue->frame_parms.symbols_per_tti-1,
 			abstraction_flag);
+    stop_meas(&ue->pdsch_procedures_stat);
+
+    start_meas(&ue->dlsch_procedures_stat);
     ue_dlsch_procedures(ue,
 			proc,
 			eNB_id,
@@ -3759,9 +3777,16 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
 			&ue->dlsch_errors[eNB_id],
 			mode,
 			abstraction_flag);
+    stop_meas(&ue->dlsch_procedures_stat);
+
+
+    printf("pdsch proc %5.2f dlsch proc %5.2f \n",ue->pdsch_procedures_stat.p_time/(cpuf*1000.0),ue->dlsch_procedures_stat.p_time/(cpuf*1000.0));
+
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PDSCH_PROC, VCD_FUNCTION_OUT);
 
   }
+
+  start_meas(&ue->generic_stat);
 
   // do procedures for SI-RNTI
   if ((ue->dlsch_SI[eNB_id]) && (ue->dlsch_SI[eNB_id]->active == 1)) {
@@ -3858,6 +3883,8 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
   }
 
 
+  stop_meas(&ue->generic_stat);
+  printf("after tubo until end of Rx %5.2f \n",ue->generic_stat.p_time/(cpuf*1000.0));
 
 #ifdef EMOS
   phy_procedures_emos_UE_RX(ue,slot,eNB_id);
@@ -3866,6 +3893,7 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
      
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_UE_RX, VCD_FUNCTION_OUT);
   stop_meas(&ue->phy_proc_rx);
+  printf("------FULL RX PROC : %5.2f ------\n",ue->phy_proc_rx.p_time/(cpuf*1000.0));
   return (0);
 }
    
