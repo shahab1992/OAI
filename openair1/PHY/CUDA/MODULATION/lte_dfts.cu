@@ -1,6 +1,6 @@
 /*! \file slot_fep_ul.cu
  * \dft/idft feature of CUDA version
- * \author Shi-Yi Ou
+ * \author isIP
  * \date 2017
  * \version 0.1
  * \company isIP LAB, Department of Computer Science, National Chiao Tung University, Hsinchu, Taiwan
