@@ -1,6 +1,6 @@
 /*! \file slot_fep_ul.cu
  * \Initilization for CUDA parameters 
- * \author Shi-Yi Ou
+ * \author isIP
  * \date 2017
  * \version 0.1
  * \company isIP LAB, Department of Computer Science, National Chiao Tung University, Hsinchu, Taiwan
