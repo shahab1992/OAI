@@ -1033,6 +1033,7 @@ set(PHY_SRC
   ${OPENAIR1_DIR}/PHY/LTE_TRANSPORT/dlsch_coding.c
   ${OPENAIR1_DIR}/PHY/LTE_TRANSPORT/dlsch_modulation.c
   ${OPENAIR1_DIR}/PHY/LTE_TRANSPORT/dlsch_demodulation.c
+  ${OPENAIR1_DIR}/PHY/LTE_TRANSPORT/dlsch_receivers.c
   ${OPENAIR1_DIR}/PHY/LTE_TRANSPORT/dlsch_llr_computation.c
   ${OPENAIR1_DIR}/PHY/LTE_TRANSPORT/power_control.c
   ${OPENAIR1_DIR}/PHY/LTE_TRANSPORT/dlsch_decoding.c

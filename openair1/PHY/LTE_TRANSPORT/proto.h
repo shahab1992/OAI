@@ -1024,7 +1024,7 @@ uint16_t dlsch_extract_rbs_single(int32_t **rxdataF,
                                   uint32_t *rb_alloc,
                                   uint8_t symbol,
                                   uint8_t subframe,
-                                  uint32_t high_speed_flag,
+                                  uint8_t high_speed_flag,
                                   LTE_DL_FRAME_PARMS *frame_parms);
 
 /** \fn dlsch_extract_rbs_dual(int32_t **rxdataF,
@@ -2116,6 +2116,33 @@ double computeRhoB_UE(PDSCH_CONFIG_DEDICATED  *pdsch_config_dedicated,
 uint8_t get_prach_prb_offset(LTE_DL_FRAME_PARMS *frame_parms, uint8_t tdd_mapindex, uint16_t Nf);
 
 uint8_t ul_subframe2pdcch_alloc_subframe(LTE_DL_FRAME_PARMS *frame_parms,uint8_t n);
+
+int32_t rx_pdsch_sap (LTE_UE_COMMON  *common_vars,
+                      LTE_UE_PDSCH   **pdsch_vars,
+                      LTE_UE_DLSCH_t **dlsch,
+                      LTE_DL_FRAME_PARMS *frame_parms,
+                      PHY_MEASUREMENTS *measurements,
+                      uint32_t *rballoc,
+                      uint8_t eNB_id,
+                      uint8_t subframe,
+                      uint8_t symbol,
+                      uint8_t first_symbol_flag,
+                      uint8_t harq_pid,
+                      uint8_t high_speed_flag);
+
+int32_t rx_pdsch_txdiv (LTE_UE_COMMON  *common_vars,
+                        LTE_UE_PDSCH   **pdsch_vars,
+                        LTE_UE_DLSCH_t **dlsch,
+                        LTE_DL_FRAME_PARMS *frame_parms,
+                        PHY_MEASUREMENTS *measurements,
+                        uint32_t *rballoc,
+                        uint8_t eNB_id,
+                        uint8_t subframe,
+                        uint8_t symbol,
+                        uint8_t first_symbol_flag,
+                        uint8_t harq_pid,
+                        uint8_t high_speed_flag);
+
 
 /**@}*/
 #endif
