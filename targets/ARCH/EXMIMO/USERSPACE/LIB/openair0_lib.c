@@ -341,7 +341,10 @@ int openair0_config(openair0_config_t *openair0_cfg, int UE_flag)
       tx_filter = TXLPF5;
     } else if (openair0_cfg[card].sample_rate==7.68e6) {
       resampling_factor = 2;
-      rx_filter = RXLPF25;
+      if (openair0_cfg[card].duplex_mode==duplex_mode_TDD) // TDD workaround for EXMIMO
+        rx_filter = RXLPF5;
+      else
+        rx_filter = RXLPF25;
       tx_filter = TXLPF25;
     } else {
       printf("Sampling rate not supported, using default 7.68MHz");
@@ -379,6 +382,11 @@ int openair0_config(openair0_config_t *openair0_cfg, int UE_flag)
         p_exmimo_config->rf.rf_mode[ant] += (RXEN + DMAMODE_RX + RXLPFNORM + RXLPFEN + rx_filter);
 
         p_exmimo_config->rf.rf_freq_rx[ant] = (unsigned int)openair0_cfg[card].rx_freq[ant];
+
+        // TDD workaround
+        if (openair0_cfg[card].duplex_mode==duplex_mode_TDD)
+          p_exmimo_config->rf.rf_freq_rx[ant] += openair0_cfg[card].sample_rate/4; 
+
         p_exmimo_config->rf.rx_gain[ant][0] = (unsigned int)openair0_cfg[card].rx_gain[ant];
         printf("openair0 : programming card %d RX antenna %d (freq %u, gain %d)\n",card,ant,p_exmimo_config->rf.rf_freq_rx[ant],p_exmimo_config->rf.rx_gain[ant][0]);
 
@@ -418,10 +426,12 @@ int openair0_config(openair0_config_t *openair0_cfg, int UE_flag)
 
     if (openair0_cfg[card].duplex_mode==duplex_mode_FDD) {
       p_exmimo_config->framing.tdd_config = DUPLEXMODE_FDD;
+      //p_exmimo_config->framing.tdd_config = DUPLEXMODE_TDD + TXRXSWITCH_LSB + ACTIVE_RF;
       printf("!!!!!setting FDD (tdd_config=%d)\n",p_exmimo_config->framing.tdd_config);
     } 
     else {
-      p_exmimo_config->framing.tdd_config = DUPLEXMODE_TDD + TXRXSWITCH_LSB + ACTIVE_RF;
+      //p_exmimo_config->framing.tdd_config = DUPLEXMODE_TDD + TXRXSWITCH_LSB + ACTIVE_RF;
+      p_exmimo_config->framing.tdd_config = DUPLEXMODE_FDD;
       printf("!!!!!setting TDD (tdd_config=%d)\n",p_exmimo_config->framing.tdd_config);
     }
 

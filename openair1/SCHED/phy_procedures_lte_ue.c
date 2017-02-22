@@ -41,6 +41,7 @@
 #include "assertions.h"
 #include "defs.h"
 #include "PHY/defs.h"
+#include "PHY/MODULATION/defs.h"
 #include "PHY/extern.h"
 #include "SCHED/defs.h"
 #include "SCHED/extern.h"
@@ -2467,7 +2468,12 @@ int phy_procedures_UE_RX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstrac
   // This is normal processing (i.e. not MBSFN)
   // RX processing of symbols in slot_rx
 
-  
+  // TDD workaround 
+#ifdef EXMIMO
+  if (phy_vars_ue->lte_frame_parms.frame_type == TDD) {
+    remove_1_4_fs(phy_vars_ue,slot_rx);
+  }
+#endif
 
   for (l=0; l<n_symb; l++) {
     if (abstraction_flag == 0) {

@@ -238,7 +238,7 @@ static char                     UE_flag=0;
 static char                     threequarter_fs=0;
 
 uint32_t                 downlink_frequency[MAX_NUM_CCs][4];
-int32_t                  uplink_frequency_offset[MAX_NUM_CCs][4];
+int32_t                  uplink_frequency_offset[MAX_NUM_CCs][4] = {{120000000,12000000,120000000,120000000}};
 
 openair0_rf_map rf_map[MAX_NUM_CCs];
 

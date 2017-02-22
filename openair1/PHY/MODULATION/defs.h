@@ -93,6 +93,8 @@ void remove_7_5_kHz(PHY_VARS_eNB *phy_vars_eNB,uint8_t subframe);
 
 void apply_7_5_kHz(PHY_VARS_UE *phy_vars_ue,int32_t*txdata,uint8_t subframe);
 
+void remove_1_4_fs(PHY_VARS_UE *phy_vars_ue,uint8_t subframe);
+
 void init_prach625(LTE_DL_FRAME_PARMS *frame_parms);
 
 void remove_625_Hz(PHY_VARS_eNB *phy_vars_eNB,int16_t *prach);
