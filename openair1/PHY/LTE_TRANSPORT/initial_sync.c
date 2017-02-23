@@ -282,6 +282,7 @@ int initial_sync(PHY_VARS_UE *phy_vars_ue, runmode_t mode)
   LTE_DL_FRAME_PARMS *frame_parms = &phy_vars_ue->lte_frame_parms;
   int ret=-1;
   int aarx,rx_power=0;
+  int slot;
   /*#ifdef OAI_USRP
   __m128i *rxdata128;
   #endif*/
@@ -294,6 +295,13 @@ int initial_sync(PHY_VARS_UE *phy_vars_ue, runmode_t mode)
   write_output("rxdata0.m","rxd0",phy_vars_ue->lte_ue_common_vars.rxdata[0],10*frame_parms->samples_per_tti,1,1);
   exit(-1);
   */
+   
+#ifdef EXMIMO
+   for (slot=0; slot<20; slot++) {
+     remove_1_4_fs(phy_vars_ue,slot,0);
+   }  
+#endif
+  
   sync_pos = lte_sync_time(phy_vars_ue->lte_ue_common_vars.rxdata,
                            frame_parms,
                            (int *)&phy_vars_ue->lte_ue_common_vars.eNb_id);

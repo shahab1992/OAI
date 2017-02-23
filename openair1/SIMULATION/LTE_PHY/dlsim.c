@@ -2887,6 +2887,9 @@ PMI_FEEDBACK:
 
               */
 
+              //Test TDD workaround
+              remove_1_4_fs(PHY_vars_UE,Ns);
+
               start_meas(&PHY_vars_UE->ofdm_demod_stats);
               slot_fep(PHY_vars_UE,
                        l,

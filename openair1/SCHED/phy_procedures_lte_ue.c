@@ -2471,7 +2471,7 @@ int phy_procedures_UE_RX(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t abstrac
   // TDD workaround 
 #ifdef EXMIMO
   if (phy_vars_ue->lte_frame_parms.frame_type == TDD) {
-    remove_1_4_fs(phy_vars_ue,slot_rx);
+    remove_1_4_fs(phy_vars_ue,slot_rx, phy_vars_ue->rx_offset);
   }
 #endif
 
