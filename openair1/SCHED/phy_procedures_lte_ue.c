@@ -1040,8 +1040,8 @@ void ulsch_common_procedures(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc, uint8_t empt
   int subframe_tx = proc->subframe_tx;
   int frame_tx = proc->frame_tx;
   int ulsch_start;
-  int overflow=0;
 #if defined(EXMIMO) || defined(OAI_USRP) || defined(OAI_BLADERF) || defined(OAI_LMSSDR)
+  int overflow=0;
   int k,l;
   int dummy_tx_buffer[3840*4] __attribute__((aligned(16)));
 #endif
@@ -1069,7 +1069,7 @@ void ulsch_common_procedures(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc, uint8_t empt
   ulsch_start = (frame_parms->samples_per_tti*subframe_tx)-ue->N_TA_offset; //-ue->timing_advance;
 #endif //else EXMIMO
 
-//#if defined(EXMIMO) || defined(OAI_USRP) || defined(OAI_BLADERF) || defined(OAI_LMSSDR)
+#if defined(EXMIMO) || defined(OAI_USRP) || defined(OAI_BLADERF) || defined(OAI_LMSSDR)
   if (empty_subframe)
   {
 //#if 1
@@ -1098,7 +1098,7 @@ void ulsch_common_procedures(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc, uint8_t empt
 #endif*/
       return;
   }
-//#endif
+#endif
 
   if ((frame_tx%100) == 0)
     LOG_D(PHY,"[UE %d] Frame %d, subframe %d: ulsch_start = %d (rxoff %d, HW TA %d, timing advance %d, TA_offset %d\n",
@@ -3257,7 +3257,14 @@ void ue_pdsch_procedures(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc, int eNB_id, PDSC
 	dual_stream_UE = 1;
 	eNB_id_i = ue->n_connected_eNB;
 	i_mod =  dlsch0->harq_processes[harq_pid]->Qm;
-      } else {
+      }
+      else if((pdsch==PDSCH) && (ue->transmission_mode[eNB_id]==3))
+      {
+          dual_stream_UE = 1;
+          eNB_id_i       = eNB_id;
+          i_mod          = 0;
+      }
+      else {
 	dual_stream_UE = 0;
 	eNB_id_i = eNB_id+1;
 	i_mod = 0;
