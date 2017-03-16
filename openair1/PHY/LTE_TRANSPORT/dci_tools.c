@@ -5138,10 +5138,70 @@ int check_dci_format2_2a_coherency(DCI_format_t dci_format,
    return(1);
 }
 
+void compute_llr_offset(LTE_DL_FRAME_PARMS *frame_parms,
+                        LTE_UE_PDCCH *pdcch_vars,
+                        LTE_UE_PDSCH *pdsch_vars,
+                        LTE_DL_UE_HARQ_t *dlsch0_harq,
+                        uint8_t nb_rb_alloc,
+                        uint8_t subframe)
+{
+    uint32_t pbch_pss_sss_re;
+    uint32_t crs_re;
+    uint32_t granted_re;
+    uint32_t data_re;
+    uint32_t llr_offset;
+    uint8_t symbol;
+    uint8_t symbol_mod;
+
+    pdsch_vars->llr_offset[pdcch_vars->num_pdcch_symbols] = 0;
+
+    LOG_I(PHY,"compute_llr_offset:  nb RB %d - Qm %d \n", nb_rb_alloc, dlsch0_harq->Qm);
+
+    //dlsch0_harq->rb_alloc_even;
+    //dlsch0_harq->rb_alloc_odd;
+
+    for(symbol=pdcch_vars->num_pdcch_symbols; symbol<frame_parms->symbols_per_tti; symbol++)
+    {
+        symbol_mod = (symbol >= (7-frame_parms->Ncp))? (symbol-(7-frame_parms->Ncp)) : symbol;
+        if((symbol_mod == 0) || symbol_mod == (4-frame_parms->Ncp))
+        {
+            if (frame_parms->mode1_flag==0)
+                crs_re = 4;
+            else
+                crs_re = 2;
+        }
+        else
+        {
+            crs_re = 0;
+        }
+
+        granted_re = nb_rb_alloc * (12-crs_re);
+        pbch_pss_sss_re = adjust_G2(frame_parms,dlsch0_harq->rb_alloc_even,dlsch0_harq->Qm,subframe,symbol);
+        pbch_pss_sss_re = (double)pbch_pss_sss_re * ((double)(12-crs_re)/12);
+        data_re = granted_re - pbch_pss_sss_re;
+        llr_offset = data_re * dlsch0_harq->Qm * 2;
+
+        pdsch_vars->llr_length[symbol]   = data_re;
+        if(symbol < (frame_parms->symbols_per_tti-1))
+          pdsch_vars->llr_offset[symbol+1] = pdsch_vars->llr_offset[symbol] + llr_offset;
+
+        //LOG_I(PHY,"Granted Re subframe %d / symbol %d => %d (%d RBs)\n", subframe, symbol_mod, granted_re,dlsch0_harq->nb_rb);
+        //LOG_I(PHY,"Pbch/PSS/SSS Re subframe %d / symbol %d => %d \n", subframe, symbol_mod, pbch_pss_sss_re);
+        //LOG_I(PHY,"CRS Re Per PRB subframe %d / symbol %d => %d \n", subframe, symbol_mod, crs_re);
+        //LOG_I(PHY,"Data Re subframe %d / symbol %d => %d \n", subframe, symbol_mod, data_re);
+
+
+
+        //LOG_I(PHY,"Data Re subframe %d-symbol %d => llr length %d, llr offset %d \n", subframe, symbol,
+        //      pdsch_vars->llr_length[symbol], pdsch_vars->llr_offset[symbol]);
+    }
+}
 void prepare_dl_decoding_format1_1A(DCI_format_t dci_format,
                                     uint8_t N_RB_DL,
                                     DCI_INFO_EXTRACTED_t *pdci_info_extarcted,
                                     LTE_DL_FRAME_PARMS *frame_parms,
+                                    LTE_UE_PDCCH *pdcch_vars,
+                                    LTE_UE_PDSCH *pdsch_vars,
                                     uint8_t  subframe,
                                     uint16_t rnti,
                                     uint16_t si_rnti,
@@ -5162,12 +5222,27 @@ void prepare_dl_decoding_format1_1A(DCI_format_t dci_format,
     uint8_t  dai       = pdci_info_extarcted->dai;
 
     uint8_t  NPRB    = 0;
+    uint8_t  nb_rb_alloc = 0;
 
     if(dci_format == format1A)
     {
         if ((rnti==si_rnti) || (rnti==p_rnti) || (rnti==ra_rnti))
         {
             NPRB = (TPC&1) + 2;
+            switch (N_RB_DL) {
+            case 6:
+                nb_rb_alloc     = RIV2nb_rb_LUT6[rballoc];//NPRB;
+                break;
+            case 25:
+                nb_rb_alloc     = RIV2nb_rb_LUT25[rballoc];//NPRB;
+                break;
+            case 50:
+                nb_rb_alloc     = RIV2nb_rb_LUT50[rballoc];//NPRB;
+                break;
+            case 100:
+                nb_rb_alloc     = RIV2nb_rb_LUT100[rballoc];//NPRB;
+                break;
+            }
         }
         else
         {
@@ -5185,6 +5260,7 @@ void prepare_dl_decoding_format1_1A(DCI_format_t dci_format,
                 NPRB     = RIV2nb_rb_LUT100[rballoc];//NPRB;
                 break;
             }
+            nb_rb_alloc = NPRB;
         }
     }
     else // format1
@@ -5337,7 +5413,6 @@ void prepare_dl_decoding_format1_1A(DCI_format_t dci_format,
         pdlsch0_harq->rb_alloc_odd[2]= pdlsch0_harq->rb_alloc_even[2];
         pdlsch0_harq->rb_alloc_odd[3]= pdlsch0_harq->rb_alloc_even[3];
     }
-
     if ((rnti==si_rnti) || (rnti==p_rnti) || (rnti==ra_rnti))
     {
         pdlsch0_harq->TBS = TBStable[mcs1][NPRB-1];
@@ -5351,11 +5426,20 @@ void prepare_dl_decoding_format1_1A(DCI_format_t dci_format,
             pdlsch0_harq->Qm  = get_Qm(mcs1);
         }
     }
+
+    compute_llr_offset(frame_parms,
+                       pdcch_vars,
+                       pdsch_vars,
+                       pdlsch0_harq,
+                       nb_rb_alloc,
+                       subframe);
 }
 
 void prepare_dl_decoding_format1C(uint8_t N_RB_DL,
                                   DCI_INFO_EXTRACTED_t *pdci_info_extarcted,
                                   LTE_DL_FRAME_PARMS *frame_parms,
+                                  LTE_UE_PDCCH *pdcch_vars,
+                                  LTE_UE_PDSCH *pdsch_vars,
                                   uint32_t rnti,
                                   uint32_t si_rnti,
                                   uint32_t ra_rnti,
@@ -5458,6 +5542,14 @@ void prepare_dl_decoding_format1C(uint8_t N_RB_DL,
         AssertFatal(0,"Format 1C: Unknown N_RB_DL %d\n",frame_parms->N_RB_DL);
         break;
     }
+
+    compute_llr_offset(frame_parms,
+                       pdcch_vars,
+                       pdsch_vars,
+                       pdlsch0_harq,
+                       pdlsch0_harq->nb_rb,
+                       subframe);
+
 }
 
 void compute_precoding_info_2cw(uint8_t tpmi, uint8_t tbswap, uint16_t pmi_alloc, LTE_DL_FRAME_PARMS *frame_parms, LTE_DL_UE_HARQ_t *dlsch0_harq, LTE_DL_UE_HARQ_t *dlsch1_harq)
@@ -5631,6 +5723,8 @@ void compute_precoding_info_format2A(uint8_t tpmi,
 void prepare_dl_decoding_format2_2A(DCI_format_t dci_format,
                                     DCI_INFO_EXTRACTED_t *pdci_info_extarcted,
                                     LTE_DL_FRAME_PARMS *frame_parms,
+                                    LTE_UE_PDCCH *pdcch_vars,
+                                    LTE_UE_PDSCH *pdsch_vars,
                                     uint16_t rnti,
                                     uint8_t subframe,
                                     LTE_DL_UE_HARQ_t *dlsch0_harq,
@@ -5882,6 +5976,12 @@ void prepare_dl_decoding_format2_2A(DCI_format_t dci_format,
             dlsch1_harq->Qm = (mcs2-28)<<1;
       }
 
+      compute_llr_offset(frame_parms,
+                         pdcch_vars,
+                         pdsch_vars,
+                         dlsch0_harq,
+                         dlsch0_harq->nb_rb,
+                         subframe);
 #ifdef DEBUG_HARQ
       printf("[DCI UE]: dlsch0_harq status %d , dlsch1_harq status %d\n", dlsch0_harq->status, dlsch1_harq->status);
 #endif
@@ -5901,6 +6001,8 @@ int generate_ue_dlsch_params_from_dci(int frame,
                                       void *dci_pdu,
                                       uint16_t rnti,
                                       DCI_format_t dci_format,
+                                      LTE_UE_PDCCH *pdcch_vars,
+                                      LTE_UE_PDSCH *pdsch_vars,
                                       LTE_UE_DLSCH_t **dlsch,
                                       LTE_DL_FRAME_PARMS *frame_parms,
                                       PDSCH_CONFIG_DEDICATED *pdsch_config_dedicated,
@@ -5990,6 +6092,8 @@ int generate_ue_dlsch_params_from_dci(int frame,
                                      frame_parms->N_RB_DL,
                                      &dci_info_extarcted,
                                      frame_parms,
+                                     pdcch_vars,
+                                     pdsch_vars,
                                      subframe,
                                      rnti,
                                      si_rnti,
@@ -6039,6 +6143,8 @@ int generate_ue_dlsch_params_from_dci(int frame,
       prepare_dl_decoding_format1C(frame_parms->N_RB_DL,
                                    &dci_info_extarcted,
                                    frame_parms,
+                                   pdcch_vars,
+                                   pdsch_vars,
                                    rnti,
                                    si_rnti,
                                    ra_rnti,
@@ -6090,6 +6196,8 @@ int generate_ue_dlsch_params_from_dci(int frame,
                                      frame_parms->N_RB_DL,
                                      &dci_info_extarcted,
                                      frame_parms,
+                                     pdcch_vars,
+                                     pdsch_vars,
                                      subframe,
                                      rnti,
                                      si_rnti,
@@ -6143,6 +6251,8 @@ int generate_ue_dlsch_params_from_dci(int frame,
         prepare_dl_decoding_format2_2A(format2,
                 &dci_info_extarcted,
                 frame_parms,
+                pdcch_vars,
+                pdsch_vars,
                 rnti,
                 subframe,
                 dlsch0_harq,
@@ -6197,6 +6307,8 @@ int generate_ue_dlsch_params_from_dci(int frame,
     prepare_dl_decoding_format2_2A(format2A,
                                    &dci_info_extarcted,
                                    frame_parms,
+                                   pdcch_vars,
+                                   pdsch_vars,
                                    rnti,
                                    subframe,
                                    dlsch0_harq,
