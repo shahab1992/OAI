@@ -62,6 +62,7 @@ extern int otg_enabled;
 #include "UTIL/OTG/otg_tx.h"
 #include "UTIL/FIFO/pad_list.h"
 #include "UTIL/LOG/vcd_signal_dumper.h"
+#include "UTIL/OPT/opt.h"
 #include "platform_constants.h"
 #include "msc.h"
 
@@ -239,6 +240,12 @@ int pdcp_fifo_flush_sdus(const protocol_ctxt_t* const  ctxt_pP)
 #ifdef PDCP_USE_RT_FIFO
           bytes_wrote = rtf_put (PDCP2PDCP_USE_RT_FIFO, &(sdu->data[sizeof (pdcp_data_ind_header_t)]), pdcp_output_sdu_bytes_to_write);
 #else
+
+          if (opt_enabled ==1) {
+            trace_pdcp_pdu(1 /*downlink*/, (uint16_t)(pthread_self() & 0xffff) /*ctxt_pP->module_id*/ /*ueid*/, &(sdu_p->data[sizeof (pdcp_data_ind_header_t)]), pdcp_output_sdu_bytes_to_write,
+                0/*reserved*/, 2/*DLSCH*/, 2/*USER_PLANE*/, 12, 1 /*no header*/);
+            LOG_D(RLC,"[UE %d][SRB] trace downlink PDCP SDU with size %d\n", ctxt_pP->module_id, ((pdcp_data_ind_header_t *)(sdu_p->data))->data_size);
+          }
 
 #ifdef PDCP_USE_NETLINK
 #ifdef LINUX

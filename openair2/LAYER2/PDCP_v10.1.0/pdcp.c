@@ -50,6 +50,7 @@
 #include "platform_constants.h"
 #include "UTIL/LOG/vcd_signal_dumper.h"
 #include "msc.h"
+#include "UTIL/OPT/opt.h"
 
 #if defined(ENABLE_SECURITY)
 # include "UTIL/OSA/osa_defs.h"
@@ -356,6 +357,13 @@ boolean_t pdcp_data_req(
 
     LOG_F(PDCP,"\n");
 #endif
+
+    if (opt_enabled ==1) {
+      trace_pdcp_pdu(0 /*uplink*/, ctxt_pP->module_id /*ueid*/, pdcp_pdu_p->data, pdcp_pdu_size,
+          srb_flagP?1/*DCCH*/:0/*reserved*/, 2/*DLSCH*/, srb_flagP?1/*SIGNALING_PLANE*/:2/*USER_PLANE*/, 12 /*12 bits SN*/, 0 /*with header*/);
+      LOG_D(RLC,"[UE %d][SRB] trace uplink PDCP PDU with size %d\n", ctxt_pP->module_id, pdcp_pdu_size);
+    }
+
     rlc_status = rlc_data_req(ctxt_pP, srb_flagP, MBMS_FLAG_NO, rb_idP, muiP, confirmP, pdcp_pdu_size, pdcp_pdu_p);
 
   }
@@ -537,6 +545,13 @@ pdcp_data_ind(
    */
 
   if (MBMS_flagP == 0 ) {
+
+    if (opt_enabled ==1) {
+      trace_pdcp_pdu(1 /*downlink*/, (uint16_t)(pthread_self() & 0xffff) /*ctxt_pP->module_id*/ /*ueid*/, sdu_buffer_pP->data, sdu_buffer_sizeP,
+          srb_flagP?1/*DCCH*/:0/*reserved*/, 2/*DLSCH*/, srb_flagP?1/*SIGNALING_PLANE*/:2/*USER_PLANE*/, pdcp_p->seq_num_size, 0 /*with header*/);
+      LOG_D(RLC,"[UE %d][SRB] trace downlink PDCP PDU with size %d\n", ctxt_pP->module_id, sdu_buffer_sizeP);
+    }
+
     if (srb_flagP) { //SRB1/2
       pdcp_header_len = PDCP_CONTROL_PLANE_DATA_PDU_SN_SIZE;
       pdcp_tailer_len = PDCP_CONTROL_PLANE_DATA_PDU_MAC_I_SIZE;

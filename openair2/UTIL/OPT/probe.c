@@ -97,12 +97,14 @@ int opt_enabled=0;
 
 #define PACKET_MAC_LTE_DEFAULT_UDP_PORT (9999)
 
+typedef int      gint;
 typedef uint8_t  guint8;
 typedef uint16_t guint16;
 typedef uint32_t guint32;
 typedef guint8   gboolean;
 
 #include "packet-mac-lte.h"
+#include "packet-pdcp-lte.h"
 #include "mac_pcap.h"
 
 //static unsigned char g_PDUBuffer[1600];
@@ -133,6 +135,14 @@ static void SendFrame(guint8 radioType, guint8 direction, guint8 rntiType,
                       guint8 isPredefinedData, guint8 retx, guint8 crcStatus,
                       guint8 oob_event, guint8 oob_event_value,
                       uint8_t *pdu_buffer, unsigned int pdu_buffer_size);
+
+static void SendPDCPFrame(guint8 direction, guint16 ueid, LogicalChannelType channelType,
+               BCCHTransportType BCCHTransport, gboolean no_header_pdu,
+               enum pdcp_plane plane, guint8 seqnum_length, gboolean rohc_compression,
+               unsigned short rohc_ip_version, gboolean cid_inclusion_info,
+               gboolean large_cid_present, enum rohc_mode mode,
+               gboolean rnd, gboolean udp_checkum_present, unsigned short profile,
+               uint8_t *pdu_buffer, unsigned int pdu_buffer_size);
 
 static int MAC_LTE_PCAP_WritePDU(MAC_Context_Info_t *context,
                                  const unsigned char *PDU, unsigned int length);
@@ -366,6 +376,122 @@ static void SendFrame(guint8 radioType, guint8 direction, guint8 rntiType,
   }
 }
 
+/*******************************************/
+/* Add framing header to PDCP PDU and send. */
+static void SendPDCPFrame(guint8 direction, guint16 ueid, LogicalChannelType channelType,
+               BCCHTransportType BCCHTransport, gboolean no_header_pdu,
+               enum pdcp_plane plane, guint8 seqnum_length, gboolean rohc_compression,
+               unsigned short rohc_ip_version, gboolean cid_inclusion_info,
+               gboolean large_cid_present, enum rohc_mode mode,
+               gboolean rnd, gboolean udp_checkum_present, unsigned short profile,
+               uint8_t *pdu_buffer, unsigned int pdu_buffer_size)
+{
+#ifdef JUMBO_FRAME
+   static unsigned char frameBuffer[9000];
+#else
+   static unsigned char frameBuffer[1600];
+#endif
+static unsigned int frameOffset;
+
+    ssize_t bytesSent;
+    frameOffset = 0;
+    unsigned short tmp16;
+
+    /********************************************************************/
+    /* Fixed start to each frame (allowing heuristic dissector to work) */
+    /* Not NULL terminated */
+    memcpy(frameBuffer+frameOffset, PDCP_LTE_START_STRING,
+           strlen(PDCP_LTE_START_STRING));
+    frameOffset += strlen(PDCP_LTE_START_STRING);
+
+    /*******************************************************************************/
+    /* Now write out fixed fields (the mandatory elements of struct pdcp_lte_info) */
+    frameBuffer[frameOffset++] = no_header_pdu;
+    frameBuffer[frameOffset++] = plane;
+    frameBuffer[frameOffset++] = rohc_compression;
+
+    /*************************************/
+    /* Now conditional fields            */
+
+    /* Seq Num Length */
+    if (plane == USER_PLANE) {
+        frameBuffer[frameOffset++] = PDCP_LTE_SEQNUM_LENGTH_TAG;
+        frameBuffer[frameOffset++] = seqnum_length;
+    }
+
+    /*************************************/
+    /* Now optional fields               */
+
+    /* Direction */
+    frameBuffer[frameOffset++] = PDCP_LTE_DIRECTION_TAG;
+    frameBuffer[frameOffset++] = direction;
+
+    /* Logical Channel Type */
+    frameBuffer[frameOffset++] = PDCP_LTE_LOG_CHAN_TYPE_TAG;
+    frameBuffer[frameOffset++] = channelType;
+
+    /* BCCH Transport Type */
+    frameBuffer[frameOffset++] = PDCP_LTE_BCCH_TRANSPORT_TYPE_TAG;
+    frameBuffer[frameOffset++] = BCCHTransport;
+
+    /* RoHC IP Version */
+    frameBuffer[frameOffset++] = PDCP_LTE_ROHC_IP_VERSION_TAG;
+    tmp16 = htons(rohc_ip_version);
+    memcpy(frameBuffer+frameOffset, &tmp16, 2);
+    frameOffset += 2;
+
+    /* UEid */
+    frameBuffer[frameOffset++] = PDCP_LTE_UEID_TAG;
+    tmp16 = htons(ueid);
+    memcpy(frameBuffer+frameOffset, &tmp16, 2);
+    frameOffset += 2;
+
+    /* RoHC Cid Inclusion Info */
+    frameBuffer[frameOffset++] = PDCP_LTE_ROHC_CID_INC_INFO_TAG;
+    frameBuffer[frameOffset++] = cid_inclusion_info;
+
+    /* RoHC Large Cid Present */
+    frameBuffer[frameOffset++] = PDCP_LTE_ROHC_LARGE_CID_PRES_TAG;
+    frameBuffer[frameOffset++] = large_cid_present;
+
+    /* RoHC Mode */
+    frameBuffer[frameOffset++] = PDCP_LTE_ROHC_MODE_TAG;
+    frameBuffer[frameOffset++] = mode;
+
+    /* RoHC Rand */
+    frameBuffer[frameOffset++] = PDCP_LTE_ROHC_RND_TAG;
+    frameBuffer[frameOffset++] = rnd;
+
+    /* RoHC UDP Checksum Present */
+    frameBuffer[frameOffset++] = PDCP_LTE_ROHC_UDP_CHECKSUM_PRES_TAG;
+    frameBuffer[frameOffset++] = udp_checkum_present;
+
+    /* RoHC Profile */
+    frameBuffer[frameOffset++] = PDCP_LTE_ROHC_PROFILE_TAG;
+    tmp16 = htons(profile);
+    memcpy(frameBuffer+frameOffset, &tmp16, 2);
+    frameOffset += 2;
+
+    /***************************************/
+    /* Now write the PDCP PDU              */
+    frameBuffer[frameOffset++] = PDCP_LTE_PAYLOAD_TAG;
+
+    /* Append actual PDU  */
+    //memcpy(frameBuffer+frameOffset, g_PDUBuffer, g_PDUOffset);
+    //frameOffset += g_PDUOffset;
+    memcpy(frameBuffer+frameOffset, pdu_buffer, pdu_buffer_size);
+    frameOffset += pdu_buffer_size;
+
+    /* Send out the data over the UDP socket */
+    bytesSent = sendto(g_socksd, frameBuffer, frameOffset, 0,
+                      (const struct sockaddr*)&g_serv_addr, sizeof(g_serv_addr));
+    if (bytesSent != frameOffset) {
+      LOG_W(OPT, "sendto() failed (not a thread-safe func)- expected %d bytes, got %d (errno=%d)\n",
+            frameOffset, bytesSent, errno);
+        //exit(1);
+    }
+}
+
 /* Write an individual PDU (PCAP packet header + mac-context + mac-pdu) */
 static int MAC_LTE_PCAP_WritePDU(MAC_Context_Info_t *context,
                                  const uint8_t *PDU, unsigned int length)
@@ -472,6 +598,33 @@ void trace_pdu(int direction, uint8_t *pdu_buffer, unsigned int pdu_buffer_size,
     pdu_context.subFrameNumber = subFrameNumber;
     pdu_context.subframesSinceCaptureStart = subframesSinceCaptureStart++;
     MAC_LTE_PCAP_WritePDU( &pdu_context, pdu_buffer, pdu_buffer_size);
+    break;
+
+  case OPT_TSHARK:
+  default:
+    break;
+  }
+}
+/*---------------------------------------------------*/
+void trace_pdcp_pdu(int direction, uint16_t ueid, uint8_t *pdu_buffer, unsigned int pdu_buffer_size,
+    int channelType, int BCCHTransport, int plane, uint8_t seqnum_length, uint8_t no_header_pdu)
+{
+  switch (opt_type) {
+  case OPT_WIRESHARK :
+    if (g_socksd == -1) {
+      return;
+    }
+
+    SendPDCPFrame((guint8)direction, (guint16)ueid, (LogicalChannelType)channelType, (BCCHTransportType)BCCHTransport,
+        (gboolean)no_header_pdu, (enum pdcp_plane)plane, (guint8)seqnum_length, 0, 0, 0, 0, 1, 0, 0, 0,
+        pdu_buffer, pdu_buffer_size);
+    break;
+
+  case OPT_PCAP:
+    if (file_fd == NULL) {
+      return;
+    }
+    LOG_I(OPT, "No implementation!\n");
     break;
 
   case OPT_TSHARK:
