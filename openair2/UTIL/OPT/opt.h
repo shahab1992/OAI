@@ -84,6 +84,9 @@ void trace_pdu(int direction, uint8_t *pdu_buffer, unsigned int pdu_buffer_size,
                int ueid, int rntiType, int rnti, uint16_t sysFrame, uint8_t subframe,
                int oob_event, int oob_event_value);
 
+void trace_pdcp_pdu(int direction, uint16_t ueid, uint8_t *pdu_buffer, unsigned int pdu_buffer_size,
+    int channelType, int BCCHTransport, int plane, uint8_t seqnum_length, uint8_t no_header_pdu);
+
 int init_opt(char *path, char *ip, char *port, radio_type_t radio_type_p);
 
 void terminate_opt(void);
