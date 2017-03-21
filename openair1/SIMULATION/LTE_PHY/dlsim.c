@@ -2732,7 +2732,7 @@ int main(int argc, char **argv)
 
         if (t_rx > 2000)
           n_rx_dropped++;
-
+/*
         push_front(&time_vector_tx, t_tx);
         push_front(&time_vector_tx_ifft, t_tx_ifft);
         push_front(&time_vector_tx_mod, t_tx_mod);
@@ -2742,7 +2742,7 @@ int main(int argc, char **argv)
         push_front(&time_vector_rx_fft, t_rx_fft);
         push_front(&time_vector_rx_demod, t_rx_demod);
         push_front(&time_vector_rx_dec, t_rx_dec);
-
+*/
 
       }   //trials
 

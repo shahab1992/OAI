@@ -630,7 +630,7 @@ __m128i tmp_result4 __attribute__ ((aligned(16)));
 //----------------------------------------------------------------------------------------------
 
 int dlsch_qpsk_llr(LTE_DL_FRAME_PARMS *frame_parms,
-                   int32_t **rxdataF_comp,
+                   int32_t *rxdataF_comp,
                    int16_t *dlsch_llr,
                    uint8_t symbol,
                    uint8_t first_symbol_flag,
@@ -639,45 +639,57 @@ int dlsch_qpsk_llr(LTE_DL_FRAME_PARMS *frame_parms,
                    int16_t **llr32p,
                    uint8_t beamforming_mode)
 {
-
-  uint32_t *rxF = (uint32_t*)&rxdataF_comp[0][((int32_t)symbol*frame_parms->N_RB_DL*12)];
-  uint32_t *llr32;
-  int i,len;
-  uint8_t symbol_mod = (symbol >= (7-frame_parms->Ncp))? (symbol-(7-frame_parms->Ncp)) : symbol;
-
-  if (first_symbol_flag==1) {
-    llr32 = (uint32_t*)dlsch_llr;
-  } else {
-    llr32 = (uint32_t*)(*llr32p);
-  }
-
-  if (!llr32) {
-    msg("dlsch_qpsk_llr: llr is null, symbol %d, llr32=%p\n",symbol, llr32);
-    return(-1);
-  }
-
-
-  if ((symbol_mod==0) || (symbol_mod==(4-frame_parms->Ncp))) {
-    if (frame_parms->mode1_flag==0)
-      len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
+    uint32_t *rxF = (uint32_t*)rxdataF_comp;
+    uint32_t *llr32;
+    int i,len;
+    uint8_t symbol_mod = (symbol >= (7-frame_parms->Ncp))? (symbol-(7-frame_parms->Ncp)) : symbol;
+    
+    if (first_symbol_flag==1)
+    {
+        llr32 = (uint32_t*)dlsch_llr;        
+    }
     else
-      len = (nb_rb*10) - (5*pbch_pss_sss_adjust/6);
-  } else if((beamforming_mode==7) && (frame_parms->Ncp==0) && (symbol==3 || symbol==6 || symbol==9 || symbol==12)){
-      len = (nb_rb*9) - (3*pbch_pss_sss_adjust/4);
-  } else if((beamforming_mode==7) && (frame_parms->Ncp==1) && (symbol==4 || symbol==7 || symbol==10)){
-      len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
-  } else {
-    len = (nb_rb*12) - pbch_pss_sss_adjust;
-  }
+    {
+        llr32 = (uint32_t*)(*llr32p);
+    }
+
+    if (!llr32)
+    {
+        msg("dlsch_qpsk_llr: llr is null, symbol %d, llr32=%p\n",symbol, llr32);
+        return(-1);
+    }
+    
+    if ((symbol_mod==0) || (symbol_mod==(4-frame_parms->Ncp)))
+    {
+        if (frame_parms->mode1_flag==0)
+        {
+            len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
+        }
+        else
+        {
+            len = (nb_rb*10) - (5*pbch_pss_sss_adjust/6);
+        }
+    }
+    else if((beamforming_mode==7) && (frame_parms->Ncp==0) && (symbol==3 || symbol==6 || symbol==9 || symbol==12))
+    {
+        len = (nb_rb*9) - (3*pbch_pss_sss_adjust/4);
+    } else if((beamforming_mode==7) && (frame_parms->Ncp==1) && (symbol==4 || symbol==7 || symbol==10))
+    {
+        len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
+    } else
+    {
+        len = (nb_rb*12) - pbch_pss_sss_adjust;
+    }
 
 
   //printf("dlsch_qpsk_llr: symbol %d,nb_rb %d, len %d,pbch_pss_sss_adjust %d\n",symbol,nb_rb,len,pbch_pss_sss_adjust);
   //printf("ll32p=%p , dlsch_llr=%p, symbol=%d, flag=%d \n", llr32, dlsch_llr, symbol, first_symbol_flag);
-  for (i=0; i<len; i++) {
-    *llr32 = *rxF;
-     //printf("llr %d : (%d,%d)\n",i,((int16_t*)llr32)[0],((int16_t*)llr32)[1]);
-    rxF++;
-    llr32++;
+  for (i=0; i<len; i++)
+  {
+      *llr32 = *rxF;
+      //printf("llr %d : (%d,%d)\n",i,((int16_t*)llr32)[0],((int16_t*)llr32)[1]);
+      rxF++;
+      llr32++;
   }
 
   *llr32p = (int16_t *)llr32;
@@ -799,9 +811,9 @@ int32_t dlsch_qpsk_llr_SIC(LTE_DL_FRAME_PARMS *frame_parms,
 //----------------------------------------------------------------------------------------------
 
 void dlsch_16qam_llr(LTE_DL_FRAME_PARMS *frame_parms,
-                     int32_t **rxdataF_comp,
+                     int32_t *rxdataF_comp,
                      int16_t *dlsch_llr,
-                     int32_t **dl_ch_mag,
+                     int32_t *dl_ch_mag,
                      uint8_t symbol,
                      uint8_t first_symbol_flag,
                      uint16_t nb_rb,
@@ -811,116 +823,135 @@ void dlsch_16qam_llr(LTE_DL_FRAME_PARMS *frame_parms,
 {
 
 #if defined(__x86_64__) || defined(__i386__)
-  __m128i *rxF = (__m128i*)&rxdataF_comp[0][(symbol*frame_parms->N_RB_DL*12)];
-  __m128i *ch_mag;
-  __m128i llr128[2];
-  uint32_t *llr32;
+    __m128i *rxF = (__m128i*)rxdataF_comp;
+    __m128i *ch_mag;
+    __m128i llr128[2];
+    uint32_t *llr32;
 #elif defined(__arm__)
-  int16x8_t *rxF = (int16x8_t*)&rxdataF_comp[0][(symbol*frame_parms->N_RB_DL*12)];
-  int16x8_t *ch_mag;
-  int16x8_t xmm0;
-  int16_t *llr16;
+    int16x8_t *rxF = (int16x8_t*)rxdataF_comp;
+    int16x8_t *ch_mag;
+    int16x8_t xmm0;
+    int16_t *llr16;
 #endif
-
-
-  int i,len;
-  unsigned char symbol_mod,len_mod4=0;
-
+    
+    int i,len;
+    unsigned char symbol_mod,len_mod4=0;
 
 #if defined(__x86_64__) || defined(__i386__)
-  if (first_symbol_flag==1) {
-    llr32 = (uint32_t*)dlsch_llr;
-  } else {
-    llr32 = (uint32_t*)*llr32p;
-  }
-#elif defined(__arm__)
-  if (first_symbol_flag==1) {
-    llr16 = (int16_t*)dlsch_llr;
-  } else {
-    llr16 = (int16_t*)*llr32p;
-  }
-#endif
-
-  symbol_mod = (symbol>=(7-frame_parms->Ncp)) ? symbol-(7-frame_parms->Ncp) : symbol;
-
-#if defined(__x86_64__) || defined(__i386__)
-  ch_mag = (__m128i*)&dl_ch_mag[0][(symbol*frame_parms->N_RB_DL*12)];
-#elif defined(__arm__)
-  ch_mag = (int16x8_t*)&dl_ch_mag[0][(symbol*frame_parms->N_RB_DL*12)];
-#endif
-  if ((symbol_mod==0) || (symbol_mod==(4-frame_parms->Ncp))) {
-    if (frame_parms->mode1_flag==0)
-      len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
+    if (first_symbol_flag==1)
+    {
+        llr32 = (uint32_t*)dlsch_llr;
+    }
     else
-      len = (nb_rb*10) - (5*pbch_pss_sss_adjust/6);
-  } else if((beamforming_mode==7) && (frame_parms->Ncp==0) && (symbol==3 || symbol==6 || symbol==9 || symbol==12)){
-      len = (nb_rb*9) - (3*pbch_pss_sss_adjust/4);
-  } else if((beamforming_mode==7) && (frame_parms->Ncp==1) && (symbol==4 || symbol==7 || symbol==10)){
-      len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
-  } else {
-    len = (nb_rb*12) - pbch_pss_sss_adjust;
-  }
+    {
+        llr32 = (uint32_t*)*llr32p;
+    }
+#elif defined(__arm__)
+    if (first_symbol_flag==1)
+    {
+        llr16 = (int16_t*)dlsch_llr;
+    }
+    else
+    {
+        llr16 = (int16_t*)*llr32p;
+    }
+#endif
+
+    symbol_mod = (symbol>=(7-frame_parms->Ncp)) ? symbol-(7-frame_parms->Ncp) : symbol;
+
+#if defined(__x86_64__) || defined(__i386__)
+    ch_mag = (__m128i*)dl_ch_mag;
+#elif defined(__arm__)
+    ch_mag = (int16x8_t*)dl_ch_mag;
+#endif
+    if ((symbol_mod==0) || (symbol_mod==(4-frame_parms->Ncp)))
+    {
+        if (frame_parms->mode1_flag==0)
+        {
+            len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
+        }
+        else
+        {
+            len = (nb_rb*10) - (5*pbch_pss_sss_adjust/6);
+        }
+    }
+    else if((beamforming_mode==7) && (frame_parms->Ncp==0) && (symbol==3 || symbol==6 || symbol==9 || symbol==12))
+    {
+        len = (nb_rb*9) - (3*pbch_pss_sss_adjust/4);
+    }
+    else if((beamforming_mode==7) && (frame_parms->Ncp==1) && (symbol==4 || symbol==7 || symbol==10))
+    {
+        len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
+    }
+    else
+    {
+        len = (nb_rb*12) - pbch_pss_sss_adjust;
+    }
 
   // update output pointer according to number of REs in this symbol (<<2 because 4 bits per RE)
-  if (first_symbol_flag == 1)
-    *llr32p = dlsch_llr + (len<<2);
-  else
-    *llr32p += (len<<2);
-
- // printf("len=%d\n", len);
-  len_mod4 = len&3;
- // printf("len_mod4=%d\n", len_mod4);
-  len>>=2;  // length in quad words (4 REs)
- // printf("len>>=2=%d\n", len);
-  len+=(len_mod4==0 ? 0 : 1);
- // printf("len+=%d\n", len);
-  for (i=0; i<len; i++) {
+    if (first_symbol_flag == 1)
+    {
+        *llr32p = dlsch_llr + (len<<2);
+    }
+    else
+    {
+        *llr32p += (len<<2);
+    }
+    
+    // printf("len=%d\n", len);
+    len_mod4 = len&3;
+    // printf("len_mod4=%d\n", len_mod4);
+    len>>=2;  // length in quad words (4 REs)
+    // printf("len>>=2=%d\n", len);
+    len+=(len_mod4==0 ? 0 : 1);
+    // printf("len+=%d\n", len);
+    for (i=0; i<len; i++)
+    {
 
 #if defined(__x86_64__) || defined(__i386)
-    xmm0 = _mm_abs_epi16(rxF[i]);
-    xmm0 = _mm_subs_epi16(ch_mag[i],xmm0);
-
-    // lambda_1=y_R, lambda_2=|y_R|-|h|^2, lamda_3=y_I, lambda_4=|y_I|-|h|^2
-    llr128[0] = _mm_unpacklo_epi32(rxF[i],xmm0);
-    llr128[1] = _mm_unpackhi_epi32(rxF[i],xmm0);
-    llr32[0] = _mm_extract_epi32(llr128[0],0); //((uint32_t *)&llr128[0])[0];
-    llr32[1] = _mm_extract_epi32(llr128[0],1); //((uint32_t *)&llr128[0])[1];
-    llr32[2] = _mm_extract_epi32(llr128[0],2); //((uint32_t *)&llr128[0])[2];
-    llr32[3] = _mm_extract_epi32(llr128[0],3); //((uint32_t *)&llr128[0])[3];
-    llr32[4] = _mm_extract_epi32(llr128[1],0); //((uint32_t *)&llr128[1])[0];
-    llr32[5] = _mm_extract_epi32(llr128[1],1); //((uint32_t *)&llr128[1])[1];
-    llr32[6] = _mm_extract_epi32(llr128[1],2); //((uint32_t *)&llr128[1])[2];
-    llr32[7] = _mm_extract_epi32(llr128[1],3); //((uint32_t *)&llr128[1])[3];
-    llr32+=8;
+        xmm0 = _mm_abs_epi16(rxF[i]);
+        xmm0 = _mm_subs_epi16(ch_mag[i],xmm0);
+        
+        // lambda_1=y_R, lambda_2=|y_R|-|h|^2, lamda_3=y_I, lambda_4=|y_I|-|h|^2
+        llr128[0] = _mm_unpacklo_epi32(rxF[i],xmm0);
+        llr128[1] = _mm_unpackhi_epi32(rxF[i],xmm0);
+        llr32[0] = _mm_extract_epi32(llr128[0],0); //((uint32_t *)&llr128[0])[0];
+        llr32[1] = _mm_extract_epi32(llr128[0],1); //((uint32_t *)&llr128[0])[1];
+        llr32[2] = _mm_extract_epi32(llr128[0],2); //((uint32_t *)&llr128[0])[2];
+        llr32[3] = _mm_extract_epi32(llr128[0],3); //((uint32_t *)&llr128[0])[3];
+        llr32[4] = _mm_extract_epi32(llr128[1],0); //((uint32_t *)&llr128[1])[0];
+        llr32[5] = _mm_extract_epi32(llr128[1],1); //((uint32_t *)&llr128[1])[1];
+        llr32[6] = _mm_extract_epi32(llr128[1],2); //((uint32_t *)&llr128[1])[2];
+        llr32[7] = _mm_extract_epi32(llr128[1],3); //((uint32_t *)&llr128[1])[3];
+        llr32+=8;
 #elif defined(__arm__)
-    xmm0 = vabsq_s16(rxF[i]);
-    xmm0 = vqsubq_s16(ch_mag[i],xmm0);
-    // lambda_1=y_R, lambda_2=|y_R|-|h|^2, lamda_3=y_I, lambda_4=|y_I|-|h|^2
-
-    llr16[0] = vgetq_lane_s16(rxF[i],0);
-    llr16[1] = vgetq_lane_s16(rxF[i],1);
-    llr16[2] = vgetq_lane_s16(xmm0,0);
-    llr16[3] = vgetq_lane_s16(xmm0,1);
-    llr16[4] = vgetq_lane_s16(rxF[i],2);
-    llr16[5] = vgetq_lane_s16(rxF[i],3);
-    llr16[6] = vgetq_lane_s16(xmm0,2);
-    llr16[7] = vgetq_lane_s16(xmm0,3);
-    llr16[8] = vgetq_lane_s16(rxF[i],4);
-    llr16[9] = vgetq_lane_s16(rxF[i],5);
-    llr16[10] = vgetq_lane_s16(xmm0,4);
-    llr16[11] = vgetq_lane_s16(xmm0,5);
-    llr16[12] = vgetq_lane_s16(rxF[i],6);
-    llr16[13] = vgetq_lane_s16(rxF[i],6);
-    llr16[14] = vgetq_lane_s16(xmm0,7);
-    llr16[15] = vgetq_lane_s16(xmm0,7);
-    llr16+=16;
-#endif
-
+        xmm0 = vabsq_s16(rxF[i]);
+        xmm0 = vqsubq_s16(ch_mag[i],xmm0);
+        // lambda_1=y_R, lambda_2=|y_R|-|h|^2, lamda_3=y_I, lambda_4=|y_I|-|h|^2
+        
+        llr16[0] = vgetq_lane_s16(rxF[i],0);
+        llr16[1] = vgetq_lane_s16(rxF[i],1);
+        llr16[2] = vgetq_lane_s16(xmm0,0);
+        llr16[3] = vgetq_lane_s16(xmm0,1);
+        llr16[4] = vgetq_lane_s16(rxF[i],2);
+        llr16[5] = vgetq_lane_s16(rxF[i],3);
+        llr16[6] = vgetq_lane_s16(xmm0,2);
+        llr16[7] = vgetq_lane_s16(xmm0,3);
+        llr16[8] = vgetq_lane_s16(rxF[i],4);
+        llr16[9] = vgetq_lane_s16(rxF[i],5);
+        llr16[10] = vgetq_lane_s16(xmm0,4);
+        llr16[11] = vgetq_lane_s16(xmm0,5);
+        llr16[12] = vgetq_lane_s16(rxF[i],6);
+        llr16[13] = vgetq_lane_s16(rxF[i],6);
+        llr16[14] = vgetq_lane_s16(xmm0,7);
+        llr16[15] = vgetq_lane_s16(xmm0,7);
+        llr16+=16;
+#endif        
   }
 
 #if defined(__x86_64__) || defined(__i386__)
-  _mm_empty();
-  _m_empty();
+    _mm_empty();
+    _m_empty();
 #endif
 }
 
@@ -1035,10 +1066,10 @@ void dlsch_16qam_llr_SIC (LTE_DL_FRAME_PARMS *frame_parms,
 //----------------------------------------------------------------------------------------------
 
 void dlsch_64qam_llr(LTE_DL_FRAME_PARMS *frame_parms,
-                     int32_t **rxdataF_comp,
+                     int32_t *rxdataF_comp,
                      int16_t *dlsch_llr,
-                     int32_t **dl_ch_mag,
-                     int32_t **dl_ch_magb,
+                     int32_t *dl_ch_mag,
+                     int32_t *dl_ch_magb,
                      uint8_t symbol,
                      uint8_t first_symbol_flag,
                      uint16_t nb_rb,
@@ -1046,66 +1077,83 @@ void dlsch_64qam_llr(LTE_DL_FRAME_PARMS *frame_parms,
                      int16_t **llr_save,
                      uint8_t beamforming_mode)
 {
+    
 #if defined(__x86_64__) || defined(__i386__)
-  __m128i *rxF = (__m128i*)&rxdataF_comp[0][(symbol*frame_parms->N_RB_DL*12)];
-  __m128i *ch_mag,*ch_magb;
+    __m128i *rxF = (__m128i*)rxdataF_comp;
+    __m128i *ch_mag,*ch_magb;
 #elif defined(__arm__)
-  int16x8_t *rxF = (int16x8_t*)&rxdataF_comp[0][(symbol*frame_parms->N_RB_DL*12)];
-  int16x8_t *ch_mag,*ch_magb,xmm1,xmm2;
+    int16x8_t *rxF = (int16x8_t*)rxdataF_comp;
+    int16x8_t *ch_mag,*ch_magb,xmm1,xmm2;
 #endif
-  int i,len,len2;
-  unsigned char symbol_mod,len_mod4;
-  short *llr;
-  int16_t *llr2;
+    int i,len,len2;
+    unsigned char symbol_mod,len_mod4;
+    short *llr;
+    int16_t *llr2;
 
-  if (first_symbol_flag==1)
-    llr = dlsch_llr;
-  else
-    llr = *llr_save;
-
-  symbol_mod = (symbol>=(7-frame_parms->Ncp)) ? symbol-(7-frame_parms->Ncp) : symbol;
-
-#if defined(__x86_64__) || defined(__i386__)
-  ch_mag = (__m128i*)&dl_ch_mag[0][(symbol*frame_parms->N_RB_DL*12)];
-  ch_magb = (__m128i*)&dl_ch_magb[0][(symbol*frame_parms->N_RB_DL*12)];
-#elif defined(__arm__)
-  ch_mag = (int16x8_t*)&dl_ch_mag[0][(symbol*frame_parms->N_RB_DL*12)];
-  ch_magb = (int16x8_t*)&dl_ch_magb[0][(symbol*frame_parms->N_RB_DL*12)];
-#endif
-  if ((symbol_mod==0) || (symbol_mod==(4-frame_parms->Ncp))) {
-    if (frame_parms->mode1_flag==0)
-      len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
+    if (first_symbol_flag==1)
+    {
+        llr = dlsch_llr;
+    }
     else
-      len = (nb_rb*10) - (5*pbch_pss_sss_adjust/6);
-  } else if((beamforming_mode==7) && (frame_parms->Ncp==0) && (symbol==3 || symbol==6 || symbol==9 || symbol==12)){
-      len = (nb_rb*9) - (3*pbch_pss_sss_adjust/4);
-  } else if((beamforming_mode==7) && (frame_parms->Ncp==1) && (symbol==4 || symbol==7 || symbol==10)){
-      len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
-  } else {
-    len = (nb_rb*12) - pbch_pss_sss_adjust;
-  }
+    {
+        llr = *llr_save;
+    }
 
-  llr2 = llr;
-  llr += (len*6);
-
-  len_mod4 =len&3;
-  len2=len>>2;  // length in quad words (4 REs)
-  len2+=((len_mod4==0)?0:1);
-
-  for (i=0; i<len2; i++) {
+    symbol_mod = (symbol>=(7-frame_parms->Ncp)) ? symbol-(7-frame_parms->Ncp) : symbol;
 
 #if defined(__x86_64__) || defined(__i386__)
-    xmm1 = _mm_abs_epi16(rxF[i]);
-    xmm1 = _mm_subs_epi16(ch_mag[i],xmm1);
-    xmm2 = _mm_abs_epi16(xmm1);
-    xmm2 = _mm_subs_epi16(ch_magb[i],xmm2);
+    ch_mag  = (__m128i*)dl_ch_mag;
+    ch_magb = (__m128i*)dl_ch_magb;
 #elif defined(__arm__)
-    xmm1 = vabsq_s16(rxF[i]);
-    xmm1 = vsubq_s16(ch_mag[i],xmm1);
-    xmm2 = vabsq_s16(xmm1);
-    xmm2 = vsubq_s16(ch_magb[i],xmm2);
+    ch_mag  = (int16x8_t*)dl_ch_mag;
+    ch_magb = (int16x8_t*)dl_ch_magb;
 #endif
-    // loop over all LLRs in quad word (24 coded bits)
+    
+    if ((symbol_mod==0) || (symbol_mod==(4-frame_parms->Ncp)))
+    {
+        if (frame_parms->mode1_flag==0)
+        {
+            len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
+        }
+        else
+        {
+            len = (nb_rb*10) - (5*pbch_pss_sss_adjust/6);
+        }
+    }
+    else if ((beamforming_mode==7) && (frame_parms->Ncp==0) && (symbol==3 || symbol==6 || symbol==9 || symbol==12))
+    {
+        len = (nb_rb*9) - (3*pbch_pss_sss_adjust/4);
+    }
+    else if((beamforming_mode==7) && (frame_parms->Ncp==1) && (symbol==4 || symbol==7 || symbol==10))
+    {
+        len = (nb_rb*8) - (2*pbch_pss_sss_adjust/3);
+    }
+    else
+    {
+        len = (nb_rb*12) - pbch_pss_sss_adjust;
+    }
+
+    llr2 = llr;
+    llr += (len*6);
+
+    len_mod4 =len&3;
+    len2=len>>2;  // length in quad words (4 REs)
+    len2+=((len_mod4==0)?0:1);
+    
+    for (i=0; i<len2; i++) {
+        
+#if defined(__x86_64__) || defined(__i386__)
+        xmm1 = _mm_abs_epi16(rxF[i]);
+        xmm1 = _mm_subs_epi16(ch_mag[i],xmm1);
+        xmm2 = _mm_abs_epi16(xmm1);
+        xmm2 = _mm_subs_epi16(ch_magb[i],xmm2);
+#elif defined(__arm__)
+        xmm1 = vabsq_s16(rxF[i]);
+        xmm1 = vsubq_s16(ch_mag[i],xmm1);
+        xmm2 = vabsq_s16(xmm1);
+        xmm2 = vsubq_s16(ch_magb[i],xmm2);
+#endif
+        // loop over all LLRs in quad word (24 coded bits)
     /*
       for (j=0;j<8;j+=2) {
       llr2[0] = ((short *)&rxF[i])[j];
