@@ -59,9 +59,6 @@ BUILD_ECLIPSE=0
 CMAKE_CMD='cmake'
 trap handle_ctrl_c INT
 
-gen_nvram_path=$OPENAIR_DIR/targets/bin
-conf_nvram_path=$OPENAIR_DIR/openair3/NAS/TOOLS/ue_eurecom_test_sfr.conf
-
 function print_help() {
   echo_info "
 This program installs OpenAirInterface Software
@@ -406,6 +403,9 @@ function main() {
 
   set_openair_env
   cecho "OPENAIR_DIR    = $OPENAIR_DIR" $green
+
+  gen_nvram_path=$OPENAIR_DIR/targets/bin
+  conf_nvram_path=$OPENAIR_DIR/openair3/NAS/TOOLS/ue_eurecom_test_sfr.conf
 
   # for conf files copy in this bash script
   if [ -d /usr/lib/freeDiameter ]; then
