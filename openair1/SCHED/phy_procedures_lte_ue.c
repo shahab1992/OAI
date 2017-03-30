@@ -3209,6 +3209,7 @@ void ue_pdsch_procedures(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc, int eNB_id, PDSC
 	       i_mod,
 	       dlsch0->current_harq_pid);
       stop_meas(&ue->dlsch_llr_stats);
+      LOG_D(PHY,"[SFN %d] Ofdm Symbol %d rxPdsch: Pdsch Meas + LLRs Computation %5.2f \n",subframe_rx,m,ue->dlsch_llr_stats.p_time/(cpuf*1000.0));
     } // CRNTI active
   }
 } 
@@ -3403,6 +3404,9 @@ void ue_dlsch_procedures(PHY_VARS_UE *ue,
 			 0,
 			 subframe_rx<<1);
       stop_meas(&ue->dlsch_unscrambling_stats);
+
+      LOG_D(PHY,"AbsSubframe %d.%d --> unscrambling %5.3f\n",
+              frame_rx%1024, subframe_rx,(ue->dlsch_unscrambling_stats.p_time)/(cpuf*1000.0));
 
 #if 0
       LOG_I(PHY," ------ start turbo decoder for AbsSubframe %d.%d / %d  ------  \n", frame_rx, subframe_rx, harq_pid);
@@ -3910,7 +3914,7 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
     LOG_D(PHY," ------ end PDSCH ChannelComp/LLR slot 0: AbsSubframe %d.%d ------  \n", frame_rx%1024, subframe_rx);
     LOG_D(PHY," ------ --> PDSCH Turbo Decoder slot 0/1: AbsSubframe %d.%d ------  \n", frame_rx%1024, subframe_rx);
 
-    start_meas(&ue->dlsch_procedures_stat);
+    start_meas(&ue->dlsch_procedures_stat[subframe_rx&0x1]);
     ue_dlsch_procedures(ue,
 			proc,
 			eNB_id,
@@ -3920,9 +3924,9 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
 			&ue->dlsch_errors[eNB_id],
 			mode,
 			abstraction_flag);
-    stop_meas(&ue->dlsch_procedures_stat);
+    stop_meas(&ue->dlsch_procedures_stat[subframe_rx&0x1]);
     LOG_D(PHY,"[SFN %d] Slot1:       Pdsch Proc %5.2f\n",subframe_rx,ue->pdsch_procedures_stat.p_time/(cpuf*1000.0));
-    LOG_D(PHY,"[SFN %d] Slot0 Slot1: Dlsch Proc %5.2f\n",subframe_rx,ue->dlsch_procedures_stat.p_time/(cpuf*1000.0));
+    LOG_D(PHY,"[SFN %d] Slot0 Slot1: Dlsch Proc %5.2f\n",subframe_rx,ue->dlsch_procedures_stat[subframe_rx&0x1].p_time/(cpuf*1000.0));
 
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PDSCH_PROC, VCD_FUNCTION_OUT);
 

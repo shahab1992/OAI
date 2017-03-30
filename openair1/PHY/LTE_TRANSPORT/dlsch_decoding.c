@@ -411,6 +411,8 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
       return(dlsch->max_turbo_iterations);
     } else
       stop_meas(dlsch_rate_unmatching_stats);
+    LOG_D(PHY,"AbsSubframe %d.%d Segment %d --> rate matching  %5.3f\n",
+               frame%1024, subframe,r, (dlsch_rate_unmatching_stats->p_time)/(cpuf*1000.0));
 
     r_offset += E;
 
@@ -425,6 +427,9 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
 
                                    harq_process->w[r]);
     stop_meas(dlsch_deinterleaving_stats);
+
+    LOG_D(PHY,"AbsSubframe %d.%d Segment %d --> deinterleaving %5.3f\n",
+            frame%1024, subframe,r, (dlsch_deinterleaving_stats->p_time)/(cpuf*1000.0));
 
 #ifdef DEBUG_DLSCH_DECODING
     /*
@@ -492,6 +497,8 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
 
 
       stop_meas(dlsch_turbo_decoding_stats);
+      LOG_D(PHY,"AbsSubframe %d.%d Segment %d --> Turbo Decoding %5.3f\n",
+              frame%1024, subframe,r, (dlsch_turbo_decoding_stats->p_time)/(cpuf*1000.0));
     }
 #else
     if ((harq_process->C == 1) ||
