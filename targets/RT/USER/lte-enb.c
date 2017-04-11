@@ -369,6 +369,7 @@ void do_OFDM_mod_rt(int subframe,PHY_VARS_eNB *phy_vars_eNB)
 	dummy_tx_b[i+2] = 0xff00;
 	dummy_tx_b[i+3] = 0xff000000;
 	}*/
+
       for (i=0; i<len; i++) {
         tx_offset = (int)slot_offset+time_offset[aa]+i;
 
