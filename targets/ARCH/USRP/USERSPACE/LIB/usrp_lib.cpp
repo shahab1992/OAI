@@ -156,7 +156,18 @@ static void trx_usrp_end(openair0_device *device) {
       @param flags flags must be set to TRUE if timestamp parameter needs to be applied
 */
 static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp, void **buff, int nsamps, int cc, int flags) {
-    int ret=0;
+    int ret=0,nsamps2;
+
+	#if defined(__x86_64) || defined(__i386__)
+	#ifdef __AVX2__
+		nsamps2 = (nsamps+7)>>3;
+	#else
+		nsamps2 = (nsamps+3)>>2;
+	#endif
+	#elif defined(__arm__)
+		nsamps2 = (nsamps+3)>>2;
+	#endif
+
     usrp_state_t *s = (usrp_state_t*)device->priv;
 
     s->tx_md.time_spec = uhd::time_spec_t::from_ticks(timestamp, s->sample_rate);
@@ -180,6 +191,21 @@ static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp,
     } else if (flags==1) { // middle of burst
         s->tx_md.start_of_burst = false;
         s->tx_md.end_of_burst = false;
+    }
+
+    // bring RX data into 12 MSBs for USRP::Shift by 4 bits to left
+    for (int i=0; i<cc; i++) {
+        for (int j=0; j<nsamps2; j++) {
+#if defined(__x86_64__) || defined(__i386__)
+#ifdef __AVX2__
+            ((__m256i *)buff[i])[j] = _mm256_slli_epi16(((__m256i *)buff[i])[j],4);
+#else
+            ((__m128i *)buff[i])[j] = _mm_slli_epi16(((__m128i *)buff[i])[j],4);
+#endif
+#elif defined(__arm__)
+            ((int16x8_t*)buff[i])[j] = vshrq_n_s16(buff[i][j],4);
+#endif
+        }
     }
 
     if (cc>1) {

@@ -134,6 +134,7 @@ extern int transmission_mode;
 
 extern int oaisim_flag;
 
+
 //pthread_t                       main_eNB_thread;
 pthread_t	if_stats_thread;
 
@@ -380,14 +381,8 @@ void do_OFDM_mod_rt(int subframe,PHY_VARS_eNB *phy_vars_eNB)
         if (tx_offset>=(LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti))
           tx_offset -= LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti;
 
-/*	((short*)&phy_vars_eNB->common_vars.txdata[0][aa][tx_offset])[0] = ((short*)dummy_tx_b)[2*i]<<openair0_cfg[0].iq_txshift;
-	
-	((short*)&phy_vars_eNB->common_vars.txdata[0][aa][tx_offset])[1] = ((short*)dummy_tx_b)[2*i+1]<<openair0_cfg[0].iq_txshift; */
-
-	((short*)&phy_vars_eNB->common_vars.txdata[0][aa][tx_offset])[0] = ((short*)&phy_vars_eNB->common_vars.txdata[0][aa][tx_offset])[0]<<openair0_cfg[CC_id].iq_txshift;
-	
-	((short*)&phy_vars_eNB->common_vars.txdata[0][aa][tx_offset])[1] = ((short*)&phy_vars_eNB->common_vars.txdata[0][aa][tx_offset])[1]<<openair0_cfg[CC_id].iq_txshift;
-     }
+        //Shift by 4 bits is now done at trx_usrp_write in usrp lib
+      }
      // if S-subframe switch to RX in second subframe
      if (subframe_select(&phy_vars_eNB->frame_parms,subframe) == SF_S) {
        for (i=0; i<len; i++) {
@@ -493,6 +488,7 @@ void proc_tx_full(PHY_VARS_eNB *eNB,
   proc_tx_high0(eNB,proc,r_type,rn);
   // do OFDM modulation
   do_OFDM_mod_rt(proc->subframe_tx,eNB);
+
   // if TX fronthaul go ahead 
   if (eNB->tx_fh) eNB->tx_fh(eNB,proc);
 
