@@ -363,51 +363,39 @@ void do_OFDM_mod_rt(int subframe,PHY_VARS_eNB *phy_vars_eNB)
 	len = phy_vars_eNB->frame_parms.samples_per_tti>>1;
       else
 	len = phy_vars_eNB->frame_parms.samples_per_tti;
-      /*
-      for (i=0;i<len;i+=4) {
-	dummy_tx_b[i] = 0x100;
-	dummy_tx_b[i+1] = 0x01000000;
-	dummy_tx_b[i+2] = 0xff00;
-	dummy_tx_b[i+3] = 0xff000000;
-	}*/
 
-      for (i=0; i<len; i++) {
-        tx_offset = (int)slot_offset+time_offset[aa]+i;
+      //Shift of IQ samples (4 bits for USRP) is now done in the driver's library
 
-	
-        if (tx_offset<0)
-          tx_offset += LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti;
-
-        if (tx_offset>=(LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti))
-          tx_offset -= LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti;
-
-        //Shift by 4 bits is now done at trx_usrp_write in usrp lib
+      // if S-subframe switch to RX in second subframe
+      if (subframe_select(&phy_vars_eNB->frame_parms,subframe) == SF_S) {
+        tx_offset = (int)slot_offset+time_offset[aa]+len;
+        for (i=0; i<len; i++) {
+          if (tx_offset<0)
+            tx_offset += LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti;
+          if (tx_offset>=(LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti))
+            tx_offset -= LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti;
+          phy_vars_eNB->common_vars.txdata[0][aa][tx_offset++] = 0x00010001;
+        }
       }
-     // if S-subframe switch to RX in second subframe
-     if (subframe_select(&phy_vars_eNB->frame_parms,subframe) == SF_S) {
-       for (i=0; i<len; i++) {
-	 phy_vars_eNB->common_vars.txdata[0][aa][tx_offset++] = 0x00010001;
-       }
-     }
 
-     if ((((phy_vars_eNB->frame_parms.tdd_config==0) ||
-	  (phy_vars_eNB->frame_parms.tdd_config==1) ||
-	  (phy_vars_eNB->frame_parms.tdd_config==2) ||
-	  (phy_vars_eNB->frame_parms.tdd_config==6)) && 
-	  (subframe==0)) || (subframe==5)) {
-       // turn on tx switch N_TA_offset before
-       //LOG_D(HW,"subframe %d, time to switch to tx (N_TA_offset %d, slot_offset %d) \n",subframe,phy_vars_eNB->N_TA_offset,slot_offset);
-       for (i=0; i<phy_vars_eNB->N_TA_offset; i++) {
-         tx_offset = (int)slot_offset+time_offset[aa]+i-phy_vars_eNB->N_TA_offset;
-         if (tx_offset<0)
-           tx_offset += LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti;
-	 
-	 if (tx_offset>=(LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti))
-	   tx_offset -= LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti;
-	 
-	 phy_vars_eNB->common_vars.txdata[0][aa][tx_offset] = 0x00000000;
-       }
-     }
+      if ((((phy_vars_eNB->frame_parms.tdd_config==0) ||
+           (phy_vars_eNB->frame_parms.tdd_config==1) ||
+           (phy_vars_eNB->frame_parms.tdd_config==2) ||
+           (phy_vars_eNB->frame_parms.tdd_config==6)) && 
+           (subframe==0)) || (subframe==5)) {
+        // turn on tx switch N_TA_offset before
+        //LOG_D(HW,"subframe %d, time to switch to tx (N_TA_offset %d, slot_offset %d) \n",subframe,phy_vars_eNB->N_TA_offset,slot_offset);
+        for (i=0; i<phy_vars_eNB->N_TA_offset; i++) {
+          tx_offset = (int)slot_offset+time_offset[aa]+i-phy_vars_eNB->N_TA_offset;
+          if (tx_offset<0)
+            tx_offset += LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti;
+          
+          if (tx_offset>=(LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti))
+            tx_offset -= LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*phy_vars_eNB->frame_parms.samples_per_tti;
+          
+          phy_vars_eNB->common_vars.txdata[0][aa][tx_offset] = 0x00000000;
+        }
+      }
     }
   }
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_ENB_SFGEN , 0 );
