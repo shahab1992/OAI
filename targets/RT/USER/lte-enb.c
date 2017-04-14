@@ -292,8 +292,6 @@ static inline void wait_sync(char *thread_name) {
 
 void do_OFDM_mod_rt(int subframe,PHY_VARS_eNB *phy_vars_eNB)
 {
-
-  int CC_id = phy_vars_eNB->proc.CC_id;
   unsigned int aa,slot_offset;
   //int dummy_tx_b[7680*4] __attribute__((aligned(32)));
   int i, tx_offset;
@@ -680,6 +678,8 @@ static void* print_stats_thread( void* param ) {
 		print_meas(&eNB->send_if4p5_comp_stats, "send_if4p5_comp_stats", NULL, NULL);
 		printf("\n");
 	}
+
+        return NULL;
 }
 
 // asynchronous UL with IF5 (RCC,RAU,eNodeB_BBU)
@@ -1494,8 +1494,6 @@ void tx_rf(PHY_VARS_eNB *eNB,eNB_rxtx_proc_t *proc_rxtx) {
   void *txp[fp->nb_antennas_tx]; 
   unsigned int txs;
   int i;
-  openair0_timestamp ts,old_ts;
-
 
   // Transmit TX buffer based on timestamp from RX
   //    printf("trx_write -> USRP TS %llu (sf %d)\n", (proc->timestamp_rx+(3*fp->samples_per_tti)),(proc->subframe_rx+2)%10);
