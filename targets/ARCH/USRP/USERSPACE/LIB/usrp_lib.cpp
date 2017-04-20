@@ -168,6 +168,8 @@ static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp,
 		nsamps2 = (nsamps+3)>>2;
 	#endif
 
+	uint32_t tx_buff[nsamps] __attribute__ ((aligned(32)));
+
     usrp_state_t *s = (usrp_state_t*)device->priv;
 
     s->tx_md.time_spec = uhd::time_spec_t::from_ticks(timestamp, s->sample_rate);
@@ -198,12 +200,12 @@ static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp,
         for (int j=0; j<nsamps2; j++) {
 #if defined(__x86_64__) || defined(__i386__)
 #ifdef __AVX2__
-            ((__m256i *)buff[i])[j] = _mm256_slli_epi16(((__m256i *)buff[i])[j],4);
+            ((__m256i *)tx_buff)[j] = _mm256_slli_epi16(((__m256i *)buff[i])[j],4);
 #else
-            ((__m128i *)buff[i])[j] = _mm_slli_epi16(((__m128i *)buff[i])[j],4);
+            ((__m128i *)tx_buff)[j] = _mm_slli_epi16(((__m128i *)buff[i])[j],4);
 #endif
 #elif defined(__arm__)
-            ((int16x8_t*)buff[i])[j] = vshrq_n_s16(buff[i][j],4);
+            ((int16x8_t*)tx_buff)[j] = vshrq_n_s16(buff[i][j],4);
 #endif
         }
     }
@@ -211,10 +213,10 @@ static int trx_usrp_write(openair0_device *device, openair0_timestamp timestamp,
     if (cc>1) {
         std::vector<void *> buff_ptrs;
         for (int i=0; i<cc; i++)
-            buff_ptrs.push_back(buff[i]);
+            buff_ptrs.push_back(tx_buff);
         ret = (int)s->tx_stream->send(buff_ptrs, nsamps, s->tx_md,1e-3);
     } else
-        ret = (int)s->tx_stream->send(buff[0], nsamps, s->tx_md,1e-3);
+        ret = (int)s->tx_stream->send(tx_buff, nsamps, s->tx_md,1e-3);
 
 
 
