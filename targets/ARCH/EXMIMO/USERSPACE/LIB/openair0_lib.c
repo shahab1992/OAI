@@ -56,6 +56,13 @@
 
 #include <pthread.h>
 
+#ifdef __SSE4_1__
+#  include <smmintrin.h>
+#endif
+
+#ifdef __AVX2__
+#  include <immintrin.h>
+#endif
 
 #define max(a,b) ((a)>(b) ? (a) : (b))
 
@@ -512,9 +519,39 @@ int trx_exmimo_start(openair0_device *device) {
   return(0);
 }
 
-int trx_exmimo_write(openair0_device *device,openair0_timestamp ptimestamp, void **buff, int nsamps, int cc, int flags) {
+int trx_exmimo_write(openair0_device *device,openair0_timestamp ptimestamp, void **buff, int nsamps, int cc, int flags)
+{
+  int nsamps2;
 
-  
+#if defined(__x86_64) || defined(__i386__)
+#ifdef __AVX2__
+  nsamps2 = (nsamps+7)>>3;
+#else
+  nsamps2 = (nsamps+3)>>2;
+#endif
+#elif defined(__arm__)
+  nsamps2 = (nsamps+3)>>2;
+#endif
+
+  // bring TX data into 12 MSBs
+  for (int i=0; i<cc; i++) {
+    for (int j=0; j<nsamps2; j++) {
+#if defined(__x86_64__) || defined(__i386__)
+#ifdef __AVX2__
+      ((__m256i *)buff[i])[j] = _mm256_slli_epi16(((__m256i *)buff[i])[j],4);
+#else
+      ((__m128i *)buff[i])[j] = _mm_slli_epi16(((__m128i *)buff[i])[j],4);
+#endif
+#elif defined(__arm__)
+      ((int16x8_t*)buff[i])[j] = vshrq_n_s16(buff[i][j],4);
+#endif
+    }
+  }
+
+  /* TODO: in openair1/SCHED/phy_procedures_lte_ue.c there is an &= 0xFFFEFFFE
+   * that should probably come here (if it is needed since we shift by 4 above?).
+   * Also, what about the function phy_procedures_UE_S_TX?
+   */
   return(nsamps);
 }
 
