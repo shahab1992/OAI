@@ -1,40 +1,35 @@
-/*******************************************************************************
-    OpenAirInterface
-    Copyright(c) 1999 - 2014 Eurecom
-
-    OpenAirInterface is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-
-    OpenAirInterface is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OpenAirInterface.The full GNU General Public License is
-   included in this distribution in the file called "COPYING". If not,
-   see <http://www.gnu.org/licenses/>.
-
-  Contact Information
-  OpenAirInterface Admin: openair_admin@eurecom.fr
-  OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
-
-  Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
-
- *******************************************************************************/
+/*
+ * Licensed to the OpenAirInterface (OAI) Software Alliance under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The OpenAirInterface Software Alliance licenses this file to You under
+ * the OAI Public License, Version 1.0  (the "License"); you may not use this file
+ * except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.openairinterface.org/?page_id=698
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *-------------------------------------------------------------------------------
+ * For more information about the OpenAirInterface (OAI) Software Alliance:
+ *      contact@openairinterface.org
+ */
 
 /*! \file pdcp.c
  * \brief pdcp interface with RLC
- * \author  Lionel GAUTHIER and Navid Nikaein
+ * \author Navid Nikaein and Lionel GAUTHIER
  * \date 2009-2012
+ * \email navid.nikaein@eurecom.fr
  * \version 1.0
  */
 
 #define PDCP_C
+//#define DEBUG_PDCP_FIFO_FLUSH_SDU
+
 #ifndef USER_MODE
 #include <rtai_fifos.h>
 #endif
@@ -83,7 +78,7 @@ extern int otg_enabled;
  * code at targets/TEST/PDCP/test_pdcp.c:test_pdcp_data_req()
  */
 boolean_t pdcp_data_req(
-  const protocol_ctxt_t* const  ctxt_pP,
+  protocol_ctxt_t*  ctxt_pP,
   const srb_flag_t     srb_flagP,
   const rb_id_t        rb_idP,
   const mui_t          muiP,
@@ -105,7 +100,6 @@ boolean_t pdcp_data_req(
   rlc_op_status_t    rlc_status;
   boolean_t          ret             = TRUE;
 
-
   hash_key_t         key             = HASHTABLE_NOT_A_KEY_VALUE;
   hashtable_rc_t     h_rc;
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PDCP_DATA_REQ,VCD_FUNCTION_IN);
@@ -115,28 +109,6 @@ boolean_t pdcp_data_req(
   if (ctxt_pP->enb_flag != ENB_FLAG_NO)
     T(T_ENB_PDCP_DL, T_INT(ctxt_pP->module_id), T_INT(ctxt_pP->rnti), T_INT(rb_idP), T_INT(sdu_buffer_sizeP));
 #endif
-
-  if (modeP == PDCP_TRANSMISSION_MODE_TRANSPARENT) {
-    AssertError (rb_idP < NB_RB_MBMS_MAX, return FALSE, "RB id is too high (%u/%d) %u %u!\n", rb_idP, NB_RB_MBMS_MAX, ctxt_pP->module_id, ctxt_pP->rnti);
-  } else {
-    if (srb_flagP) {
-      AssertError (rb_idP < 2, return FALSE, "RB id is too high (%u/%d) %u %u!\n", rb_idP, 2, ctxt_pP->module_id, ctxt_pP->rnti);
-    } else {
-      AssertError (rb_idP < maxDRB, return FALSE, "RB id is too high (%u/%d) %u %u!\n", rb_idP, maxDRB, ctxt_pP->module_id, ctxt_pP->rnti);
-    }
-  }
-
-  key = PDCP_COLL_KEY_VALUE(ctxt_pP->module_id, ctxt_pP->rnti, ctxt_pP->enb_flag, rb_idP, srb_flagP);
-  h_rc = hashtable_get(pdcp_coll_p, key, (void**)&pdcp_p);
-
-  if (h_rc != HASH_TABLE_OK) {
-    if (modeP != PDCP_TRANSMISSION_MODE_TRANSPARENT) {
-      LOG_W(PDCP, PROTOCOL_CTXT_FMT" Instance is not configured for rb_id %d Ignoring SDU...\n",
-            PROTOCOL_CTXT_ARGS(ctxt_pP),
-            rb_idP);
-    return FALSE;
-  }
-  }
 
   if (sdu_buffer_sizeP == 0) {
     LOG_W(PDCP, "Handed SDU is of size 0! Ignoring...\n");
@@ -153,19 +125,44 @@ boolean_t pdcp_data_req(
     // XXX What does following call do?
     mac_xface->macphy_exit("PDCP sdu buffer size > MAX_IP_PACKET_SIZE");
   }
+  
+  if (modeP == PDCP_TRANSMISSION_MODE_TRANSPARENT) {
+    AssertError (rb_idP < NB_RB_MBMS_MAX, return FALSE, "RB id is too high (%u/%d) %u %u!\n", rb_idP, NB_RB_MBMS_MAX, ctxt_pP->module_id, ctxt_pP->rnti);
+  } else {
+    if (srb_flagP) {
+      AssertError (rb_idP < 3, return FALSE, "RB id is too high (%u/%d) %u %u!\n", rb_idP, 3, ctxt_pP->module_id, ctxt_pP->rnti);
+    } else {
+      AssertError (rb_idP < maxDRB, return FALSE, "RB id is too high (%u/%d) %u %u!\n", rb_idP, maxDRB, ctxt_pP->module_id, ctxt_pP->rnti);
+    }
+  }
 
+  key = PDCP_COLL_KEY_VALUE(ctxt_pP->module_id, ctxt_pP->rnti, ctxt_pP->enb_flag, rb_idP, srb_flagP);
+  h_rc = hashtable_get(pdcp_coll_p, key, (void**)&pdcp_p);
+
+  if (h_rc != HASH_TABLE_OK) {
+    if (modeP != PDCP_TRANSMISSION_MODE_TRANSPARENT) {
+      LOG_W(PDCP, PROTOCOL_CTXT_FMT" Instance is not configured for rb_id %d Ignoring SDU...\n",
+	    PROTOCOL_CTXT_ARGS(ctxt_pP),
+	    rb_idP);
+      ctxt_pP->configured=FALSE;
+      return FALSE;
+    }
+  }else{
+    // instance for a given RB is configured
+    ctxt_pP->configured=TRUE;
+  }
+    
   if (ctxt_pP->enb_flag == ENB_FLAG_NO) {
     start_meas(&eNB_pdcp_stats[ctxt_pP->module_id].data_req);
   } else {
     start_meas(&UE_pdcp_stats[ctxt_pP->module_id].data_req);
   }
 
-
   // PDCP transparent mode for MBMS traffic
 
   if (modeP == PDCP_TRANSMISSION_MODE_TRANSPARENT) {
     LOG_D(PDCP, " [TM] Asking for a new mem_block of size %d\n",sdu_buffer_sizeP);
-    pdcp_pdu_p = get_free_mem_block(sdu_buffer_sizeP);
+    pdcp_pdu_p = get_free_mem_block(sdu_buffer_sizeP, __func__);
 
     if (pdcp_pdu_p != NULL) {
       memcpy(&pdcp_pdu_p->data[0], sdu_buffer_pP, sdu_buffer_sizeP);
@@ -206,7 +203,7 @@ boolean_t pdcp_data_req(
     /*
      * Allocate a new block for the new PDU (i.e. PDU header and SDU payload)
      */
-    pdcp_pdu_p = get_free_mem_block(pdcp_pdu_size);
+    pdcp_pdu_p = get_free_mem_block(pdcp_pdu_size, __func__);
 
     if (pdcp_pdu_p != NULL) {
       /*
@@ -260,12 +257,12 @@ boolean_t pdcp_data_req(
        * Validate incoming sequence number, there might be a problem with PDCP initialization
        */
       if (current_sn > pdcp_calculate_max_seq_num_for_given_size(pdcp_p->seq_num_size)) {
-        LOG_E(PDCP, PROTOCOL_PDCP_CTXT_FMT" Generated sequence number (%lu) is greater than a sequence number could ever be!\n"\
+        LOG_E(PDCP, PROTOCOL_PDCP_CTXT_FMT" Generated sequence number (%"PRIu16") is greater than a sequence number could ever be!\n"\
               "There must be a problem with PDCP initialization, ignoring this PDU...\n",
               PROTOCOL_PDCP_CTXT_ARGS(ctxt_pP,pdcp_p),
               current_sn);
 
-        free_mem_block(pdcp_pdu_p);
+        free_mem_block(pdcp_pdu_p, __func__);
 
         if (ctxt_pP->enb_flag == ENB_FLAG_NO) {
           stop_meas(&eNB_pdcp_stats[ctxt_pP->module_id].data_req);
@@ -515,7 +512,7 @@ pdcp_data_ind(
             PROTOCOL_CTXT_FMT"Could not get PDCP instance key 0x%"PRIx64"\n",
             PROTOCOL_CTXT_ARGS(ctxt_pP),
             key);
-      free_mem_block(sdu_buffer_pP);
+      free_mem_block(sdu_buffer_pP, __func__);
       VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PDCP_DATA_IND,VCD_FUNCTION_OUT);
       return FALSE;
     }
@@ -572,7 +569,7 @@ pdcp_data_ind(
             PROTOCOL_PDCP_CTXT_FMT"Incoming (from RLC) SDU is short of size (size:%d)! Ignoring...\n",
             PROTOCOL_PDCP_CTXT_ARGS(ctxt_pP, pdcp_p),
             sdu_buffer_sizeP);
-      free_mem_block(sdu_buffer_pP);
+      free_mem_block(sdu_buffer_pP, __func__);
 
       if (ctxt_pP->enb_flag) {
         stop_meas(&eNB_pdcp_stats[ctxt_pP->module_id].data_ind);
@@ -603,7 +600,7 @@ pdcp_data_ind(
        */
 #if 0
       LOG_D(PDCP, "Ignoring PDU...\n");
-      free_mem_block(sdu_buffer);
+      free_mem_block(sdu_buffer, __func__);
       return FALSE;
 #else
       //LOG_W(PDCP, "Delivering out-of-order SDU to upper layer...\n");
@@ -650,9 +647,9 @@ pdcp_data_ind(
 		   rb_id,
 		   sdu_buffer_sizeP - pdcp_header_len - pdcp_tailer_len,
 		   (uint8_t*)&sdu_buffer_pP->data[pdcp_header_len]);
-      free_mem_block(sdu_buffer_pP);
+      free_mem_block(sdu_buffer_pP, __func__);
 
-      // free_mem_block(new_sdu);
+      // free_mem_block(new_sdu, __func__);
       if (ctxt_pP->enb_flag) {
         stop_meas(&eNB_pdcp_stats[ctxt_pP->module_id].data_ind);
       } else {
@@ -727,7 +724,7 @@ pdcp_data_ind(
           ctime,
           (const char*)(&sdu_buffer_pP->data[payload_offset]),
                    sdu_buffer_sizeP - payload_offset ) == 0 ) {
-      free_mem_block(sdu_buffer_pP);
+      free_mem_block(sdu_buffer_pP, __func__);
 
       if (ctxt_pP->enb_flag) {
         stop_meas(&eNB_pdcp_stats[ctxt_pP->module_id].data_ind);
@@ -744,7 +741,7 @@ pdcp_data_ind(
 
   if (otg_enabled==1) {
     LOG_D(OTG,"Discarding received packed\n");
-    free_mem_block(sdu_buffer_pP);
+    free_mem_block(sdu_buffer_pP, __func__);
 
     if (ctxt_pP->enb_flag) {
       stop_meas(&eNB_pdcp_stats[ctxt_pP->module_id].data_ind);
@@ -799,7 +796,7 @@ pdcp_data_ind(
 #endif
 
   if (FALSE == packet_forwarded) {
-    new_sdu_p = get_free_mem_block(sdu_buffer_sizeP - payload_offset + sizeof (pdcp_data_ind_header_t));
+    new_sdu_p = get_free_mem_block(sdu_buffer_sizeP - payload_offset + sizeof (pdcp_data_ind_header_t), __func__);
 
     if (new_sdu_p) {
       if (pdcp_p->rlc_mode == RLC_MODE_AM ) {
@@ -811,6 +808,7 @@ pdcp_data_ind(
        */
       memset(new_sdu_p->data, 0, sizeof (pdcp_data_ind_header_t));
       ((pdcp_data_ind_header_t *) new_sdu_p->data)->data_size = sdu_buffer_sizeP - payload_offset;
+      AssertFatal((sdu_buffer_sizeP - payload_offset >= 0), "invalid PDCP SDU size!");
 
       // Here there is no virtualization possible
       // set ((pdcp_data_ind_header_t *) new_sdu_p->data)->inst for IP layer here
@@ -818,6 +816,14 @@ pdcp_data_ind(
         ((pdcp_data_ind_header_t *) new_sdu_p->data)->rb_id = rb_id;
 #if defined(OAI_EMU)
         ((pdcp_data_ind_header_t*) new_sdu_p->data)->inst  = ctxt_pP->module_id + oai_emulation.info.nb_enb_local - oai_emulation.info.first_ue_local;
+#else
+#  if defined(ENABLE_USE_MME)
+        /* for the UE compiled in S1 mode, we need 1 here
+         * for the UE compiled in noS1 mode, we need 0
+         * TODO: be sure of this
+         */
+        ((pdcp_data_ind_header_t*) new_sdu_p->data)->inst  = 1;
+#  endif
 #endif
       } else {
         ((pdcp_data_ind_header_t*) new_sdu_p->data)->rb_id = rb_id + (ctxt_pP->module_id * maxDRB);
@@ -825,6 +831,11 @@ pdcp_data_ind(
         ((pdcp_data_ind_header_t*) new_sdu_p->data)->inst  = ctxt_pP->module_id - oai_emulation.info.first_enb_local;
 #endif
       }
+#ifdef DEBUG_PDCP_FIFO_FLUSH_SDU
+      static uint32_t pdcp_inst = 0;
+      ((pdcp_data_ind_header_t*) new_sdu_p->data)->inst = pdcp_inst++;
+      LOG_D(PDCP, "inst=%d size=%d\n", ((pdcp_data_ind_header_t*) new_sdu_p->data)->inst, ((pdcp_data_ind_header_t *) new_sdu_p->data)->data_size);
+#endif
 
       memcpy(&new_sdu_p->data[sizeof (pdcp_data_ind_header_t)], \
              &sdu_buffer_pP->data[payload_offset], \
@@ -833,7 +844,7 @@ pdcp_data_ind(
 
       /* Print octets of incoming data in hexadecimal form */
       LOG_D(PDCP, "Following content has been received from RLC (%d,%d)(PDCP header has already been removed):\n",
-            sdu_buffer_sizeP  - payload_offset + sizeof(pdcp_data_ind_header_t),
+            sdu_buffer_sizeP  - payload_offset + (int)sizeof(pdcp_data_ind_header_t),
             sdu_buffer_sizeP  - payload_offset);
       //util_print_hex_octets(PDCP, &new_sdu_p->data[sizeof (pdcp_data_ind_header_t)], sdu_buffer_sizeP - payload_offset);
       //util_flush_hex_octets(PDCP, &new_sdu_p->data[sizeof (pdcp_data_ind_header_t)], sdu_buffer_sizeP - payload_offset);
@@ -861,7 +872,7 @@ pdcp_data_ind(
 
 #endif
 
-  free_mem_block(sdu_buffer_pP);
+  free_mem_block(sdu_buffer_pP, __func__);
 
   if (ctxt_pP->enb_flag) {
     stop_meas(&eNB_pdcp_stats[ctxt_pP->module_id].data_ind);
@@ -916,7 +927,7 @@ pdcp_run (
           RRC_DCCH_DATA_REQ (msg_p).frame, 
 	  0,
 	  RRC_DCCH_DATA_REQ (msg_p).eNB_index);
-        LOG_D(PDCP, PROTOCOL_CTXT_FMT"Received %s from %s: instance %d, rb_id %d, muiP %d, confirmP %d, mode %d\n",
+        LOG_I(PDCP, PROTOCOL_CTXT_FMT"Received %s from %s: instance %d, rb_id %d, muiP %d, confirmP %d, mode %d\n",
               PROTOCOL_CTXT_ARGS(&ctxt),
               msg_name,
               ITTI_MSG_ORIGIN_NAME(msg_p),
@@ -1059,9 +1070,10 @@ rrc_pdcp_config_asn1_req (
   uint8_t                  *const kRRCenc_pP,
   uint8_t                  *const kRRCint_pP,
   uint8_t                  *const kUPenc_pP
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
   ,PMCH_InfoList_r9_t*  const pmch_InfoList_r9_pP
 #endif
+  ,rb_id_t                 *const defaultDRB 
 )
 //-----------------------------------------------------------------------------
 {
@@ -1083,7 +1095,9 @@ rrc_pdcp_config_asn1_req (
 
   hash_key_t      key            = HASHTABLE_NOT_A_KEY_VALUE;
   hashtable_rc_t  h_rc;
-#ifdef Rel10
+  hash_key_t      key_defaultDRB = HASHTABLE_NOT_A_KEY_VALUE;
+  hashtable_rc_t  h_defaultDRB_rc;
+#if defined(Rel10) || defined(Rel14)
   int i,j;
   MBMS_SessionInfoList_r9_t *mbms_SessionInfoList_r9_p = NULL;
   MBMS_SessionInfo_r9_t     *MBMS_SessionInfo_p        = NULL;
@@ -1103,7 +1117,7 @@ rrc_pdcp_config_asn1_req (
       srb_id = srb2add_list_pP->list.array[cnt]->srb_Identity;
       srb_toaddmod_p = srb2add_list_pP->list.array[cnt];
       rlc_type = RLC_MODE_AM;
-      lc_id = srb_id + 2;
+      lc_id = srb_id;
       key = PDCP_COLL_KEY_VALUE(ctxt_pP->module_id, ctxt_pP->rnti, ctxt_pP->enb_flag, srb_id, SRB_FLAG_YES);
       h_rc = hashtable_get(pdcp_coll_p, key, (void**)&pdcp_p);
 
@@ -1164,6 +1178,22 @@ rrc_pdcp_config_asn1_req (
           break;
 
         case SRB_ToAddMod__rlc_Config_PR_defaultValue:
+        	pdcp_config_req_asn1 (
+        	              ctxt_pP,
+        	              pdcp_p,
+        	              SRB_FLAG_YES,
+        	              rlc_type,
+        	              action,
+        	              lc_id,
+        	              mch_id,
+        	              srb_id,
+        	              srb_sn,
+        	              0, // drb_report
+        	              0, // header compression
+        	              security_modeP,
+        	              kRRCenc_pP,
+        	              kRRCint_pP,
+        	              kUPenc_pP);
           // already the default values
           break;
 
@@ -1183,8 +1213,19 @@ rrc_pdcp_config_asn1_req (
       drb_toaddmod_p = drb2add_list_pP->list.array[cnt];
 
       drb_id = drb_toaddmod_p->drb_Identity;// + drb_id_offset;
+      if (drb_toaddmod_p->logicalChannelIdentity) {
+        lc_id = *(drb_toaddmod_p->logicalChannelIdentity);
+      } else {
+        LOG_E(PDCP, PROTOCOL_PDCP_CTXT_FMT" logicalChannelIdentity is missing in DRB-ToAddMod information element!\n",
+              PROTOCOL_PDCP_CTXT_ARGS(ctxt_pP, pdcp_p));
+        continue;
+      }
 
-      lc_id = drb_id + 2;
+      if (lc_id == 1 || lc_id == 2) {
+        LOG_E(RLC, PROTOCOL_CTXT_FMT" logicalChannelIdentity = %ld is invalid in RRC message when adding DRB!\n", PROTOCOL_CTXT_ARGS(ctxt_pP), lc_id);
+        continue;
+      }
+
       DevCheck4(drb_id < maxDRB, drb_id, maxDRB, ctxt_pP->module_id, ctxt_pP->rnti);
       key = PDCP_COLL_KEY_VALUE(ctxt_pP->module_id, ctxt_pP->rnti, ctxt_pP->enb_flag, drb_id, SRB_FLAG_NO);
       h_rc = hashtable_get(pdcp_coll_p, key, (void**)&pdcp_p);
@@ -1200,7 +1241,21 @@ rrc_pdcp_config_asn1_req (
         pdcp_p = calloc(1, sizeof(pdcp_t));
         h_rc = hashtable_insert(pdcp_coll_p, key, pdcp_p);
 
-        if (h_rc != HASH_TABLE_OK) {
+        // save the first configured DRB-ID as the default DRB-ID
+        if ((defaultDRB != NULL) && (*defaultDRB == drb_id)) {
+          key_defaultDRB = PDCP_COLL_KEY_DEFAULT_DRB_VALUE(ctxt_pP->module_id, ctxt_pP->rnti, ctxt_pP->enb_flag);
+          h_defaultDRB_rc = hashtable_insert(pdcp_coll_p, key_defaultDRB, pdcp_p);
+        } else {
+          h_defaultDRB_rc = HASH_TABLE_OK; // do not trigger any error handling if this is not a default DRB
+        }
+
+        if (h_defaultDRB_rc != HASH_TABLE_OK) {
+          LOG_E(PDCP, PROTOCOL_PDCP_CTXT_FMT" CONFIG_ACTION_ADD ADD default DRB key 0x%"PRIx64" FAILED\n",
+                PROTOCOL_PDCP_CTXT_ARGS(ctxt_pP, pdcp_p),
+                key_defaultDRB);
+          free(pdcp_p);
+          return TRUE;
+        } else if (h_rc != HASH_TABLE_OK) {
           LOG_E(PDCP, PROTOCOL_PDCP_CTXT_FMT" CONFIG_ACTION_ADD ADD key 0x%"PRIx64" FAILED\n",
                 PROTOCOL_PDCP_CTXT_ARGS(ctxt_pP, pdcp_p),
                 key);
@@ -1265,7 +1320,7 @@ rrc_pdcp_config_asn1_req (
           break;
 
         default:
-          LOG_W(PDCP,"[MOD_id %u/%u][RB %u] unknown drb_toaddmod->PDCP_Config->headerCompression->present \n",
+          LOG_W(PDCP,PROTOCOL_PDCP_CTXT_FMT"[RB %ld] unknown drb_toaddmod->PDCP_Config->headerCompression->present \n",
                 PROTOCOL_PDCP_CTXT_ARGS(ctxt_pP,pdcp_p), drb_id);
           break;
         }
@@ -1294,16 +1349,16 @@ rrc_pdcp_config_asn1_req (
     for (cnt=0; cnt<drb2release_list_pP->list.count; cnt++) {
       pdrb_id_p = drb2release_list_pP->list.array[cnt];
       drb_id =  *pdrb_id_p;
-      lc_id = drb_id + 2;
       key = PDCP_COLL_KEY_VALUE(ctxt_pP->module_id, ctxt_pP->rnti, ctxt_pP->enb_flag, srb_id, SRB_FLAG_NO);
       h_rc = hashtable_get(pdcp_coll_p, key, (void**)&pdcp_p);
 
       if (h_rc != HASH_TABLE_OK) {
-        LOG_E(PDCP, PROTOCOL_CTXT_FMT" PDCP REMOVE FAILED drb_id %u\n",
+        LOG_E(PDCP, PROTOCOL_CTXT_FMT" PDCP REMOVE FAILED drb_id %ld\n",
               PROTOCOL_CTXT_ARGS(ctxt_pP),
               drb_id);
         continue;
       }
+      lc_id = pdcp_p->lcid;
 
       action = CONFIG_ACTION_REMOVE;
       pdcp_config_req_asn1 (
@@ -1323,10 +1378,24 @@ rrc_pdcp_config_asn1_req (
         kRRCint_pP,
         kUPenc_pP);
       h_rc = hashtable_remove(pdcp_coll_p, key);
+
+      if ((defaultDRB != NULL) && (*defaultDRB == drb_id)) {
+        // default DRB being removed. nevertheless this shouldn't happen as removing default DRB is not allowed in standard
+        key_defaultDRB = PDCP_COLL_KEY_DEFAULT_DRB_VALUE(ctxt_pP->module_id, ctxt_pP->rnti, ctxt_pP->enb_flag);
+        h_defaultDRB_rc = hashtable_get(pdcp_coll_p, key_defaultDRB, (void**)&pdcp_p);
+
+        if (h_defaultDRB_rc == HASH_TABLE_OK) {
+          h_defaultDRB_rc = hashtable_remove(pdcp_coll_p, key_defaultDRB);
+        } else {
+          LOG_E(PDCP, PROTOCOL_CTXT_FMT" PDCP REMOVE FAILED default DRB\n", PROTOCOL_CTXT_ARGS(ctxt_pP));
+        }
+      } else {
+        key_defaultDRB = HASH_TABLE_OK; // do not trigger any error handling if this is not a default DRB
+      }
     }
   }
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
 
   if (pmch_InfoList_r9_pP != NULL) {
     for (i=0; i<pmch_InfoList_r9_pP->list.count; i++) {
@@ -1439,13 +1508,14 @@ pdcp_config_req_asn1 (
     pdcp_pP->first_missing_pdu                = -1;
     pdcp_pP->rx_hfn_offset                    = 0;
 
-    LOG_D(PDCP, PROTOCOL_PDCP_CTXT_FMT" Action ADD  LCID %d (rb id %d) "
+    LOG_N(PDCP, PROTOCOL_PDCP_CTXT_FMT" Action ADD  LCID %d (%s id %d) "
             "configured with SN size %d bits and RLC %s\n",
           PROTOCOL_PDCP_CTXT_ARGS(ctxt_pP,pdcp_pP),
           lc_idP,
+	  (srb_flagP == SRB_FLAG_YES) ? "SRB" : "DRB",
           rb_idP,
           pdcp_pP->seq_num_size,
-            (rlc_modeP == RLC_MODE_AM ) ? "AM" : (rlc_modeP == RLC_MODE_TM) ? "TM" : "UM");
+	  (rlc_modeP == RLC_MODE_AM ) ? "AM" : (rlc_modeP == RLC_MODE_TM) ? "TM" : "UM");
     /* Setup security */
     if (security_modeP != 0xff) {
       pdcp_config_set_security(
@@ -1487,8 +1557,8 @@ pdcp_config_req_asn1 (
       pdcp_pP->seq_num_size=5;
     }
 
-    LOG_D(PDCP,PROTOCOL_PDCP_CTXT_FMT" Action MODIFY LCID %d "
-            "RB id %d configured with SN size %d and RLC %s \n",
+    LOG_N(PDCP,PROTOCOL_PDCP_CTXT_FMT" Action MODIFY LCID %d "
+            "RB id %d reconfigured with SN size %d and RLC %s \n",
           PROTOCOL_PDCP_CTXT_ARGS(ctxt_pP,pdcp_pP),
           lc_idP,
           rb_idP,
@@ -1520,7 +1590,7 @@ pdcp_config_req_asn1 (
 
     memset(pdcp_pP, 0, sizeof(pdcp_t));
     break;
-#if defined(Rel10)
+#if defined(Rel10) || defined(Rel14)
 
   case CONFIG_ACTION_MBMS_ADD:
   case CONFIG_ACTION_MBMS_MODIFY:
@@ -1687,7 +1757,7 @@ rrc_pdcp_config_req (
             pdcp_p->cipheringAlgorithm,
             pdcp_p->integrityProtAlgorithm );
     } else {
-        LOG_W(PDCP,"[%s %d] bad security mode %d", security_modeP);
+        LOG_W(PDCP,PROTOCOL_PDCP_CTXT_FMT" bad security mode %d", PROTOCOL_PDCP_CTXT_ARGS(ctxt_pP,pdcp_p), security_modeP);
     }
 
     break;
@@ -1838,7 +1908,7 @@ void pdcp_layer_init(void)
 {
 
   module_id_t       instance;
-#if defined(Rel10)
+#if defined(Rel10) || defined(Rel14)
   mbms_session_id_t session_id;
   mbms_service_id_t service_id;
 #endif
@@ -1850,7 +1920,7 @@ void pdcp_layer_init(void)
   AssertFatal(pdcp_coll_p != NULL, "UNRECOVERABLE error, PDCP hashtable_create failed");
 
   for (instance = 0; instance < NUMBER_OF_UE_MAX; instance++) {
-#if defined(Rel10)
+#if defined(Rel10) || defined(Rel14)
 
     for (service_id = 0; service_id < maxServiceCount; service_id++) {
       for (session_id = 0; session_id < maxSessionPerPMCH; session_id++) {
@@ -1864,7 +1934,7 @@ void pdcp_layer_init(void)
 
     
   for (instance = 0; instance < NUMBER_OF_eNB_MAX; instance++) {
-#if defined(Rel10)
+#if defined(Rel10) || defined(Rel14)
 
     for (service_id = 0; service_id < maxServiceCount; service_id++) {
       for (session_id = 0; session_id < maxSessionPerPMCH; session_id++) {

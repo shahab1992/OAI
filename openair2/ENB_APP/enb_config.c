@@ -1,31 +1,23 @@
-/*******************************************************************************
-    OpenAirInterface
-    Copyright(c) 1999 - 2014 Eurecom
-
-    OpenAirInterface is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-
-    OpenAirInterface is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OpenAirInterface.The full GNU General Public License is
-    included in this distribution in the file called "COPYING". If not,
-    see <http://www.gnu.org/licenses/>.
-
-  Contact Information
-  OpenAirInterface Admin: openair_admin@eurecom.fr
-  OpenAirInterface Tech : openair_tech@eurecom.fr
-  OpenAirInterface Dev  : openair4g-devel@lists.eurecom.fr
-
-  Address      : Eurecom, Campus SophiaTech, 450 Route des Chappes, CS 50193 - 06904 Biot Sophia Antipolis cedex, FRANCE
-
- *******************************************************************************/
+/*
+ * Licensed to the OpenAirInterface (OAI) Software Alliance under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The OpenAirInterface Software Alliance licenses this file to You under
+ * the OAI Public License, Version 1.0  (the "License"); you may not use this file
+ * except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.openairinterface.org/?page_id=698
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *-------------------------------------------------------------------------------
+ * For more information about the OpenAirInterface (OAI) Software Alliance:
+ *      contact@openairinterface.org
+ */
 
 /*
                                 enb_config.c
@@ -59,6 +51,28 @@
 #include "sctp_default_values.h"
 #include "SystemInformationBlockType2.h"
 #include "LAYER2/MAC/extern.h"
+#include "PHY/extern.h"
+
+/* those macros are here to help diagnose problems in configuration files
+ * if the lookup fails, a warning is printed
+ * (yes we can use the function name for the macro itself, the C preprocessor
+ * won't die in an infinite loop)
+ */
+#define config_setting_lookup_int(setting, name, value) \
+    (config_setting_lookup_int(setting, name, value) || \
+    (printf("WARNING: setting '%s' not found in configuration file\n", name), 0))
+#define config_setting_lookup_int64(setting, name, value) \
+    (config_setting_lookup_int64(setting, name, value) || \
+    (printf("WARNING: setting '%s' not found in configuration file\n", name), 0))
+#define config_setting_lookup_float(setting, name, value) \
+    (config_setting_lookup_float(setting, name, value) || \
+    (printf("WARNING: setting '%s' not found in configuration file\n", name), 0))
+#define config_setting_lookup_bool(setting, name, value) \
+    (config_setting_lookup_bool(setting, name, value) || \
+    (printf("WARNING: setting '%s' not found in configuration file\n", name), 0))
+#define config_setting_lookup_string(setting, name, value) \
+    (config_setting_lookup_string(setting, name, value) || \
+    (printf("WARNING: setting '%s' not found in configuration file\n", name), 0))
 
 #define ENB_CONFIG_STRING_ACTIVE_ENBS                   "Active_eNBs"
 
@@ -73,6 +87,10 @@
 
 #define ENB_CONFIG_STRING_COMPONENT_CARRIERS                            "component_carriers"
 
+#define ENB_CONFIG_STRING_CC_NODE_FUNCTION                              "node_function"
+#define ENB_CONFIG_STRING_CC_NODE_TIMING                                "node_timing"   
+#define ENB_CONFIG_STRING_CC_NODE_SYNCH_REF                             "node_synch_ref"   
+
 #define ENB_CONFIG_STRING_FRAME_TYPE                                    "frame_type"
 #define ENB_CONFIG_STRING_TDD_CONFIG                                    "tdd_config"
 #define ENB_CONFIG_STRING_TDD_CONFIG_S                                  "tdd_config_s"
@@ -84,6 +102,7 @@
 #define ENB_CONFIG_STRING_NID_CELL                                      "Nid_cell"
 #define ENB_CONFIG_STRING_N_RB_DL                                       "N_RB_DL"
 #define ENB_CONFIG_STRING_CELL_MBSFN                                  "Nid_cell_mbsfn"
+#define ENB_CONFIG_STRING_NB_ANT_PORTS                              "nb_antenna_ports"
 #define ENB_CONFIG_STRING_NB_ANT_TX                                 "nb_antennas_tx"
 #define ENB_CONFIG_STRING_NB_ANT_RX                                 "nb_antennas_rx"
 #define ENB_CONFIG_STRING_TX_GAIN                                       "tx_gain"
@@ -96,7 +115,7 @@
 #define ENB_CONFIG_STRING_PUCCH_DELTA_SHIFT                         "pucch_delta_shift"
 #define ENB_CONFIG_STRING_PUCCH_NRB_CQI                                 "pucch_nRB_CQI"
 #define ENB_CONFIG_STRING_PUCCH_NCS_AN                                  "pucch_nCS_AN"
-#ifndef Rel10
+#if !defined(Rel10) && !defined(Rel14)
 #define ENB_CONFIG_STRING_PUCCH_N1_AN                                 "pucch_n1_AN"
 #endif
 #define ENB_CONFIG_STRING_PDSCH_RS_EPRE                                 "pdsch_referenceSignalPower"
@@ -145,6 +164,7 @@
 #define ENB_CONFIG_STRING_UETIMERS_T311                                 "ue_TimersAndConstants_t311"
 #define ENB_CONFIG_STRING_UETIMERS_N310                                 "ue_TimersAndConstants_n310"
 #define ENB_CONFIG_STRING_UETIMERS_N311                                 "ue_TimersAndConstants_n311"
+#define ENB_CONFIG_STRING_UE_TRANSMISSION_MODE                          "ue_TransmissionMode"
 
 #define ENB_CONFIG_STRING_SRB1                                          "srb1_parameters"
 #define ENB_CONFIG_STRING_SRB1_TIMER_POLL_RETRANSMIT                    "timer_poll_retransmit"
@@ -170,6 +190,12 @@
 #define ENB_CONFIG_STRING_ENB_IPV4_ADDR_FOR_S1U         "ENB_IPV4_ADDRESS_FOR_S1U"
 #define ENB_CONFIG_STRING_ENB_PORT_FOR_S1U              "ENB_PORT_FOR_S1U"
 
+#define ENB_CONFIG_STRING_NETWORK_CONTROLLER_CONFIG     "NETWORK_CONTROLLER"
+#define ENB_CONFIG_STRING_FLEXRAN_AGENT_INTERFACE_NAME      "FLEXRAN_AGENT_INTERFACE_NAME"
+#define ENB_CONFIG_STRING_FLEXRAN_AGENT_IPV4_ADDRESS        "FLEXRAN_AGENT_IPV4_ADDRESS"
+#define ENB_CONFIG_STRING_FLEXRAN_AGENT_PORT                "FLEXRAN_AGENT_PORT"
+#define ENB_CONFIG_STRING_FLEXRAN_AGENT_CACHE               "FLEXRAN_AGENT_CACHE"
+
 #define ENB_CONFIG_STRING_RRH_GW_CONFIG                   "rrh_gw_config"
 #define ENB_CONFIG_STRING_RRH_GW_LOCAL_IF_NAME            "local_if_name"
 #define ENB_CONFIG_STRING_RRH_GW_LOCAL_ADDRESS            "local_address"
@@ -182,6 +208,7 @@
 #define ENB_CONFIG_STRING_RRH_GW_IQ_TXSHIFT               "iq_txshift"
 #define ENB_CONFIG_STRING_RRH_GW_TX_SAMPLE_ADVANCE        "tx_sample_advance"
 #define ENB_CONFIG_STRING_RRH_GW_TX_SCHEDULING_ADVANCE    "tx_scheduling_advance"
+#define ENB_CONFIG_STRING_RRH_GW_IF_COMPRESSION           "if_compression"
 
 #define ENB_CONFIG_STRING_ASN1_VERBOSITY                   "Asn1_verbosity"
 #define ENB_CONFIG_STRING_ASN1_VERBOSITY_NONE              "none"
@@ -290,7 +317,7 @@ void enb_config_display(void)
     for (j=0; j< enb_properties.properties[i]->nb_rrh_gw; j++) {
       if (enb_properties.properties[i]->rrh_gw_config[j].active == 1 ){
 	printf( "\n\tRRH GW %d config for eNB %u:\n\n", j, i);
-	printf( "\tinterface name :       \t%s:\n",enb_properties.properties[i]->rrh_gw_if_name);
+        printf( "\tinterface name :       \t%s:\n",enb_properties.properties[i]->rrh_gw_config[j].rrh_gw_if_name);
 	printf( "\tlocal address  :       \t%s:\n",enb_properties.properties[i]->rrh_gw_config[j].local_address);
 	printf( "\tlocal port     :       \t%d:\n",enb_properties.properties[i]->rrh_gw_config[j].local_port);
 	printf( "\tremote address :       \t%s:\n",enb_properties.properties[i]->rrh_gw_config[j].remote_address);
@@ -298,33 +325,49 @@ void enb_config_display(void)
 	printf( "\ttx_scheduling_advance :\t%d:\n",enb_properties.properties[i]->rrh_gw_config[j].tx_scheduling_advance);
 	printf( "\ttx_sample_advance :    \t%d:\n",enb_properties.properties[i]->rrh_gw_config[j].tx_sample_advance);
 	printf( "\tiq_txshift :           \t%d:\n",enb_properties.properties[i]->rrh_gw_config[j].iq_txshift);
-	printf( "\ttransport  :           \t%s Ethernet:\n",(enb_properties.properties[i]->rrh_gw_config[j].raw == 1)? "RAW" : "UDP");
+	printf( "\ttransport  :           \t%s Ethernet:\n",(enb_properties.properties[i]->rrh_gw_config[j].raw == 1)? "RAW" : (enb_properties.properties[i]->rrh_gw_config[j].rawif4p5 == 1)? "RAW_IF4p5" : (enb_properties.properties[i]->rrh_gw_config[j].udpif4p5 == 1)? "UDP_IF4p5" : (enb_properties.properties[i]->rrh_gw_config[j].rawif5_mobipass == 1)? "RAW_IF5_MOBIPASS" : "UDP");
 	if (enb_properties.properties[i]->rrh_gw_config[j].exmimo == 1) {
-	  printf( "\tRF target  :           \tEXMIMO:\n\n");
+	  printf( "\tRF target  :           \tEXMIMO:\n");
 	} else if (enb_properties.properties[i]->rrh_gw_config[j].usrp_b200 == 1) {
-	  printf( "\tRF target  :           \tUSRP_B200:\n\n");
+	  printf( "\tRF target  :           \tUSRP_B200:\n");
 	} else if (enb_properties.properties[i]->rrh_gw_config[j].usrp_x300 == 1) {
-	  printf( "\tRF target  :           \tUSRP_X300:\n\n");
+	  printf( "\tRF target  :           \tUSRP_X300:\n");
 	} else if (enb_properties.properties[i]->rrh_gw_config[j].bladerf == 1) {
-	  printf( "\tRF target  :           \tBLADERF:\n\n");
+	  printf( "\tRF target  :           \tBLADERF:\n");
 	} else if (enb_properties.properties[i]->rrh_gw_config[j].lmssdr == 1) {
-	  printf( "\tRF target  :           \tLMSSDR:\n\n");
+	  printf( "\tRF target  :           \tLMSSDR:\n");
 	} else {
-	  printf( "\tRF target  :           \tNONE:\n\n");
+	  printf( "\tRF target  :           \tNONE:\n");
 	}
+    printf( "\tif_compression :         \t%s Compression:\n",(enb_properties.properties[i]->rrh_gw_config[j].if_compress == 1)? "ALAW" : "None");
       }
     }
 
+#if defined(FLEXRAN_AGENT_SB_IF)
+    printf( "\nFLEXRAN AGENT CONFIG : \n\n");
+    printf( "\tInterface name:           \t%s:\n",enb_properties.properties[i]->flexran_agent_interface_name);
+    //    printf( "\tInterface IP Address:     \t%s:\n",enb_properties.properties[i]->flexran_agent_ipv4_address);
+    printf( "\tInterface PORT:           \t%d:\n\n",enb_properties.properties[i]->flexran_agent_port);
+    printf( "\tCache directory:          \t%s:\n",enb_properties.properties[i]->flexran_agent_cache);
+    
+#endif 
+
     for (j=0; j< enb_properties.properties[i]->nb_cc; j++) {
+      // CC_ID node function/timing
+      printf( "\n\tnode_function for CC %d:      \t%s:\n",j,eNB_functions[enb_properties.properties[i]->cc_node_function[j]]);
+      printf( "\tnode_timing for CC %d:        \t%s:\n",j,eNB_timing[enb_properties.properties[i]->cc_node_timing[j]]);
+      printf( "\tnode_synch_ref for CC %d:     \t%d:\n",j,enb_properties.properties[i]->cc_node_synch_ref[j]);
+
       printf( "\teutra band for CC %d:         \t%"PRId16":\n",j,enb_properties.properties[i]->eutra_band[j]);
       printf( "\tdownlink freq for CC %d:      \t%"PRIu64":\n",j,enb_properties.properties[i]->downlink_frequency[j]);
       printf( "\tuplink freq offset for CC %d: \t%"PRId32":\n",j,enb_properties.properties[i]->uplink_frequency_offset[j]);
 
       printf( "\n\tCell ID for CC %d:\t%"PRId16":\n",j,enb_properties.properties[i]->Nid_cell[j]);
       printf( "\tN_RB_DL for CC %d:\t%"PRId16":\n",j,enb_properties.properties[i]->N_RB_DL[j]);
+      printf( "\tnb_antenna_ports for CC %d:\t%d:\n",j,enb_properties.properties[i]->nb_antenna_ports[j]);
       printf( "\tnb_antennas_tx for CC %d:\t%d:\n",j,enb_properties.properties[i]->nb_antennas_tx[j]);
       printf( "\tnb_antennas_rx for CC %d:\t%d:\n",j,enb_properties.properties[i]->nb_antennas_rx[j]);
-
+      
       // RACH-Config
       printf( "\trach_numberOfRA_Preambles for CC %d:\t%ld:\n",j,enb_properties.properties[i]->rach_numberOfRA_Preambles[j]);
       printf( "\trach_preamblesGroupAConfig for CC %d:\t%d:\n",j,enb_properties.properties[i]->rach_preamblesGroupAConfig[j]);
@@ -375,7 +418,7 @@ void enb_config_display(void)
       printf( "\tpucch_delta_shift for CC %d:\t%ld:\n",j,enb_properties.properties[i]->pucch_delta_shift[j]);
       printf( "\tpucch_nRB_CQI for CC %d:\t%ld:\n",j,enb_properties.properties[i]->pucch_nRB_CQI[j]);
       printf( "\tpucch_nCS_AN for CC %d:\t%ld:\n",j,enb_properties.properties[i]->pucch_nCS_AN[j]);
-#ifndef Rel10
+#if !defined(Rel10) && !defined(Rel14)
       printf( "\tpucch_n1_AN for CC %d:\t%ld:\n",j,enb_properties.properties[i]->pucch_n1_AN[j]);
 #endif
 
@@ -384,7 +427,7 @@ void enb_config_display(void)
 
       if (enb_properties.properties[i]->srs_enable[j]) {
         printf( "\tsrs_BandwidthConfig for CC %d:\t%ld:\n",j,enb_properties.properties[i]->srs_BandwidthConfig[j]);
-        printf( "\tsrs_BandwidthConfig for CC %d:\t%ld:\n",j,enb_properties.properties[i]->srs_SubframeConfig[j]);
+        printf( "\tsrs_SubframeConfig for CC %d:\t%ld:\n",j,enb_properties.properties[i]->srs_SubframeConfig[j]);
         printf( "\tsrs_ackNackST for CC %d:\t%d:\n",j,enb_properties.properties[i]->srs_ackNackST[j]);
         printf( "\tsrs_MaxUpPts for CC %d:\t%d:\n",j,enb_properties.properties[i]->srs_MaxUpPts[j]);
       }
@@ -410,6 +453,8 @@ void enb_config_display(void)
       printf( "\tue_TimersAndConstants_n310 for CC %d:\t%ld:\n",j,enb_properties.properties[i]->ue_TimersAndConstants_n310[j]);
       printf( "\tue_TimersAndConstants_t311 for CC %d:\t%ld:\n",j,enb_properties.properties[i]->ue_TimersAndConstants_t311[j]);
       printf( "\tue_TimersAndConstants_n311 for CC %d:\t%ld:\n",j,enb_properties.properties[i]->ue_TimersAndConstants_n311[j]);
+
+      printf( "\tue_TransmissionMode for CC %d:\t%ld:\n",j,enb_properties.properties[i]->ue_TransmissionMode[j]);
 
     }
 
@@ -500,6 +545,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   config_setting_t *setting_enb                   = NULL;
   config_setting_t *setting_otg                   = NULL;
   config_setting_t *subsetting_otg                = NULL;
+  int               parse_errors                  = 0;
   int               num_enb_properties            = 0;
   int               enb_properties_index          = 0;
   int               num_enbs                      = 0;
@@ -509,8 +555,12 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   int               num_component_carriers        = 0;
   int               i                             = 0;
   int               j                             = 0;
-  int               parse_errors                  = 0;
   libconfig_int     enb_id                        = 0;
+
+  const char*       cc_node_function              = NULL; 
+  const char*       cc_node_timing                = NULL; 
+  int               cc_node_synch_ref             = 0;
+
   const char*       cell_type                     = NULL;
   const char*       tac                           = 0;
   const char*       enb_name                      = NULL;
@@ -526,6 +576,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   libconfig_int     Nid_cell                      = 0;
   libconfig_int     Nid_cell_mbsfn                = 0;
   libconfig_int     N_RB_DL                       = 0;
+  libconfig_int     nb_antenna_ports              = 0;
   libconfig_int     nb_antennas_tx                = 0;
   libconfig_int     nb_antennas_rx                = 0;
   libconfig_int     tx_gain                       = 0;
@@ -538,7 +589,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   libconfig_int     pucch_delta_shift             = 0;
   libconfig_int     pucch_nRB_CQI                 = 0;
   libconfig_int     pucch_nCS_AN                  = 0;
-#ifndef Rel10
+#if !defined(Rel10) && !defined(Rel14)
   libconfig_int     pucch_n1_AN                   = 0;
 #endif
   libconfig_int     pdsch_referenceSignalPower    = 0;
@@ -589,7 +640,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   libconfig_int     ue_TimersAndConstants_t311    = 0;
   libconfig_int     ue_TimersAndConstants_n310    = 0;
   libconfig_int     ue_TimersAndConstants_n311    = 0;
-
+  libconfig_int     ue_TransmissionMode           = 0;
 
 
   libconfig_int     srb1_timer_poll_retransmit    = 0;
@@ -608,6 +659,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   char*             ipv6                          = NULL;
   char*             active                        = NULL;
   char*             preference                    = NULL;
+  char*             if_compression                = NULL;
 
   char*             tr_preference                 = NULL;
   char*             rf_preference                 = NULL;
@@ -625,6 +677,10 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
   char             *address                       = NULL;
   char             *cidr                          = NULL;
   char             *astring                       = NULL;
+  char*             flexran_agent_interface_name      = NULL;
+  char*             flexran_agent_ipv4_address        = NULL;
+  libconfig_int     flexran_agent_port                = 0;
+  char*             flexran_agent_cache               = NULL;
   libconfig_int     otg_ue_id                     = 0;
   char*             otg_app_type                  = NULL;
   char*             otg_bg_traffic                = NULL;
@@ -710,7 +766,6 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
 
   if (setting != NULL) {
     enb_properties_index = 0;
-    parse_errors      = 0;
     num_enbs = config_setting_length(setting);
 
     for (i = 0; i < num_enbs; i++) {
@@ -737,7 +792,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
 
             )
         ) {
-        AssertError (0, parse_errors ++,
+        AssertFatal (0,
                      "Failed to parse eNB configuration file %s, %u th enb\n",
                      lib_config_file_name_pP, i);
         continue; // FIXME this prevents segfaults below, not sure what happens after function exit
@@ -755,7 +810,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
           } else  if (strcmp(cell_type, "CELL_HOME_ENB") == 0) {
             enb_properties.properties[enb_properties_index]->cell_type = CELL_HOME_ENB;
           } else {
-            AssertError (0, parse_errors ++,
+            AssertFatal (0,
                          "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for cell_type choice: CELL_MACRO_ENB or CELL_HOME_ENB !\n",
                          lib_config_file_name_pP, i, cell_type);
           }
@@ -787,7 +842,10 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               component_carrier = config_setting_get_elem(setting_component_carriers, j);
 
               //printf("Component carrier %d\n",component_carrier);
-              if (!(config_setting_lookup_string(component_carrier, ENB_CONFIG_STRING_FRAME_TYPE, &frame_type)
+              if (!(config_setting_lookup_string(component_carrier, ENB_CONFIG_STRING_CC_NODE_FUNCTION, &cc_node_function)
+                   && config_setting_lookup_string(component_carrier, ENB_CONFIG_STRING_CC_NODE_TIMING, &cc_node_timing)
+                   && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_CC_NODE_SYNCH_REF, &cc_node_synch_ref)
+                   && config_setting_lookup_string(component_carrier, ENB_CONFIG_STRING_FRAME_TYPE, &frame_type)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_TDD_CONFIG, &tdd_config)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_TDD_CONFIG_S, &tdd_config_s)
                    && config_setting_lookup_string(component_carrier, ENB_CONFIG_STRING_PREFIX_TYPE, &prefix_type)
@@ -797,6 +855,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_NID_CELL, &Nid_cell)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_N_RB_DL, &N_RB_DL)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_CELL_MBSFN, &Nid_cell_mbsfn)
+                   && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_NB_ANT_PORTS, &nb_antenna_ports)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_NB_ANT_TX, &nb_antennas_tx)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_NB_ANT_RX, &nb_antennas_rx)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_TX_GAIN, &tx_gain)
@@ -809,7 +868,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_PUCCH_DELTA_SHIFT, &pucch_delta_shift)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_PUCCH_NRB_CQI, &pucch_nRB_CQI)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_PUCCH_NCS_AN, &pucch_nCS_AN)
-#ifndef Rel10
+#if !defined(Rel10) && !defined(Rel14)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_PUCCH_N1_AN, &pucch_n1_AN)
 #endif
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_PDSCH_RS_EPRE, &pdsch_referenceSignalPower)
@@ -852,12 +911,13 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_UETIMERS_T311,  &ue_TimersAndConstants_t311)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_UETIMERS_N310,  &ue_TimersAndConstants_n310)
                    && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_UETIMERS_N311,  &ue_TimersAndConstants_n311)
+                   && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_UE_TRANSMISSION_MODE,  &ue_TransmissionMode)
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
 
 #endif
                   )) {
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, Component Carrier %d!\n",
                              lib_config_file_name_pP, enb_properties.properties[enb_properties_index]->nb_cc++);
                 continue; // FIXME this prevents segfaults below, not sure what happens after function exit
@@ -865,18 +925,54 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
 
               enb_properties.properties[enb_properties_index]->nb_cc++;
 
+              if (strcmp(cc_node_function, "eNodeB_3GPP") == 0) {
+                enb_properties.properties[enb_properties_index]->cc_node_function[j] = eNodeB_3GPP;
+              } else if (strcmp(cc_node_function, "eNodeB_3GPP_BBU") == 0) {
+                enb_properties.properties[enb_properties_index]->cc_node_function[j] = eNodeB_3GPP_BBU;
+              } else if (strcmp(cc_node_function, "NGFI_RCC_IF4p5") == 0) {
+                enb_properties.properties[enb_properties_index]->cc_node_function[j] = NGFI_RCC_IF4p5;
+              } else if (strcmp(cc_node_function, "NGFI_RAU_IF4p5") == 0) {
+                enb_properties.properties[enb_properties_index]->cc_node_function[j] = NGFI_RAU_IF4p5;
+              } else if (strcmp(cc_node_function, "NGFI_RRU_IF4p5") == 0) {
+                enb_properties.properties[enb_properties_index]->cc_node_function[j] = NGFI_RRU_IF4p5;
+              } else if (strcmp(cc_node_function, "NGFI_RRU_IF5") == 0) {
+                enb_properties.properties[enb_properties_index]->cc_node_function[j] = NGFI_RRU_IF5;
+              } else {
+                AssertError (0, parse_errors ++,
+                             "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for node_function choice: eNodeB_3GPP or eNodeB_3GPP_BBU or NGFI_IF4_RCC or NGFI_IF4_RRU or NGFI_IF5_RRU !\n",
+                             lib_config_file_name_pP, i, cc_node_function);
+              }
+
+              if (strcmp(cc_node_timing, "synch_to_ext_device") == 0) {
+                enb_properties.properties[enb_properties_index]->cc_node_timing[j] = synch_to_ext_device;
+              } else if (strcmp(cc_node_timing, "synch_to_other") == 0) {
+                enb_properties.properties[enb_properties_index]->cc_node_timing[j] = synch_to_other;
+              } else {
+                AssertError (0, parse_errors ++,
+                             "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for node_function choice: SYNCH_TO_DEVICE or SYNCH_TO_OTHER !\n",
+                             lib_config_file_name_pP, i, cc_node_timing);
+              }
+
+              if ((cc_node_synch_ref >= -1) && (cc_node_synch_ref < num_component_carriers)) {  
+               enb_properties.properties[enb_properties_index]->cc_node_synch_ref[j] = (int16_t) cc_node_synch_ref; 
+              } else {
+                AssertError (0, parse_errors ++,
+                             "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for node_synch_ref choice: valid CC_id or -1 !\n",
+                             lib_config_file_name_pP, i, cc_node_synch_ref);
+              }
+              
               enb_properties.properties[enb_properties_index]->tdd_config[j] = tdd_config;
-              AssertError (tdd_config <= TDD_Config__subframeAssignment_sa6, parse_errors ++,
+              AssertFatal (tdd_config <= TDD_Config__subframeAssignment_sa6,
                            "Failed to parse eNB configuration file %s, enb %d illegal tdd_config %d (should be 0-%d)!",
                            lib_config_file_name_pP, i, tdd_config, TDD_Config__subframeAssignment_sa6);
 
               enb_properties.properties[enb_properties_index]->tdd_config_s[j] = tdd_config_s;
-              AssertError (tdd_config_s <= TDD_Config__specialSubframePatterns_ssp8, parse_errors ++,
+              AssertFatal (tdd_config_s <= TDD_Config__specialSubframePatterns_ssp8,
                            "Failed to parse eNB configuration file %s, enb %d illegal tdd_config_s %d (should be 0-%d)!",
                            lib_config_file_name_pP, i, tdd_config_s, TDD_Config__specialSubframePatterns_ssp8);
 
               if (!prefix_type)
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d define %s: NORMAL,EXTENDED!\n",
                              lib_config_file_name_pP, i, ENB_CONFIG_STRING_PREFIX_TYPE);
               else if (strcmp(prefix_type, "NORMAL") == 0) {
@@ -884,18 +980,18 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else  if (strcmp(prefix_type, "EXTENDED") == 0) {
                 enb_properties.properties[enb_properties_index]->prefix_type[j] = EXTENDED;
               } else {
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for prefix_type choice: NORMAL or EXTENDED !\n",
                              lib_config_file_name_pP, i, prefix_type);
               }
-
+              
               enb_properties.properties[enb_properties_index]->eutra_band[j] = eutra_band;
               enb_properties.properties[enb_properties_index]->downlink_frequency[j] = (uint32_t) downlink_frequency;
               enb_properties.properties[enb_properties_index]->uplink_frequency_offset[j] = (unsigned int) uplink_frequency_offset;
               enb_properties.properties[enb_properties_index]->Nid_cell[j]= Nid_cell;
 
               if (Nid_cell>503) {
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for Nid_cell choice: 0...503 !\n",
                              lib_config_file_name_pP, i, Nid_cell);
               }
@@ -903,7 +999,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               enb_properties.properties[enb_properties_index]->N_RB_DL[j]= N_RB_DL;
 
               if ((N_RB_DL!=6) && (N_RB_DL!=15) && (N_RB_DL!=25) && (N_RB_DL!=50) && (N_RB_DL!=75) && (N_RB_DL!=100)) {
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for N_RB_DL choice: 6,15,25,50,75,100 !\n",
                              lib_config_file_name_pP, i, N_RB_DL);
               }
@@ -913,27 +1009,27 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else  if (strcmp(frame_type, "TDD") == 0) {
                 enb_properties.properties[enb_properties_index]->frame_type[j] = TDD;
               } else {
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for frame_type choice: FDD or TDD !\n",
                              lib_config_file_name_pP, i, frame_type);
               }
 
 
               enb_properties.properties[enb_properties_index]->tdd_config[j] = tdd_config;
-              AssertError (tdd_config <= TDD_Config__subframeAssignment_sa6, parse_errors ++,
+              AssertFatal (tdd_config <= TDD_Config__subframeAssignment_sa6,
                            "Failed to parse eNB configuration file %s, enb %d illegal tdd_config %d (should be 0-%d)!",
                            lib_config_file_name_pP, i, tdd_config, TDD_Config__subframeAssignment_sa6);
 
 
               enb_properties.properties[enb_properties_index]->tdd_config_s[j] = tdd_config_s;
-              AssertError (tdd_config_s <= TDD_Config__specialSubframePatterns_ssp8, parse_errors ++,
+              AssertFatal (tdd_config_s <= TDD_Config__specialSubframePatterns_ssp8,
                            "Failed to parse eNB configuration file %s, enb %d illegal tdd_config_s %d (should be 0-%d)!",
                            lib_config_file_name_pP, i, tdd_config_s, TDD_Config__specialSubframePatterns_ssp8);
 
 
 
               if (!prefix_type)
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d define %s: NORMAL,EXTENDED!\n",
                              lib_config_file_name_pP, i, ENB_CONFIG_STRING_PREFIX_TYPE);
               else if (strcmp(prefix_type, "NORMAL") == 0) {
@@ -941,7 +1037,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else  if (strcmp(prefix_type, "EXTENDED") == 0) {
                 enb_properties.properties[enb_properties_index]->prefix_type[j] = EXTENDED;
               } else {
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for prefix_type choice: NORMAL or EXTENDED !\n",
                              lib_config_file_name_pP, i, prefix_type);
               }
@@ -959,57 +1055,66 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
 
               enb_properties.properties[enb_properties_index]->uplink_frequency_offset[j] = (unsigned int) uplink_frequency_offset;
 
-              parse_errors += enb_check_band_frequencies(lib_config_file_name_pP,
+              if (enb_check_band_frequencies(lib_config_file_name_pP,
                               enb_properties_index,
                               enb_properties.properties[enb_properties_index]->eutra_band[j],
                               enb_properties.properties[enb_properties_index]->downlink_frequency[j],
                               enb_properties.properties[enb_properties_index]->uplink_frequency_offset[j],
-                              enb_properties.properties[enb_properties_index]->frame_type[j]);
+                              enb_properties.properties[enb_properties_index]->frame_type[j])) {
+                AssertFatal(0, "error calling enb_check_band_frequencies\n");
+              }
 
               enb_properties.properties[enb_properties_index]->nb_antennas_tx[j] = nb_antennas_tx;
 
-              if ((nb_antennas_tx <1) || (nb_antennas_tx > 4))
-                AssertError (0, parse_errors ++,
-                             "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for nb_antennas_tx choice: 1..4 !\n",
+              if ((nb_antenna_ports <1) || (nb_antenna_ports > 2))
+                AssertFatal (0,
+                             "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for nb_antenna_ports choice: 1..2 !\n",
+                             lib_config_file_name_pP, i, nb_antenna_ports);
+
+              enb_properties.properties[enb_properties_index]->nb_antenna_ports[j] = nb_antenna_ports;
+
+              if ((nb_antennas_tx <1) || (nb_antennas_tx > 64))
+                AssertFatal (0,
+                             "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for nb_antennas_tx choice: 1..64 !\n",
                              lib_config_file_name_pP, i, nb_antennas_tx);
 
               enb_properties.properties[enb_properties_index]->nb_antennas_rx[j] = nb_antennas_rx;
 
-              if ((nb_antennas_rx <1) || (nb_antennas_rx > 4))
-                AssertError (0, parse_errors ++,
-                             "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for nb_antennas_rx choice: 1..4 !\n",
+              if ((nb_antennas_rx <1) || (nb_antennas_rx > 64))
+                AssertFatal (0,
+                             "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for nb_antennas_rx choice: 1..64 !\n",
                              lib_config_file_name_pP, i, nb_antennas_rx);
 
               enb_properties.properties[enb_properties_index]->tx_gain[j] = tx_gain;
 
               if ((tx_gain <0) || (tx_gain > 127))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for tx_gain choice: 0..127 !\n",
                              lib_config_file_name_pP, i, tx_gain);
 
               enb_properties.properties[enb_properties_index]->rx_gain[j] = rx_gain;
 
               if ((rx_gain <0) || (rx_gain > 160))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for rx_gain choice: 0..160 !\n",
                              lib_config_file_name_pP, i, rx_gain);
 
               enb_properties.properties[enb_properties_index]->prach_root[j] =  prach_root;
 
               if ((prach_root <0) || (prach_root > 1023))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for prach_root choice: 0..1023 !\n",
                              lib_config_file_name_pP, i, prach_root);
 
               enb_properties.properties[enb_properties_index]->prach_config_index[j] = prach_config_index;
 
               if ((prach_config_index <0) || (prach_config_index > 63))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for prach_config_index choice: 0..1023 !\n",
                              lib_config_file_name_pP, i, prach_config_index);
 
               if (!prach_high_speed)
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d define %s: ENABLE,DISABLE!\n",
                              lib_config_file_name_pP, i, ENB_CONFIG_STRING_PRACH_HIGH_SPEED);
               else if (strcmp(prach_high_speed, "ENABLE") == 0) {
@@ -1017,21 +1122,21 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else if (strcmp(prach_high_speed, "DISABLE") == 0) {
                 enb_properties.properties[enb_properties_index]->prach_high_speed[j] = FALSE;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for prach_config choice: ENABLE,DISABLE !\n",
                              lib_config_file_name_pP, i, prach_high_speed);
 
               enb_properties.properties[enb_properties_index]->prach_zero_correlation[j] =prach_zero_correlation;
 
               if ((prach_zero_correlation <0) || (prach_zero_correlation > 15))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for prach_zero_correlation choice: 0..15!\n",
                              lib_config_file_name_pP, i, prach_zero_correlation);
 
               enb_properties.properties[enb_properties_index]->prach_freq_offset[j] = prach_freq_offset;
 
               if ((prach_freq_offset <0) || (prach_freq_offset > 94))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for prach_freq_offset choice: 0..94!\n",
                              lib_config_file_name_pP, i, prach_freq_offset);
 
@@ -1039,29 +1144,29 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               enb_properties.properties[enb_properties_index]->pucch_delta_shift[j] = pucch_delta_shift-1;
 
               if ((pucch_delta_shift <1) || (pucch_delta_shift > 3))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pucch_delta_shift choice: 1..3!\n",
                              lib_config_file_name_pP, i, pucch_delta_shift);
 
               enb_properties.properties[enb_properties_index]->pucch_nRB_CQI[j] = pucch_nRB_CQI;
 
               if ((pucch_nRB_CQI <0) || (pucch_nRB_CQI > 98))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pucch_nRB_CQI choice: 0..98!\n",
                              lib_config_file_name_pP, i, pucch_nRB_CQI);
 
               enb_properties.properties[enb_properties_index]->pucch_nCS_AN[j] = pucch_nCS_AN;
 
               if ((pucch_nCS_AN <0) || (pucch_nCS_AN > 7))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pucch_nCS_AN choice: 0..7!\n",
                              lib_config_file_name_pP, i, pucch_nCS_AN);
 
-#ifndef Rel10
+#if !defined(Rel10) && !defined(Rel14)
               enb_properties.properties[enb_properties_index]->pucch_n1_AN[j] = pucch_n1_AN;
 
               if ((pucch_n1_AN <0) || (pucch_n1_AN > 2047))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pucch_n1_AN choice: 0..2047!\n",
                              lib_config_file_name_pP, i, pucch_n1_AN);
 
@@ -1069,26 +1174,26 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               enb_properties.properties[enb_properties_index]->pdsch_referenceSignalPower[j] = pdsch_referenceSignalPower;
 
               if ((pdsch_referenceSignalPower <-60) || (pdsch_referenceSignalPower > 50))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pdsch_referenceSignalPower choice:-60..50!\n",
                              lib_config_file_name_pP, i, pdsch_referenceSignalPower);
 
               enb_properties.properties[enb_properties_index]->pdsch_p_b[j] = pdsch_p_b;
 
               if ((pdsch_p_b <0) || (pdsch_p_b > 3))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pdsch_p_b choice: 0..3!\n",
                              lib_config_file_name_pP, i, pdsch_p_b);
 
               enb_properties.properties[enb_properties_index]->pusch_n_SB[j] = pusch_n_SB;
 
               if ((pusch_n_SB <1) || (pusch_n_SB > 4))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pusch_n_SB choice: 1..4!\n",
                              lib_config_file_name_pP, i, pusch_n_SB);
 
               if (!pusch_hoppingMode)
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d define %s: interSubframe,intraAndInterSubframe!\n",
                              lib_config_file_name_pP, i, ENB_CONFIG_STRING_PUSCH_HOPPINGMODE);
               else if (strcmp(pusch_hoppingMode,"interSubFrame")==0) {
@@ -1096,19 +1201,19 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               }  else if (strcmp(pusch_hoppingMode,"intraAndInterSubFrame")==0) {
                 enb_properties.properties[enb_properties_index]->pusch_hoppingMode[j] = PUSCH_ConfigCommon__pusch_ConfigBasic__hoppingMode_intraAndInterSubFrame;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for pusch_hoppingMode choice: interSubframe,intraAndInterSubframe!\n",
                              lib_config_file_name_pP, i, pusch_hoppingMode);
 
               enb_properties.properties[enb_properties_index]->pusch_hoppingOffset[j] = pusch_hoppingOffset;
 
               if ((pusch_hoppingOffset<0) || (pusch_hoppingOffset>98))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for pusch_hoppingOffset choice: 0..98!\n",
                              lib_config_file_name_pP, i, pusch_hoppingMode);
 
               if (!pusch_enable64QAM)
-                AssertError (0, parse_errors ++,
+                AssertFatal (0, 
                              "Failed to parse eNB configuration file %s, enb %d define %s: ENABLE,DISABLE!\n",
                              lib_config_file_name_pP, i, ENB_CONFIG_STRING_PUSCH_ENABLE64QAM);
               else if (strcmp(pusch_enable64QAM, "ENABLE") == 0) {
@@ -1116,12 +1221,12 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               }  else if (strcmp(pusch_enable64QAM, "DISABLE") == 0) {
                 enb_properties.properties[enb_properties_index]->pusch_enable64QAM[j] = FALSE;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for pusch_enable64QAM choice: ENABLE,DISABLE!\n",
                              lib_config_file_name_pP, i, pusch_enable64QAM);
 
               if (!pusch_groupHoppingEnabled)
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d define %s: ENABLE,DISABLE!\n",
                              lib_config_file_name_pP, i, ENB_CONFIG_STRING_PUSCH_GROUP_HOPPING_EN);
               else if (strcmp(pusch_groupHoppingEnabled, "ENABLE") == 0) {
@@ -1129,7 +1234,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               }  else if (strcmp(pusch_groupHoppingEnabled, "DISABLE") == 0) {
                 enb_properties.properties[enb_properties_index]->pusch_groupHoppingEnabled[j] = FALSE;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for pusch_groupHoppingEnabled choice: ENABLE,DISABLE!\n",
                              lib_config_file_name_pP, i, pusch_groupHoppingEnabled);
 
@@ -1137,12 +1242,12 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               enb_properties.properties[enb_properties_index]->pusch_groupAssignment[j] = pusch_groupAssignment;
 
               if ((pusch_groupAssignment<0)||(pusch_groupAssignment>29))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pusch_groupAssignment choice: 0..29!\n",
                              lib_config_file_name_pP, i, pusch_groupAssignment);
 
               if (!pusch_sequenceHoppingEnabled)
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d define %s: ENABLE,DISABLE!\n",
                              lib_config_file_name_pP, i, ENB_CONFIG_STRING_PUSCH_SEQUENCE_HOPPING_EN);
               else if (strcmp(pusch_sequenceHoppingEnabled, "ENABLE") == 0) {
@@ -1150,14 +1255,14 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               }  else if (strcmp(pusch_sequenceHoppingEnabled, "DISABLE") == 0) {
                 enb_properties.properties[enb_properties_index]->pusch_sequenceHoppingEnabled[j] = FALSE;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for pusch_sequenceHoppingEnabled choice: ENABLE,DISABLE!\n",
                              lib_config_file_name_pP, i, pusch_sequenceHoppingEnabled);
 
               enb_properties.properties[enb_properties_index]->pusch_nDMRS1[j] = pusch_nDMRS1;  //cyclic_shift in RRC!
 
               if ((pusch_nDMRS1 <0) || (pusch_nDMRS1>7))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pusch_nDMRS1 choice: 0..7!\n",
                              lib_config_file_name_pP, i, pusch_nDMRS1);
 
@@ -1166,7 +1271,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else if (strcmp(phich_duration,"EXTENDED")==0) {
                 enb_properties.properties[enb_properties_index]->phich_duration[j] = extended;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for phich_duration choice: NORMAL,EXTENDED!\n",
                              lib_config_file_name_pP, i, phich_duration);
 
@@ -1179,7 +1284,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else if (strcmp(phich_resource,"TWO")==0) {
                 enb_properties.properties[enb_properties_index]->phich_resource[j] = two;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for phich_resource choice: ONESIXTH,HALF,ONE,TWO!\n",
                              lib_config_file_name_pP, i, phich_resource);
 
@@ -1188,7 +1293,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else if (strcmp(srs_enable, "DISABLE") == 0) {
                 enb_properties.properties[enb_properties_index]->srs_enable[j] = FALSE;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for srs_BandwidthConfig choice: ENABLE,DISABLE !\n",
                              lib_config_file_name_pP, i, srs_enable);
 
@@ -1198,21 +1303,20 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                       && config_setting_lookup_string(component_carrier, ENB_CONFIG_STRING_SRS_ACKNACKST_CONFIG, &srs_ackNackST)
                       && config_setting_lookup_string(component_carrier, ENB_CONFIG_STRING_SRS_MAXUPPTS, &srs_MaxUpPts)
                      ))
-                  AssertError(0,
-                              parse_errors++,
+                  AssertFatal(0,
                               "Failed to parse eNB configuration file %s, enb %d unknown values for srs_BandwidthConfig, srs_SubframeConfig, srs_ackNackST, srs_MaxUpPts\n",
                               lib_config_file_name_pP, i);
 
                 enb_properties.properties[enb_properties_index]->srs_BandwidthConfig[j] = srs_BandwidthConfig;
 
                 if ((srs_BandwidthConfig < 0) || (srs_BandwidthConfig >7))
-                  AssertError (0, parse_errors ++, "Failed to parse eNB configuration file %s, enb %d unknown value %d for srs_BandwidthConfig choice: 0...7\n",
+                  AssertFatal (0, "Failed to parse eNB configuration file %s, enb %d unknown value %d for srs_BandwidthConfig choice: 0...7\n",
                                lib_config_file_name_pP, i, srs_BandwidthConfig);
 
                 enb_properties.properties[enb_properties_index]->srs_SubframeConfig[j] = srs_SubframeConfig;
 
                 if ((srs_SubframeConfig<0) || (srs_SubframeConfig>15))
-                  AssertError (0, parse_errors ++,
+                  AssertFatal (0,
                                "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for srs_SubframeConfig choice: 0..15 !\n",
                                lib_config_file_name_pP, i, srs_SubframeConfig);
 
@@ -1221,7 +1325,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 } else if (strcmp(srs_ackNackST, "DISABLE") == 0) {
                   enb_properties.properties[enb_properties_index]->srs_ackNackST[j] = FALSE;
                 } else
-                  AssertError (0, parse_errors ++,
+                  AssertFatal (0,
                                "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for srs_BandwidthConfig choice: ENABLE,DISABLE !\n",
                                lib_config_file_name_pP, i, srs_ackNackST);
 
@@ -1230,7 +1334,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 } else if (strcmp(srs_MaxUpPts, "DISABLE") == 0) {
                   enb_properties.properties[enb_properties_index]->srs_MaxUpPts[j] = FALSE;
                 } else
-                  AssertError (0, parse_errors ++,
+                  AssertFatal (0,
                                "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for srs_MaxUpPts choice: ENABLE,DISABLE !\n",
                                lib_config_file_name_pP, i, srs_MaxUpPts);
               }
@@ -1238,42 +1342,42 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               enb_properties.properties[enb_properties_index]->pusch_p0_Nominal[j] = pusch_p0_Nominal;
 
               if ((pusch_p0_Nominal<-126) || (pusch_p0_Nominal>24))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pusch_p0_Nominal choice: -126..24 !\n",
                              lib_config_file_name_pP, i, pusch_p0_Nominal);
 
               if (strcmp(pusch_alpha,"AL0")==0) {
-                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = UplinkPowerControlCommon__alpha_al0;
+                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = Alpha_r12_al0;
               } else if (strcmp(pusch_alpha,"AL04")==0) {
-                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = UplinkPowerControlCommon__alpha_al04;
+                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = Alpha_r12_al04;
               } else if (strcmp(pusch_alpha,"AL05")==0) {
-                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = UplinkPowerControlCommon__alpha_al05;
+                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = Alpha_r12_al05;
               } else if (strcmp(pusch_alpha,"AL06")==0) {
-                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = UplinkPowerControlCommon__alpha_al06;
+                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = Alpha_r12_al06;
               } else if (strcmp(pusch_alpha,"AL07")==0) {
-                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = UplinkPowerControlCommon__alpha_al07;
+                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = Alpha_r12_al07;
               } else if (strcmp(pusch_alpha,"AL08")==0) {
-                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = UplinkPowerControlCommon__alpha_al08;
+                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = Alpha_r12_al08;
               } else if (strcmp(pusch_alpha,"AL09")==0) {
-                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = UplinkPowerControlCommon__alpha_al09;
+                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = Alpha_r12_al08;
               } else if (strcmp(pusch_alpha,"AL1")==0) {
-                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = UplinkPowerControlCommon__alpha_al1;
+                enb_properties.properties[enb_properties_index]->pusch_alpha[j] = Alpha_r12_al1;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for pucch_Alpha choice: AL0,AL04,AL05,AL06,AL07,AL08,AL09,AL1!\n",
                              lib_config_file_name_pP, i, pusch_alpha);
 
               enb_properties.properties[enb_properties_index]->pucch_p0_Nominal[j] = pucch_p0_Nominal;
 
               if ((pucch_p0_Nominal<-127) || (pucch_p0_Nominal>-96))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pucch_p0_Nominal choice: -127..-96 !\n",
                              lib_config_file_name_pP, i, pucch_p0_Nominal);
 
               enb_properties.properties[enb_properties_index]->msg3_delta_Preamble[j] = msg3_delta_Preamble;
 
               if ((msg3_delta_Preamble<-1) || (msg3_delta_Preamble>6))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for msg3_delta_Preamble choice: -1..6 !\n",
                              lib_config_file_name_pP, i, msg3_delta_Preamble);
 
@@ -1285,7 +1389,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else if (strcmp(pucch_deltaF_Format1,"deltaF2")==0) {
                 enb_properties.properties[enb_properties_index]->pucch_deltaF_Format1[j] = DeltaFList_PUCCH__deltaF_PUCCH_Format1_deltaF2;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for pucch_deltaF_Format1 choice: deltaF_2,dltaF0,deltaF2!\n",
                              lib_config_file_name_pP, i, pucch_deltaF_Format1);
 
@@ -1296,7 +1400,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else if (strcmp(pucch_deltaF_Format1b,"deltaF5")==0) {
                 enb_properties.properties[enb_properties_index]->pucch_deltaF_Format1b[j] = DeltaFList_PUCCH__deltaF_PUCCH_Format1b_deltaF5;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for pucch_deltaF_Format1b choice: deltaF1,dltaF3,deltaF5!\n",
                              lib_config_file_name_pP, i, pucch_deltaF_Format1b);
 
@@ -1310,7 +1414,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else if (strcmp(pucch_deltaF_Format2,"deltaF2")==0) {
                 enb_properties.properties[enb_properties_index]->pucch_deltaF_Format2[j] = DeltaFList_PUCCH__deltaF_PUCCH_Format2_deltaF2;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for pucch_deltaF_Format2 choice: deltaF_2,dltaF0,deltaF1,deltaF2!\n",
                              lib_config_file_name_pP, i, pucch_deltaF_Format2);
 
@@ -1321,7 +1425,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else if (strcmp(pucch_deltaF_Format2a,"deltaF2")==0) {
                 enb_properties.properties[enb_properties_index]->pucch_deltaF_Format2a[j] = DeltaFList_PUCCH__deltaF_PUCCH_Format2a_deltaF2;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for pucch_deltaF_Format2a choice: deltaF_2,dltaF0,deltaF2!\n",
                              lib_config_file_name_pP, i, pucch_deltaF_Format2a);
 
@@ -1332,7 +1436,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else if (strcmp(pucch_deltaF_Format2b,"deltaF2")==0) {
                 enb_properties.properties[enb_properties_index]->pucch_deltaF_Format2b[j] = DeltaFList_PUCCH__deltaF_PUCCH_Format2b_deltaF2;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for pucch_deltaF_Format2b choice: deltaF_2,dltaF0,deltaF2!\n",
                              lib_config_file_name_pP, i, pucch_deltaF_Format2b);
 
@@ -1342,7 +1446,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               enb_properties.properties[enb_properties_index]->rach_numberOfRA_Preambles[j] = (rach_numberOfRA_Preambles/4)-1;
 
               if ((rach_numberOfRA_Preambles <4) || (rach_numberOfRA_Preambles>64) || ((rach_numberOfRA_Preambles&3)!=0))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for rach_numberOfRA_Preambles choice: 4,8,12,...,64!\n",
                              lib_config_file_name_pP, i, rach_numberOfRA_Preambles);
 
@@ -1352,14 +1456,14 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 if (!(config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_RACH_SIZEOFRA_PREAMBLESGROUPA, &rach_sizeOfRA_PreamblesGroupA)
                       && config_setting_lookup_int(component_carrier, ENB_CONFIG_STRING_RACH_MESSAGESIZEGROUPA, &rach_messageSizeGroupA)
                       && config_setting_lookup_string(component_carrier, ENB_CONFIG_STRING_RACH_MESSAGEPOWEROFFSETGROUPB, &rach_messagePowerOffsetGroupB)))
-                  AssertError (0, parse_errors ++,
+                  AssertFatal (0,
                                "Failed to parse eNB configuration file %s, enb %d  rach_sizeOfRA_PreamblesGroupA, messageSizeGroupA,messagePowerOffsetGroupB!\n",
                                lib_config_file_name_pP, i);
 
                 enb_properties.properties[enb_properties_index]->rach_sizeOfRA_PreamblesGroupA[j] = (rach_sizeOfRA_PreamblesGroupA/4)-1;
 
                 if ((rach_numberOfRA_Preambles <4) || (rach_numberOfRA_Preambles>60) || ((rach_numberOfRA_Preambles&3)!=0))
-                  AssertError (0, parse_errors ++,
+                  AssertFatal (0,
                                "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for rach_sizeOfRA_PreamblesGroupA choice: 4,8,12,...,60!\n",
                                lib_config_file_name_pP, i, rach_sizeOfRA_PreamblesGroupA);
 
@@ -1382,7 +1486,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                   break;
 
                 default:
-                  AssertError (0, parse_errors ++,
+                  AssertFatal (0,
                                "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for rach_messageSizeGroupA choice: 56,144,208,256!\n",
                                lib_config_file_name_pP, i, rach_messageSizeGroupA);
                   break;
@@ -1419,21 +1523,21 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 else if (strcmp(rach_messagePowerOffsetGroupB,"dB18")==0) {
                   enb_properties.properties[enb_properties_index]->rach_messagePowerOffsetGroupB[j] = RACH_ConfigCommon__preambleInfo__preamblesGroupAConfig__messagePowerOffsetGroupB_dB18;
                 } else
-                  AssertError (0, parse_errors ++,
+                  AssertFatal (0,
                                "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for rach_messagePowerOffsetGroupB choice: minusinfinity,dB0,dB5,dB8,dB10,dB12,dB15,dB18!\n",
                                lib_config_file_name_pP, i, rach_messagePowerOffsetGroupB);
 
               } else if (strcmp(rach_preamblesGroupAConfig, "DISABLE") == 0) {
                 enb_properties.properties[enb_properties_index]->rach_preamblesGroupAConfig[j] = FALSE;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%s\" for rach_preamblesGroupAConfig choice: ENABLE,DISABLE !\n",
                              lib_config_file_name_pP, i, rach_preamblesGroupAConfig);
 
               enb_properties.properties[enb_properties_index]->rach_preambleInitialReceivedTargetPower[j] = (rach_preambleInitialReceivedTargetPower+120)/2;
 
               if ((rach_preambleInitialReceivedTargetPower<-120) || (rach_preambleInitialReceivedTargetPower>-90) || ((rach_preambleInitialReceivedTargetPower&1)!=0))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for rach_preambleInitialReceivedTargetPower choice: -120,-118,...,-90 !\n",
                              lib_config_file_name_pP, i, rach_preambleInitialReceivedTargetPower);
 
@@ -1441,7 +1545,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               enb_properties.properties[enb_properties_index]->rach_powerRampingStep[j] = rach_powerRampingStep/2;
 
               if ((rach_powerRampingStep<0) || (rach_powerRampingStep>6) || ((rach_powerRampingStep&1)!=0))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for rach_powerRampingStep choice: 0,2,4,6 !\n",
                              lib_config_file_name_pP, i, rach_powerRampingStep);
 
@@ -1449,51 +1553,51 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
 
               switch (rach_preambleTransMax) {
               case 3:
-                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  RACH_ConfigCommon__ra_SupervisionInfo__preambleTransMax_n3;
+                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  PreambleTransMax_n3;
                 break;
 
               case 4:
-                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  RACH_ConfigCommon__ra_SupervisionInfo__preambleTransMax_n4;
+                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  PreambleTransMax_n4;
                 break;
 
               case 5:
-                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  RACH_ConfigCommon__ra_SupervisionInfo__preambleTransMax_n5;
+                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  PreambleTransMax_n5;
                 break;
 
               case 6:
-                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  RACH_ConfigCommon__ra_SupervisionInfo__preambleTransMax_n6;
+                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  PreambleTransMax_n6;
                 break;
 
               case 7:
-                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  RACH_ConfigCommon__ra_SupervisionInfo__preambleTransMax_n7;
+                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  PreambleTransMax_n7;
                 break;
 
               case 8:
-                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  RACH_ConfigCommon__ra_SupervisionInfo__preambleTransMax_n8;
+                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  PreambleTransMax_n8;
                 break;
 
               case 10:
-                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  RACH_ConfigCommon__ra_SupervisionInfo__preambleTransMax_n10;
+                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  PreambleTransMax_n10;
                 break;
 
               case 20:
-                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  RACH_ConfigCommon__ra_SupervisionInfo__preambleTransMax_n20;
+                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  PreambleTransMax_n20;
                 break;
 
               case 50:
-                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  RACH_ConfigCommon__ra_SupervisionInfo__preambleTransMax_n50;
+                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  PreambleTransMax_n50;
                 break;
 
               case 100:
-                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  RACH_ConfigCommon__ra_SupervisionInfo__preambleTransMax_n100;
+                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  PreambleTransMax_n100;
                 break;
 
               case 200:
-                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  RACH_ConfigCommon__ra_SupervisionInfo__preambleTransMax_n200;
+                enb_properties.properties[enb_properties_index]->rach_preambleTransMax[j] =  PreambleTransMax_n200;
                 break;
 
               default:
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for rach_preambleTransMax choice: 3,4,5,6,7,8,10,20,50,100,200!\n",
                              lib_config_file_name_pP, i, rach_preambleTransMax);
                 break;
@@ -1502,7 +1606,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               enb_properties.properties[enb_properties_index]->rach_raResponseWindowSize[j] =  (rach_raResponseWindowSize==10)?7:rach_raResponseWindowSize-2;
 
               if ((rach_raResponseWindowSize<0)||(rach_raResponseWindowSize==9)||(rach_raResponseWindowSize>10))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for rach_raResponseWindowSize choice: 2,3,4,5,6,7,8,10!\n",
                              lib_config_file_name_pP, i, rach_preambleTransMax);
 
@@ -1510,14 +1614,14 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               enb_properties.properties[enb_properties_index]->rach_macContentionResolutionTimer[j] = (rach_macContentionResolutionTimer/8)-1;
 
               if ((rach_macContentionResolutionTimer<8) || (rach_macContentionResolutionTimer>64) || ((rach_macContentionResolutionTimer&7)!=0))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for rach_macContentionResolutionTimer choice: 8,16,...,56,64!\n",
                              lib_config_file_name_pP, i, rach_preambleTransMax);
 
               enb_properties.properties[enb_properties_index]->rach_maxHARQ_Msg3Tx[j] = rach_maxHARQ_Msg3Tx;
 
               if ((rach_maxHARQ_Msg3Tx<0) || (rach_maxHARQ_Msg3Tx>8))
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for rach_maxHARQ_Msg3Tx choice: 1..8!\n",
                              lib_config_file_name_pP, i, rach_preambleTransMax);
 
@@ -1540,7 +1644,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 break;
 
               default:
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pcch_defaultPagingCycle choice: 32,64,128,256!\n",
                              lib_config_file_name_pP, i, pcch_defaultPagingCycle);
                 break;
@@ -1563,7 +1667,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               } else if (strcmp(pcch_nB, "oneThirtySecondT") == 0) {
                 enb_properties.properties[enb_properties_index]->pcch_nB[j] = PCCH_Config__nB_oneThirtySecondT;
               } else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for pcch_nB choice: fourT,twoT,oneT,halfT,quarterT,oneighthT,oneSixteenthT,oneThirtySecondT !\n",
                              lib_config_file_name_pP, i, pcch_defaultPagingCycle);
 
@@ -1587,7 +1691,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 break;
 
               default:
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for bcch_modificationPeriodCoeff choice: 2,4,8,16",
                              lib_config_file_name_pP, i, bcch_modificationPeriodCoeff);
 
@@ -1629,7 +1733,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 break;
 
               default:
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for ue_TimersAndConstants_t300 choice: 100,200,300,400,600,1000,1500,2000 ",
                              lib_config_file_name_pP, i, ue_TimersAndConstants_t300);
                 break;
@@ -1670,7 +1774,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 break;
 
               default:
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for ue_TimersAndConstants_t301 choice: 100,200,300,400,600,1000,1500,2000 ",
                              lib_config_file_name_pP, i, ue_TimersAndConstants_t301);
                 break;
@@ -1707,7 +1811,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 break;
 
               default:
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for ue_TimersAndConstants_t310 choice: 0,50,100,200,500,1000,1500,2000 ",
                              lib_config_file_name_pP, i, ue_TimersAndConstants_t310);
                 break;
@@ -1744,7 +1848,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 break;
 
               default:
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for ue_TimersAndConstants_t311 choice: 1000,3000,5000,10000,150000,20000,30000",
                              lib_config_file_name_pP, i, ue_TimersAndConstants_t311);
                 break;
@@ -1785,7 +1889,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 break;
 
               default:
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for ue_TimersAndConstants_n310 choice: 1,2,3,4,6,6,8,10,20",
                              lib_config_file_name_pP, i, ue_TimersAndConstants_n311);
                 break;
@@ -1826,12 +1930,41 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                 break;
 
               default:
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for ue_TimersAndConstants_t311 choice: 1,2,3,4,5,6,8,10",
                              lib_config_file_name_pP, i, ue_TimersAndConstants_t311);
                 break;
 
               }
+
+	      switch (ue_TransmissionMode) {
+	      case 1:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm1;
+		break;
+	      case 2:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm2;
+		break;
+	      case 3:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm3;
+		break;
+	      case 4:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm4;
+		break;
+	      case 5:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm5;
+		break;
+	      case 6:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm6;
+		break;
+	      case 7:
+		enb_properties.properties[enb_properties_index]->ue_TransmissionMode[j] = AntennaInfoDedicated__transmissionMode_tm7;
+		break;
+	      default:
+                AssertFatal (0,
+                             "Failed to parse eNB configuration file %s, enb %d unknown value \"%d\" for ue_TransmissionMode choice: 1,2,3,4,5,6,7",
+                             lib_config_file_name_pP, i, ue_TransmissionMode);
+		break;
+	      }
             }
           }
 
@@ -1844,7 +1977,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                   && config_setting_lookup_int(setting_srb1, ENB_CONFIG_STRING_SRB1_MAX_RETX_THRESHOLD,    &srb1_max_retx_threshold)
                   && config_setting_lookup_int(setting_srb1, ENB_CONFIG_STRING_SRB1_POLL_PDU,              &srb1_poll_pdu)
                   && config_setting_lookup_int(setting_srb1, ENB_CONFIG_STRING_SRB1_POLL_BYTE,             &srb1_poll_byte)))
-              AssertError (0, parse_errors ++,
+              AssertFatal (0,
                            "Failed to parse eNB configuration file %s, enb %d  timer_poll_retransmit, timer_reordering, "
                            "timer_status_prohibit, poll_pdu, poll_byte, max_retx_threshold !\n",
                            lib_config_file_name_pP, i);
@@ -1883,7 +2016,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               break;
 
             default:
-              AssertError (0, parse_errors ++,
+              AssertFatal (0,
                            "Bad config value when parsing eNB configuration file %s, enb %d  srb1_max_retx_threshold %u!\n",
                            lib_config_file_name_pP, i, srb1_max_retx_threshold);
             }
@@ -1921,7 +2054,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               if (srb1_poll_pdu >= 10000)
                 enb_properties.properties[enb_properties_index]->srb1_poll_pdu = PollPDU_pInfinity;
               else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Bad config value when parsing eNB configuration file %s, enb %d  srb1_poll_pdu %u!\n",
                              lib_config_file_name_pP, i, srb1_poll_pdu);
             }
@@ -1989,7 +2122,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               if (srb1_poll_byte >= 10000)
                 enb_properties.properties[enb_properties_index]->srb1_poll_byte = PollByte_kBinfinity;
               else
-                AssertError (0, parse_errors ++,
+                AssertFatal (0,
                              "Bad config value when parsing eNB configuration file %s, enb %d  srb1_poll_byte %u!\n",
                              lib_config_file_name_pP, i, srb1_poll_byte);
             }
@@ -1999,7 +2132,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
             } else if (srb1_timer_poll_retransmit <= 500) {
               enb_properties.properties[enb_properties_index]->srb1_timer_poll_retransmit = (srb1_timer_poll_retransmit - 300)/50 + 50;
             } else {
-              AssertError (0, parse_errors ++,
+              AssertFatal (0,
                            "Bad config value when parsing eNB configuration file %s, enb %d  srb1_timer_poll_retransmit %u!\n",
                            lib_config_file_name_pP, i, srb1_timer_poll_retransmit);
             }
@@ -2009,7 +2142,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
             } else if ((srb1_timer_poll_retransmit >= 300) && (srb1_timer_poll_retransmit <= 500)) {
               enb_properties.properties[enb_properties_index]->srb1_timer_status_prohibit = (srb1_timer_status_prohibit - 300)/50 + 51;
             } else {
-              AssertError (0, parse_errors ++,
+              AssertFatal (0,
                            "Bad config value when parsing eNB configuration file %s, enb %d  srb1_timer_status_prohibit %u!\n",
                            lib_config_file_name_pP, i, srb1_timer_status_prohibit);
             }
@@ -2140,7 +2273,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               break;
 
             default:
-              AssertError (0, parse_errors ++,
+              AssertFatal (0,
                            "Bad config value when parsing eNB configuration file %s, enb %d  srb1_timer_reordering %u!\n",
                            lib_config_file_name_pP, i, srb1_timer_reordering);
             }
@@ -2167,7 +2300,7 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
                    && config_setting_lookup_string(setting_mme_address, ENB_CONFIG_STRING_MME_IP_ADDRESS_PREFERENCE, (const char **)&preference)
                  )
               ) {
-              AssertError (0, parse_errors ++,
+              AssertFatal (0,
                            "Failed to parse eNB configuration file %s, %u th enb %u th mme address !\n",
                            lib_config_file_name_pP, i, j);
               continue; // FIXME will prevent segfaults below, not sure what happens at function exit...
@@ -2197,78 +2330,94 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
 	  // RRH Config 
 	  setting_rrh_gws = config_setting_get_member (setting_enb, ENB_CONFIG_STRING_RRH_GW_CONFIG);
 	  if ( setting_rrh_gws != NULL) {
-          num_rrh_gw     = config_setting_length(setting_rrh_gws);
-          enb_properties.properties[enb_properties_index]->nb_rrh_gw = 0;
+	    num_rrh_gw     = config_setting_length(setting_rrh_gws);
+	    enb_properties.properties[enb_properties_index]->nb_rrh_gw = 0;
 
-          for (j = 0; j < num_rrh_gw; j++) {
-            setting_rrh_gw = config_setting_get_elem(setting_rrh_gws, j);
-
-            if (  !(
-                   config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_LOCAL_IF_NAME, (const char **)&if_name)
-		   && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_LOCAL_ADDRESS, (const char **)&ipv4)
-                   && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_REMOTE_ADDRESS , (const char **)&ipv4_remote)
-                   && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_LOCAL_PORT, &local_port)
-                   && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_REMOTE_PORT, &remote_port)
-                   && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_ACTIVE, (const char **)&active)
-		   && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_TRANSPORT_PREFERENCE, (const char **)&tr_preference)
-		   && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_RF_TARGET_PREFERENCE, (const char **)&rf_preference)
-		   && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_IQ_TXSHIFT, &iq_txshift) 
-		   && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_TX_SAMPLE_ADVANCE, &tx_sample_advance)
-		   && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_TX_SCHEDULING_ADVANCE, &tx_scheduling_advance)
-                 )
-              ) {
-              AssertError (0, parse_errors ++,
-                           "Failed to parse eNB configuration file %s, %u th enb %u the RRH GW address !\n",
-                           lib_config_file_name_pP, i, j);
-              continue; // FIXME will prevent segfaults below, not sure what happens at function exit...
-            }
-
-            enb_properties.properties[enb_properties_index]->nb_rrh_gw += 1;
-
-	    enb_properties.properties[enb_properties_index]->rrh_gw_if_name = strdup(if_name);
-            enb_properties.properties[enb_properties_index]->rrh_gw_config[j].local_address  = strdup(ipv4);
-            enb_properties.properties[enb_properties_index]->rrh_gw_config[j].remote_address = strdup(ipv4_remote);
-	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].local_port = local_port;
-	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].remote_port = remote_port;
-	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].iq_txshift = iq_txshift;
-	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].tx_sample_advance = tx_sample_advance;
-	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].tx_scheduling_advance= tx_scheduling_advance;
-
-            if (strcmp(active, "yes") == 0) {
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].active = 1;
-            } 
-
-            if (strcmp(tr_preference, "udp") == 0) {
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].udp = 1;
-            } else if (strcmp(tr_preference, "raw") == 0) {
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].raw = 1;
-            } else {//if (strcmp(preference, "no") == 0) 
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].udp = 1;
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].raw = 1;
-            }
-
-	    if (strcmp(rf_preference, "exmimo") == 0) {
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].exmimo = 1;
-            } else if (strcmp(rf_preference, "usrp_b200") == 0) {
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_b200 = 1;
-	    } else if (strcmp(rf_preference, "usrp_x300") == 0) {
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_x300 = 1;
-            } else if (strcmp(rf_preference, "bladerf") == 0) {
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].bladerf = 1;
-	    } else if (strcmp(rf_preference, "bladerf") == 0) {
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].lmssdr = 1;	      
-            } else {//if (strcmp(preference, "no") == 0) 
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].exmimo = 1;
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_b200 = 1;
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_x300 = 1;
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].bladerf = 1;    
-              enb_properties.properties[enb_properties_index]->rrh_gw_config[j].lmssdr = 1;    
-
-            }
-          }
+	    for (j = 0; j < num_rrh_gw; j++) {
+	      setting_rrh_gw = config_setting_get_elem(setting_rrh_gws, j);
+	      
+	      if (  !(
+		      config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_LOCAL_IF_NAME, (const char **)&if_name)
+		      && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_LOCAL_ADDRESS, (const char **)&ipv4)
+		      && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_REMOTE_ADDRESS , (const char **)&ipv4_remote)
+		      && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_LOCAL_PORT, &local_port)
+		      && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_REMOTE_PORT, &remote_port)
+		      && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_ACTIVE, (const char **)&active)
+		      && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_TRANSPORT_PREFERENCE, (const char **)&tr_preference)
+		      && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_RF_TARGET_PREFERENCE, (const char **)&rf_preference)
+		      && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_IQ_TXSHIFT, &iq_txshift) 
+		      && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_TX_SAMPLE_ADVANCE, &tx_sample_advance)
+		      && config_setting_lookup_int(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_TX_SCHEDULING_ADVANCE, &tx_scheduling_advance)
+		      && config_setting_lookup_string(setting_rrh_gw, ENB_CONFIG_STRING_RRH_GW_IF_COMPRESSION, (const char **)&if_compression)
+		      )
+		    ) {
+		AssertFatal (0,
+			     "Failed to parse eNB configuration file %s, %u th enb %u the RRH GW address !\n",
+			     lib_config_file_name_pP, i, j);
+		continue; // FIXME will prevent segfaults below, not sure what happens at function exit...
+	      }
+	      
+	      enb_properties.properties[enb_properties_index]->nb_rrh_gw += 1;
+	      
+	      enb_properties.properties[enb_properties_index]->rrh_gw_config[j].rrh_gw_if_name = strdup(if_name);
+	      enb_properties.properties[enb_properties_index]->rrh_gw_config[j].local_address  = strdup(ipv4);
+	      enb_properties.properties[enb_properties_index]->rrh_gw_config[j].remote_address = strdup(ipv4_remote);
+	      enb_properties.properties[enb_properties_index]->rrh_gw_config[j].local_port = local_port;
+	      enb_properties.properties[enb_properties_index]->rrh_gw_config[j].remote_port = remote_port;
+	      enb_properties.properties[enb_properties_index]->rrh_gw_config[j].iq_txshift = iq_txshift;
+	      enb_properties.properties[enb_properties_index]->rrh_gw_config[j].tx_sample_advance = tx_sample_advance;
+	      enb_properties.properties[enb_properties_index]->rrh_gw_config[j].tx_scheduling_advance= tx_scheduling_advance;
+	      
+	      if (strcmp(active, "yes") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].active = 1;
+	      } 
+	      
+	      if (strcmp(tr_preference, "udp") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].udp = 1;
+	      } else if (strcmp(tr_preference, "raw") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].raw = 1;
+	      } else if (strcmp(tr_preference, "udp_if4p5") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].udpif4p5 = 1; 
+	      } else if (strcmp(tr_preference, "raw_if4p5") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].rawif4p5 = 1;
+	      } else if (strcmp(tr_preference, "raw_if5_mobipass") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].rawif5_mobipass = 1;
+	      } else {//if (strcmp(preference, "no") == 0) 
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].udp = 1;
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].raw = 1;
+	      }
+	      
+	      if (strcmp(rf_preference, "exmimo") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].exmimo = 1;
+	      } else if (strcmp(rf_preference, "usrp_b200") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_b200 = 1;
+	      } else if (strcmp(rf_preference, "usrp_x300") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_x300 = 1;
+	      } else if (strcmp(rf_preference, "bladerf") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].bladerf = 1;
+	      } else if (strcmp(rf_preference, "lmsdr") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].lmssdr = 1;	      
+	      } else {//if (strcmp(preference, "no") == 0) 
+	      
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].exmimo = 1;
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_b200 = 1;
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_x300 = 1;
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].bladerf = 1;    
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].lmssdr = 1;    
+		
+	      }
+	      
+	      if (strcmp(if_compression, "alaw") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].if_compress = 1;
+	      } else if (strcmp(if_compression, "none") == 0) {
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].if_compress = 0;
+	      } else { 
+		enb_properties.properties[enb_properties_index]->rrh_gw_config[j].if_compress = 0;
+	      }
+	    } 
 	  } else {
 	    enb_properties.properties[enb_properties_index]->nb_rrh_gw = 0;	    
-	    enb_properties.properties[enb_properties_index]->rrh_gw_if_name = "none";
+            enb_properties.properties[enb_properties_index]->rrh_gw_config[j].rrh_gw_if_name = "none";
             enb_properties.properties[enb_properties_index]->rrh_gw_config[j].local_address  = "0.0.0.0";
             enb_properties.properties[enb_properties_index]->rrh_gw_config[j].remote_address = "0.0.0.0";
 	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].local_port= 0;
@@ -2284,8 +2433,9 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
 	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].usrp_x300 = 0;
 	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].bladerf = 0;
 	    enb_properties.properties[enb_properties_index]->rrh_gw_config[j].lmssdr = 0;
+            enb_properties.properties[enb_properties_index]->rrh_gw_config[j].if_compress = 0;
 	  }
-
+	  
           // SCTP SETTING
           enb_properties.properties[enb_properties_index]->sctp_out_streams = SCTP_OUT_STREAMS;
           enb_properties.properties[enb_properties_index]->sctp_in_streams  = SCTP_IN_STREAMS;
@@ -2339,6 +2489,35 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
               }
             }
           }
+	  
+	  // Network Controller 
+	  subsetting = config_setting_get_member (setting_enb, ENB_CONFIG_STRING_NETWORK_CONTROLLER_CONFIG);
+
+          if (subsetting != NULL) {
+            if (  (
+                   config_setting_lookup_string( subsetting, ENB_CONFIG_STRING_FLEXRAN_AGENT_INTERFACE_NAME,
+                                                 (const char **)&flexran_agent_interface_name)
+                   && config_setting_lookup_string( subsetting, ENB_CONFIG_STRING_FLEXRAN_AGENT_IPV4_ADDRESS,
+                                                    (const char **)&flexran_agent_ipv4_address)
+                   && config_setting_lookup_int(subsetting, ENB_CONFIG_STRING_FLEXRAN_AGENT_PORT,
+                                                &flexran_agent_port)
+		   && config_setting_lookup_string( subsetting, ENB_CONFIG_STRING_FLEXRAN_AGENT_CACHE,
+						    (const char **)&flexran_agent_cache)
+                 )
+              ) {
+              enb_properties.properties[enb_properties_index]->flexran_agent_interface_name = strdup(flexran_agent_interface_name);
+              cidr = flexran_agent_ipv4_address;
+              address = strtok(cidr, "/");
+	      //enb_properties.properties[enb_properties_index]->flexran_agent_ipv4_address = strdup(address);
+	      if (address) {
+                IPV4_STR_ADDR_TO_INT_NWBO (address, enb_properties.properties[enb_properties_index]->flexran_agent_ipv4_address, "BAD IP ADDRESS FORMAT FOR eNB Agent !\n" );
+	      }
+
+              enb_properties.properties[enb_properties_index]->flexran_agent_port = flexran_agent_port;
+	      enb_properties.properties[enb_properties_index]->flexran_agent_cache = strdup(flexran_agent_cache);
+            }
+          }
+	  
 
           // OTG _CONFIG
           setting_otg = config_setting_get_member (setting_enb, ENB_CONF_STRING_OTG_CONFIG);
@@ -2620,13 +2799,10 @@ const Enb_properties_array_t *enb_config_init(char* lib_config_file_name_pP)
 
   enb_properties.number = num_enb_properties;
 
-  AssertError (enb_properties_index == num_enb_properties, parse_errors ++,
+  AssertFatal (enb_properties_index == num_enb_properties,
                "Failed to parse eNB configuration file %s, mismatch between %u active eNBs and %u corresponding defined eNBs !\n",
                lib_config_file_name_pP, num_enb_properties, enb_properties_index);
 
-  AssertFatal (parse_errors == 0,
-               "Failed to parse eNB configuration file %s, found %d error%s !\n",
-               lib_config_file_name_pP, parse_errors, parse_errors > 1 ? "s" : "");
   enb_config_display();
   return &enb_properties;
 
