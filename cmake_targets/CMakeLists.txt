@@ -499,7 +499,6 @@ set(HWLIB_EXMIMO_SOURCE
 add_library(oai_exmimodevif MODULE ${HWLIB_EXMIMO_SOURCE} )
 
 include_directories("${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/")
-set (option_HWUSRPLIB_lib "-l uhd")
 set(HWLIB_USRP_SOURCE
   ${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/usrp_lib.cpp
   )
@@ -507,11 +506,11 @@ add_library(oai_usrpdevif MODULE ${HWLIB_USRP_SOURCE} )
 target_link_libraries(oai_usrpdevif uhd)
 
 include_directories("${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/")
-set (option_HWBLADERFLIB_lib "-l bladerf")
 set(HWLIB_BLADERF_SOURCE
   ${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/bladerf_lib.c
   )
 add_library(oai_bladerfdevif MODULE ${HWLIB_BLADERF_SOURCE} )
+target_link_libraries(oai_bladerfdevif bladeRF)
 
 include_directories("${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/")
 
@@ -519,6 +518,7 @@ set(HWLIB_LMSSDR_SOURCE
   ${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/lms_lib.cpp
   )
 add_library(oai_lmssdrdevif MODULE ${HWLIB_LMSSDR_SOURCE} )
+target_link_libraries(oai_lmssdrdevif LimeSuite )
 
 include_directories("${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/")
 set(TPLIB_ETHERNET_SOURCE

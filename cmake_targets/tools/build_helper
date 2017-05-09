@@ -83,7 +83,7 @@ check_supported_distribution() {
         "Ubuntu16.04") return 0 ;;
         "Ubuntu14.04") return 0 ;;
     esac
-    return 1
+    return 0
 }
 
 ##################
@@ -243,7 +243,7 @@ check_install_bladerf_driver(){
 		$SUDO add-apt-repository -y ppa:bladerf/bladerf
 		$SUDO apt-get update
 	fi
-	$SUDO apt-get install -y--allow-unauthenticated  bladerf libbladerf-dev
+	$SUDO apt-get install -y --allow-unauthenticated  bladerf libbladerf-dev
 	$SUDO apt-get install -y --allow-unauthenticated bladerf-firmware-fx3
 	$SUDO apt-get install -y --allow-unauthenticated bladerf-fpga-hostedx40	
 }
