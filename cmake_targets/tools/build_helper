@@ -53,7 +53,7 @@ cecho()  {
 }
 
 echo_error()   { cecho "$*" $red          ;}
-echo_fatal()   { cecho "$*" $red; exit -1 ;}
+echo_fatal()   { cecho "$*" $red;exit -1 ;}
 echo_warning() { cecho "$*" $yellow       ;}
 echo_success() { cecho "$*" $green        ;}
 echo_info()    { cecho "$*" $blue         ;}
@@ -250,6 +250,21 @@ check_install_bladerf_driver(){
 
 flash_firmware_bladerf() {
 	$SUDO bladeRF-cli --flash-firmware /usr/share/Nuand/bladeRF/bladeRF_fw.img
+}
+
+check_install_lmssdr_driver(){
+	if ( [ -d "/usr/local/include/lime" ] &&
+             [ -f "/usr/local/include/lime/LimeSuite.h" ] )
+	then
+  		echo_success "Found lmssdr drivers and tools installed from source"
+        else
+                echo_error "lmssdr support implies installing lmssdr drivers and tools" \
+                           " from sources. check:"
+                echo_info "https://open-cells.com/index.php/2017/05/10/limesdr-installation/"
+                echo_fatal "Cannot compile lmssdr device" 
+	fi
+
+
 }
 
 check_install_additional_tools (){

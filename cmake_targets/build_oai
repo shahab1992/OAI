@@ -448,8 +448,14 @@ function main() {
         flash_firmware_bladerf
       fi
     fi
+    if [ "$HW" == "OAI_LMSSDR" ] ; then
+      echo_info "checking LMSSDR installation"
+      check_install_lmssdr_driver
+#      if [ ! "$DISABLE_HARDWARE_DEPENDENCY" == "True" ]; then
+#        flash_firmware_bladerf
+#      fi
+    fi
   fi
-
   if [ "$INSTALL_OPTIONAL" = "1" ] ; then
     echo_info "Installing optional packages"
     check_install_additional_tools
