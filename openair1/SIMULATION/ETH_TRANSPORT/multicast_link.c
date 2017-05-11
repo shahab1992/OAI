@@ -308,10 +308,10 @@ void* multicast_link_main_loop (void *param)
 }
 
 void multicast_link_start(void (*rx_handlerP) (unsigned int, char *),
-                          unsigned char multicast_group, char *multicast_ifname)
+                          unsigned char Multicast_Group, char *multicast_ifname)
 {
   rx_handler = rx_handlerP;
-  multicast_group = multicast_group;
+  multicast_group = Multicast_Group;
   multicast_if =  multicast_ifname;
   LOG_I(EMU, "[MULTICAST] LINK START on interface=%s for group=%d: handler=%p\n",
         (multicast_if == NULL) ? "not specified" : multicast_if, multicast_group,
