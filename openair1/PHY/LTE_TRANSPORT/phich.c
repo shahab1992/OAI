@@ -1085,7 +1085,6 @@ void rx_phich(PHY_VARS_UE *ue,
   int32_t **rxdataF_comp = pdcch_vars[eNB_id]->rxdataF_comp;
   uint8_t Ngroup_PHICH,ngroup_PHICH,nseq_PHICH;
   uint8_t NSF_PHICH = 4;
-  uint8_t pusch_subframe;
 
   // check if we're expecting a PHICH in this subframe
   LOG_D(PHY,"[UE  %d][PUSCH %d] Frame %d subframe %d PHICH RX\n",ue->Mod_id,harq_pid,proc->frame_rx,subframe);
@@ -1109,12 +1108,6 @@ void rx_phich(PHY_VARS_UE *ue,
     ngroup_PHICH = (ulsch->harq_processes[harq_pid]->first_rb +
                     ulsch->harq_processes[harq_pid]->n_DMRS)%Ngroup_PHICH;
 
-    if ((frame_parms->tdd_config == 0) && (frame_parms->frame_type == TDD) ) {
-      pusch_subframe = phich_subframe2_pusch_subframe(frame_parms,subframe);
-
-      if ((pusch_subframe == 4) || (pusch_subframe == 9))
-        ngroup_PHICH += Ngroup_PHICH;
-    }
 
     nseq_PHICH = ((ulsch->harq_processes[harq_pid]->first_rb/Ngroup_PHICH) +
                   ulsch->harq_processes[harq_pid]->n_DMRS)%(2*NSF_PHICH);
@@ -1522,11 +1515,6 @@ void generate_phich_top(PHY_VARS_eNB *eNB,
         ngroup_PHICH = (ulsch[UE_id]->harq_processes[harq_pid]->previous_first_rb +
                         ulsch[UE_id]->harq_processes[harq_pid]->previous_n_DMRS)%Ngroup_PHICH;
 
-        if ((frame_parms->tdd_config == 0) && (frame_parms->frame_type == TDD) ) {
-
-          if ((pusch_subframe == 4) || (pusch_subframe == 9))
-            ngroup_PHICH += Ngroup_PHICH;
-        }
 
         nseq_PHICH = ((ulsch[UE_id]->harq_processes[harq_pid]->previous_first_rb/Ngroup_PHICH) +
                       ulsch[UE_id]->harq_processes[harq_pid]->previous_n_DMRS)%(2*NSF_PHICH);
