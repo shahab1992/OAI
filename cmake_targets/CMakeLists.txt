@@ -530,6 +530,71 @@ set(TPLIB_ETHERNET_SOURCE
 add_library(oai_eth_transpro MODULE ${TPLIB_ETHERNET_SOURCE} )
 
 
+# RF devices / transport protocols settings
+######################################################################
+#if (${RF_BOARD} STREQUAL "EXMIMO")
+#  set(DRIVER2013)
+#  include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/")
+#  include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/DEFS/")
+#  set(HW_SOURCE ${HW_SOURCE}
+#    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/openair0_lib.c)
+#    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/gain_control.c)
+#  set(option_HW_lib "-rdynamic -ldl")
+#
+#elseif (${RF_BOARD} STREQUAL "OAI_USRP")
+#  include_directories("${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/")
+#  include_directories("/opt/include/uhd")
+#  set(HW_SOURCE ${HW_SOURCE}
+#    ${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/usrp_lib.cpp)
+#  LINK_DIRECTORIES("/opt/lib")
+#  set(option_HW_lib "-luhd -rdynamic -ldl -lboost_system")
+#
+#elseif (${RF_BOARD} STREQUAL "OAI_BLADERF")
+#  include_directories("${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/")
+#  include_directories("${OPENAIR2_DIR}/UTIL/LOG")
+#  include_directories("/usr/include")
+#  set(HW_SOURCE ${HW_SOURCE}
+#    ${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/bladerf_lib.c
+#    )
+#  LINK_DIRECTORIES("/usr/lib/x86_64-linux-gnu")
+#
+#
+#  set(option_HW_lib "bladeRF -rdynamic -ldl")
+#
+#elseif (${RF_BOARD} STREQUAL "OAI_LMSSDR")
+#  include_directories("${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB")
+#  include_directories("/usr/local/include/lime")
+#  include_directories("/usr/include/lime")
+#  LINK_DIRECTORIES("/usr/lib/x86_64-linux-gnu")
+#  LINK_DIRECTORIES("/usr/local/lib")
+#  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/lmsSDR")
+#  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/lms7002m")
+#  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/Si5351C")
+#  set(HW_SOURCE ${HW_SOURCE} ${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/lms_lib.cpp)
+#  set(option_HW_lib "-lLimeSuite -rdynamic -ldl")
+#
+#elseif (${RF_BOARD} STREQUAL "CPRIGW")
+#  set(HW_SOURCE ${HW_SOURCE}
+#    ${OPENAIR_TARGETS}/ARCH/CPRIGW/USERSPACE/LIB/cprigw_lib.c
+#    )
+#  include_directories("${OPENAIR_TARGETS}/ARCH/CPRIGW/USERSPACE/LIB/")
+#  set(option_HW_lib "-rdynamic dl")
+#
+#endif (${RF_BOARD} STREQUAL "EXMIMO")
+#
+#
+#if (${TRANSP_PRO} STREQUAL "ETHERNET")
+#
+#  include_directories ("${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB")
+#  set(TRANSPORT_SOURCE ${TRANSPORT_SOURCE}
+#    ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/ethernet_lib.c
+#    ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/eth_udp.c
+#    ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/eth_raw.c
+#    )
+#  set(option_TP_lib "-rdynamic -ldl")
+#
+#
+#endif (${TRANSP_PRO} STREQUAL "ETHERNET")
 ##########################################################
 
 include_directories ("${OPENAIR_TARGETS}/ARCH/COMMON")
@@ -1723,7 +1788,7 @@ target_link_libraries (lte-softmodem -ldl
   -Wl,--end-group )
 
 target_link_libraries (lte-softmodem ${LIBXML2_LIBRARIES})
-target_link_libraries (lte-softmodem pthread m ${CONFIG_LIBRARIES} rt crypt ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES} ${NETTLE_LIBRARIES} sctp ${option_HW_lib} ${option_TP_lib} ${XFORMS_LIBRARIES} ${PROTOBUF_LIB}  ${CMAKE_DL_LIBS} ${LIBYAML_LIBRARIES})
+target_link_libraries (lte-softmodem pthread m ${CONFIG_LIBRARIES} rt crypt ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES} ${NETTLE_LIBRARIES} sctp  ${XFORMS_LIBRARIES} ${PROTOBUF_LIB}  ${CMAKE_DL_LIBS} ${LIBYAML_LIBRARIES})
 target_link_libraries (lte-softmodem ${LIB_LMS_LIBRARIES})
 target_link_libraries (lte-softmodem ${T_LIB})
 
@@ -1756,7 +1821,7 @@ target_link_libraries (lte-softmodem-nos1
   -Wl,--end-group )
 
 target_link_libraries (lte-softmodem-nos1 ${LIBXML2_LIBRARIES})
-target_link_libraries (lte-softmodem-nos1 pthread m ${CONFIG_LIBRARIES} rt crypt ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES} ${NETTLE_LIBRARIES}  ${option_HW_lib} ${option_TP_lib} ${XFORMS_LIBRARIES} ${PROTOBUF_LIB} ${CMAKE_DL_LIBS} ${LIBYAML_LIBRARIES})
+target_link_libraries (lte-softmodem-nos1 pthread m ${CONFIG_LIBRARIES} rt crypt ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES} ${NETTLE_LIBRARIES}  ${XFORMS_LIBRARIES} ${PROTOBUF_LIB} ${CMAKE_DL_LIBS} ${LIBYAML_LIBRARIES})
 target_link_libraries (lte-softmodem-nos1  ${LIB_LMS_LIBRARIES})
 target_link_libraries (lte-softmodem-nos1 ${T_LIB})
 
@@ -1777,12 +1842,9 @@ target_link_libraries(rrh_gw
   UTIL LFDS
   -Wl,--end-group )
 target_link_libraries (rrh_gw rt pthread m )
-target_link_libraries (rrh_gw  ${option_HW_lib} ${option_TP_lib})
 target_link_libraries (rrh_gw ${LIB_LMS_LIBRARIES})
 target_link_libraries (rrh_gw ${T_LIB})
 
-Message("-- option_HW_lib=${option_HW_lib}")
-Message("-- option_TP_lib=${option_TP_lib}")
 
 # USIM process
 #################
@@ -1849,7 +1911,7 @@ target_link_libraries (oaisim
   -Wl,--end-group )
 
 target_link_libraries (oaisim ${LIBXML2_LIBRARIES} ${LAPACK_LIBRARIES})
-target_link_libraries (oaisim pthread m ${CONFIG_LIBRARIES} rt crypt ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES}  ${NETTLE_LIBRARIES} sctp ${option_HW_lib} ${option_TP_lib}
+target_link_libraries (oaisim pthread m ${CONFIG_LIBRARIES} rt crypt ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES}  ${NETTLE_LIBRARIES} sctp 
   ${ATLAS_LIBRARIES} ${XFORMS_LIBRARIES} ${OPENPGM_LIBRARIES})
 #Force link with forms, regardless XFORMS option
 target_link_libraries (oaisim forms)
@@ -1890,7 +1952,7 @@ target_link_libraries (oaisim_nos1
   -Wl,--end-group )
 
 target_link_libraries (oaisim_nos1 ${LIBXML2_LIBRARIES} ${LAPACK_LIBRARIES})
-target_link_libraries (oaisim_nos1 pthread m ${CONFIG_LIBRARIES} rt crypt ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES}  ${NETTLE_LIBRARIES}  ${option_HW_lib} ${option_TP_lib}
+target_link_libraries (oaisim_nos1 pthread m ${CONFIG_LIBRARIES} rt crypt ${CRYPTO_LIBRARIES} ${OPENSSL_LIBRARIES}  ${NETTLE_LIBRARIES}  
   ${ATLAS_LIBRARIES} ${XFORMS_LIBRARIES} ${OPENPGM_LIBRARIES} ${PROTOBUF_LIB} ${CMAKE_DL_LIBS} ${LIBYAML_LIBRARIES})
 #Force link with forms, regardless XFORMS option
 target_link_libraries (oaisim_nos1 forms)
