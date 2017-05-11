@@ -488,114 +488,112 @@ add_list2_option(TRANSP_PRO "None" "Transport protocol type" "None" "ETHERNET")
 
 # include RF devices / transport protocols library modules
 ######################################################################
-
-include_directories("${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/")
-include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/DEFS/")
+#
+#include_directories("${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/")
+#include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/DEFS/")
 #set (option_HWEXMIMOLIB_lib "-l ")
-set(HWLIB_EXMIMO_SOURCE
-  ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/openair0_lib.c
+#set(HWLIB_EXMIMO_SOURCE
+#  ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/openair0_lib.c
 #  ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/gain_control.c
-  )
-add_library(oai_exmimodevif MODULE ${HWLIB_EXMIMO_SOURCE} )
-
-include_directories("${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/")
-set(HWLIB_USRP_SOURCE
-  ${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/usrp_lib.cpp
-  )
-add_library(oai_usrpdevif MODULE ${HWLIB_USRP_SOURCE} )
-target_link_libraries(oai_usrpdevif uhd)
-
-include_directories("${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/")
-set(HWLIB_BLADERF_SOURCE
-  ${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/bladerf_lib.c
-  )
-add_library(oai_bladerfdevif MODULE ${HWLIB_BLADERF_SOURCE} )
-target_link_libraries(oai_bladerfdevif bladeRF)
-
-include_directories("${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/")
-
-set(HWLIB_LMSSDR_SOURCE
-  ${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/lms_lib.cpp
-  )
-add_library(oai_lmssdrdevif MODULE ${HWLIB_LMSSDR_SOURCE} )
-target_include_directories(oai_lmssdrdevif PRIVATE /usr/local/include/lime)
-target_link_libraries(oai_lmssdrdevif LimeSuite )
-
-include_directories("${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/")
-set(TPLIB_ETHERNET_SOURCE
-  ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/ethernet_lib.c
-  ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/eth_udp.c
-  ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/eth_raw.c
-  )
-add_library(oai_eth_transpro MODULE ${TPLIB_ETHERNET_SOURCE} )
-
-
+#  )
+#add_library(oai_exmimodevif MODULE ${HWLIB_EXMIMO_SOURCE} )
+#
+#include_directories("${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/")
+#set(HWLIB_USRP_SOURCE
+#  ${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/usrp_lib.cpp
+#  )
+#add_library(oai_usrpdevif MODULE ${HWLIB_USRP_SOURCE} )
+#target_link_libraries(oai_usrpdevif uhd)
+#
+#include_directories("${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/")
+#set(HWLIB_BLADERF_SOURCE
+#  ${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/bladerf_lib.c
+#  )
+#add_library(oai_bladerfdevif MODULE ${HWLIB_BLADERF_SOURCE} )
+#target_link_libraries(oai_bladerfdevif bladeRF)
+#
+#include_directories("${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/")
+#
+#set(HWLIB_LMSSDR_SOURCE
+#  ${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/lms_lib.cpp
+#  )
+#add_library(oai_lmssdrdevif MODULE ${HWLIB_LMSSDR_SOURCE} )
+#target_include_directories(oai_lmssdrdevif PRIVATE /usr/local/include/lime)
+#target_link_libraries(oai_lmssdrdevif LimeSuite )
+#
+#include_directories("${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/")
+#set(TPLIB_ETHERNET_SOURCE
+#  ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/ethernet_lib.c
+#  ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/eth_udp.c
+#  ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/eth_raw.c
+#  )
+#add_library(oai_eth_transpro MODULE ${TPLIB_ETHERNET_SOURCE} )
+#
+#
 # RF devices / transport protocols settings
 ######################################################################
-#if (${RF_BOARD} STREQUAL "EXMIMO")
-#  set(DRIVER2013)
-#  include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/")
-#  include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/DEFS/")
-#  set(HW_SOURCE ${HW_SOURCE}
-#    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/openair0_lib.c)
-##    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/gain_control.c)
-#  set(option_HW_lib "-rdynamic -ldl")
-#
-#elseif (${RF_BOARD} STREQUAL "OAI_USRP")
-#  include_directories("${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/")
-#  include_directories("/opt/include/uhd")
-#  set(HW_SOURCE ${HW_SOURCE}
-#    ${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/usrp_lib.cpp)
-#  LINK_DIRECTORIES("/opt/lib")
-#  set(option_HW_lib "-luhd -rdynamic -ldl -lboost_system")
-#
-#elseif (${RF_BOARD} STREQUAL "OAI_BLADERF")
-#  include_directories("${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/")
-#  include_directories("${OPENAIR2_DIR}/UTIL/LOG")
-#  include_directories("/usr/include")
-#  set(HW_SOURCE ${HW_SOURCE}
-#    ${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/bladerf_lib.c
-#    )
-#  LINK_DIRECTORIES("/usr/lib/x86_64-linux-gnu")
-#
-#
-#  set(option_HW_lib "bladeRF -rdynamic -ldl")
-#
-#elseif (${RF_BOARD} STREQUAL "OAI_LMSSDR")
-#  include_directories("${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB")
-#  include_directories("/usr/local/include/lime")
-#  include_directories("/usr/include/lime")
-#  LINK_DIRECTORIES("/usr/lib/x86_64-linux-gnu")
-#  LINK_DIRECTORIES("/usr/local/lib")
-#  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/lmsSDR")
-#  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/lms7002m")
-#  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/Si5351C")
-#  set(HW_SOURCE ${HW_SOURCE} ${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/lms_lib.cpp)
-#  set(option_HW_lib "-lLimeSuite -rdynamic -ldl")
-#
-#elseif (${RF_BOARD} STREQUAL "CPRIGW")
-#  set(HW_SOURCE ${HW_SOURCE}
-#    ${OPENAIR_TARGETS}/ARCH/CPRIGW/USERSPACE/LIB/cprigw_lib.c
-#    )
-#  include_directories("${OPENAIR_TARGETS}/ARCH/CPRIGW/USERSPACE/LIB/")
-#  set(option_HW_lib "-rdynamic dl")
-#
-#endif (${RF_BOARD} STREQUAL "EXMIMO")
-#
-#
-#if (${TRANSP_PRO} STREQUAL "ETHERNET")
-#
-#  include_directories ("${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB")
-#  set(TRANSPORT_SOURCE ${TRANSPORT_SOURCE}
-#    ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/ethernet_lib.c
-#    ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/eth_udp.c
-#    ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/eth_raw.c
-#    )
-#  set(option_TP_lib "-rdynamic -ldl")
-#
-#
-#endif (${TRANSP_PRO} STREQUAL "ETHERNET")
-#
+if (${RF_BOARD} STREQUAL "EXMIMO")
+  set(DRIVER2013)
+  include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/")
+  include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/DEFS/")
+  set(HW_SOURCE ${HW_SOURCE}
+    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/openair0_lib.c)
+#    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/gain_control.c)
+  set(option_HW_lib "-rdynamic -ldl")
+
+elseif (${RF_BOARD} STREQUAL "OAI_USRP")
+  include_directories("${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/")
+  include_directories("/opt/include/uhd")
+  set(HW_SOURCE ${HW_SOURCE}
+    ${OPENAIR_TARGETS}/ARCH/USRP/USERSPACE/LIB/usrp_lib.cpp)
+  LINK_DIRECTORIES("/opt/lib")
+  set(option_HW_lib "-luhd -rdynamic -ldl -lboost_system")
+
+elseif (${RF_BOARD} STREQUAL "OAI_BLADERF")
+  include_directories("${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/")
+  include_directories("${OPENAIR2_DIR}/UTIL/LOG")
+  include_directories("/usr/include")
+  set(HW_SOURCE ${HW_SOURCE}
+    ${OPENAIR_TARGETS}/ARCH/BLADERF/USERSPACE/LIB/bladerf_lib.c
+    )
+  LINK_DIRECTORIES("/usr/lib/x86_64-linux-gnu")
+
+  set(option_HW_lib "bladeRF -rdynamic -ldl")
+
+elseif (${RF_BOARD} STREQUAL "OAI_LMSSDR")
+  include_directories("${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB")
+  include_directories("/usr/local/include/lime")
+  include_directories("/usr/include/lime")
+  LINK_DIRECTORIES("/usr/lib/x86_64-linux-gnu")
+  LINK_DIRECTORIES("/usr/local/lib")
+  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/lmsSDR")
+  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/lms7002m")
+  LINK_DIRECTORIES("${CMAKE_CURRENT_BINARY_DIR}/Si5351C")
+  set(HW_SOURCE ${HW_SOURCE} ${OPENAIR_TARGETS}/ARCH/LMSSDR/USERSPACE/LIB/lms_lib.cpp)
+  set(option_HW_lib "-lLimeSuite -rdynamic -ldl")
+
+elseif (${RF_BOARD} STREQUAL "CPRIGW")
+  set(HW_SOURCE ${HW_SOURCE}
+    ${OPENAIR_TARGETS}/ARCH/CPRIGW/USERSPACE/LIB/cprigw_lib.c
+    )
+  include_directories("${OPENAIR_TARGETS}/ARCH/CPRIGW/USERSPACE/LIB/")
+  set(option_HW_lib "-rdynamic dl")
+
+endif (${RF_BOARD} STREQUAL "EXMIMO")
+
+
+if (${TRANSP_PRO} STREQUAL "ETHERNET")
+
+  include_directories ("${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB")
+  set(TRANSPORT_SOURCE ${TRANSPORT_SOURCE}
+    ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/ethernet_lib.c
+    ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/eth_udp.c
+    ${OPENAIR_TARGETS}/ARCH/ETHERNET/USERSPACE/LIB/eth_raw.c
+    )
+  set(option_TP_lib "-rdynamic -ldl")
+
+
+endif (${TRANSP_PRO} STREQUAL "ETHERNET")
 ##########################################################
 
 include_directories ("${OPENAIR_TARGETS}/ARCH/COMMON")
