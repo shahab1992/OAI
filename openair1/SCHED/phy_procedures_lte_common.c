@@ -163,7 +163,7 @@ uint8_t get_Msg3_harq_pid(LTE_DL_FRAME_PARMS *frame_parms,
         break;
 
       case 5:
-      case 7:
+      case 4:
         ul_subframe = 2;
         break;
 
@@ -668,13 +668,13 @@ unsigned int is_phich_subframe(LTE_DL_FRAME_PARMS *frame_parms,unsigned char sub
       break;
 
     case 4:
-      if ((subframe == 0) || (subframe == 8) )
+      if ((subframe == 8) || (subframe == 9) )
         return(1);
 
       break;
 
     case 5:
-      if (subframe == 0)
+      if (subframe == 8)
         return(1);
 
       break;
