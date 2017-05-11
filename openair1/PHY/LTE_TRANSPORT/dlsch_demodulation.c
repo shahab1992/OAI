@@ -4093,7 +4093,7 @@ unsigned short dlsch_extract_rbs_single(int **rxdataF,
         }
 
         if ((frame_parms->frame_type == TDD) &&
-            (subframe==6)) { //TDD Subframe 6
+            (subframe==6 || subframe==1)) { //TDD Subframe 6
           if ((rb>=((frame_parms->N_RB_DL>>1)-3)) && (rb<((frame_parms->N_RB_DL>>1)+3)) && (l==pss_symb) ) {
             rb_alloc_ind = 0;
           }
