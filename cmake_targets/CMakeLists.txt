@@ -538,7 +538,7 @@ add_library(oai_eth_transpro MODULE ${TPLIB_ETHERNET_SOURCE} )
 #  include_directories ("${OPENAIR_TARGETS}/ARCH/EXMIMO/DEFS/")
 #  set(HW_SOURCE ${HW_SOURCE}
 #    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/openair0_lib.c)
-#    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/gain_control.c)
+##    ${OPENAIR_TARGETS}/ARCH/EXMIMO/USERSPACE/LIB/gain_control.c)
 #  set(option_HW_lib "-rdynamic -ldl")
 #
 #elseif (${RF_BOARD} STREQUAL "OAI_USRP")
@@ -595,6 +595,7 @@ add_library(oai_eth_transpro MODULE ${TPLIB_ETHERNET_SOURCE} )
 #
 #
 #endif (${TRANSP_PRO} STREQUAL "ETHERNET")
+#
 ##########################################################
 
 include_directories ("${OPENAIR_TARGETS}/ARCH/COMMON")
