@@ -678,7 +678,7 @@ void add_ue_spec_dci(DCI_PDU *DCI_pdu,void *pdu,rnti_t rnti,unsigned char dci_si
 
 
 // This has to be updated to include BSR information
-uint8_t UE_is_to_be_scheduled(module_id_t module_idP,int CC_id,uint8_t UE_id)
+uint8_t UE_is_to_be_scheduled(module_id_t module_idP,int CC_id,uint8_t UE_id, frame_t frameP, sub_frame_t subframeP)
 {
 
   UE_TEMPLATE *UE_template    = &eNB_mac_inst[module_idP].UE_list.UE_template[CC_id][UE_id];

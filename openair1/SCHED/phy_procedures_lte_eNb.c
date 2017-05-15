@@ -2020,7 +2020,7 @@ void prach_procedures(PHY_VARS_eNB *eNB) {
         preamble_delay_list[preamble_max]);
 #endif
 
-  if (preamble_energy_list[preamble_max] > 580) {
+  if (preamble_energy_list[preamble_max] > 780) {
 
     UE_id = find_next_ue_index(eNB);
  

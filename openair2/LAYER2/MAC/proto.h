@@ -352,7 +352,7 @@ void set_ue_dai(sub_frame_t   subframeP,
                 UE_list_t     *UE_list);
 
 uint8_t find_num_active_UEs_in_cbagroup(module_id_t module_idP, unsigned char group_id);
-uint8_t UE_is_to_be_scheduled(module_id_t module_idP,int CC_id,uint8_t UE_id);
+uint8_t UE_is_to_be_scheduled(module_id_t module_idP,int CC_id,uint8_t UE_id, frame_t frameP, sub_frame_t subframeP);
 /** \brief Round-robin scheduler for ULSCH traffic.
 @param Mod_id Instance ID for eNB
 @param subframe Subframe number on which to act
