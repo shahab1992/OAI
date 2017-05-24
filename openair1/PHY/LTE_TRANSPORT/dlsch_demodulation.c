@@ -5319,7 +5319,7 @@ unsigned short dlsch_extract_rbs_TM7(int **rxdataF,
               for (i=0; i<12; i++){
                 rxF_ext[i]=rxF[i];
 #ifdef DEBUG_DLSCH_DEMOD
-                printf("extract rb %d, re %d => (%d,%d)\n",symbol,rb,i,*(short *)&rxF[i],*(1+(short*)&rxF[i]));
+                printf("symbol %d extract rb %d, re %d => (%d,%d)\n",symbol,rb,i,*(short *)&rxF[i],*(1+(short*)&rxF[i]));
 #endif
               }
               dl_ch0_ext+=12;
@@ -5439,7 +5439,7 @@ unsigned short dlsch_extract_rbs_TM7(int **rxdataF,
               rxF_ext[j] = rxF[i];
                     dl_ch0_ext[j++] = dl_ch0[i];
 #ifdef DEBUG_DLSCH_DEMOD
-                    printf("extract rb %d, re %d, j %d => (%d,%d)\n",symbol,rb,i,j-1,*(short *)&dl_ch0[j],*(1+(short*)&dl_ch0[i]));
+                    printf("symbol %d extract rb %d, re %d, j %d => (%d,%d)\n",symbol,rb,i,j-1,*(short *)&dl_ch0[j],*(1+(short*)&dl_ch0[i]));
 #endif
                   }
                 } else{
