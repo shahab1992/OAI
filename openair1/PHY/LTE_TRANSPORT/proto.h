@@ -1245,6 +1245,12 @@ void dlsch_scale_channel(int32_t **dl_ch_estimates_ext,
                          uint8_t symbol_mod,
                          uint16_t nb_rb);
 
+void dlsch_scale_channel_avx2(int **dl_ch_estimates_ext,
+                         LTE_DL_FRAME_PARMS *frame_parms,
+                         LTE_UE_DLSCH_t **dlsch_ue,
+                         uint8_t symbol,
+                         unsigned short nb_rb);
+
 /** \brief This is the top-level entry point for DLSCH decoding in UE.  It should be replicated on several
     threads (on multi-core machines) corresponding to different HARQ processes. The routine first
     computes the segmentation information, followed by rate dematching and sub-block deinterleaving the of the

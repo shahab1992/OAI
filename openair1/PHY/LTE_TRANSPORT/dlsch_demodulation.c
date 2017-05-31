@@ -361,7 +361,7 @@ int rx_pdsch(PHY_VARS_UE *ue,
   aatx = frame_parms->nb_antenna_ports_eNB;
   aarx = frame_parms->nb_antennas_rx;
 
-  dlsch_scale_channel(pdsch_vars[eNB_id]->dl_ch_estimates_ext,
+  dlsch_scale_channel_avx2(pdsch_vars[eNB_id]->dl_ch_estimates_ext,
                       frame_parms,
                       dlsch,
                       symbol,
@@ -3301,7 +3301,86 @@ void dlsch_detection_mrc_TM34(LTE_DL_FRAME_PARMS *frame_parms,
   _m_empty();
 }
 
+void dlsch_scale_channel_avx2(int **dl_ch_estimates_ext,
+                         LTE_DL_FRAME_PARMS *frame_parms,
+                         LTE_UE_DLSCH_t **dlsch_ue,
+                         uint8_t symbol,
+                         unsigned short nb_rb)
+{
 
+#if defined(__x86_64__)||defined(__i386__)
+
+  short rb, ch_amp;
+  unsigned char aatx,aarx,pilots=0,symbol_mod;
+  __m256i *dl_ch256, ch_amp256;
+  __m128i *dl_ch128, ch_amp128;
+
+  symbol_mod = (symbol>=(7-frame_parms->Ncp)) ? symbol-(7-frame_parms->Ncp) : symbol;
+
+  if ((symbol_mod == 0) || (symbol_mod == (4-frame_parms->Ncp))) {
+    if (frame_parms->mode1_flag==1) // 10 out of 12 so don't reduce size
+      nb_rb=1+(5*nb_rb/6);
+    else
+      pilots=1;
+  }
+
+  // Determine scaling amplitude based the symbol
+
+  ch_amp = ((pilots) ? (dlsch_ue[0]->sqrt_rho_b) : (dlsch_ue[0]->sqrt_rho_a));
+
+  LOG_D(PHY,"Scaling PDSCH Chest in OFDM symbol %d by %d, pilots %d nb_rb %d NCP %d symbol %d\n",symbol_mod,ch_amp,pilots,nb_rb,frame_parms->Ncp,symbol);
+  // printf("Scaling PDSCH Chest in OFDM symbol %d by %d\n",symbol_mod,ch_amp);
+  ch_amp256 = _mm256_broadcastw_epi16(_mm_set1_epi16(ch_amp)); // Q3.13
+  ch_amp128 = _mm_set1_epi16(ch_amp);
+
+  for (aatx=0; aatx<frame_parms->nb_antenna_ports_eNB; aatx++) {
+    for (aarx=0; aarx<frame_parms->nb_antennas_rx; aarx++) {
+
+      dl_ch256   = (__m256i *)&dl_ch_estimates_ext[(aatx<<1)+aarx][symbol*frame_parms->N_RB_DL*12];
+      if (pilots) {
+          // 1PRB = 8REs ==> 1 word of 256bits
+          for (rb=0; rb<nb_rb; rb++)
+          {
+              dl_ch256[0] = _mm256_mulhi_epi16(dl_ch256[0],ch_amp256);
+              _mm256_slli_epi16(dl_ch256[0],3);
+              dl_ch256++;
+          }
+      }
+      else
+      {
+          // 2PRBs = 24REs ==> 3 word of 256bits
+          for (rb=0; rb<(nb_rb>>1); rb++)
+          {
+              dl_ch256[0] = _mm256_mulhi_epi16(dl_ch256[0],ch_amp256);
+              _mm256_slli_epi16(dl_ch256[0],3);
+              dl_ch256[1] = _mm256_mulhi_epi16(dl_ch256[1],ch_amp256);
+              _mm256_slli_epi16(dl_ch256[1],3);
+              dl_ch256[2] = _mm256_mulhi_epi16(dl_ch256[2],ch_amp256);
+              _mm256_slli_epi16(dl_ch256[2],3);
+
+              dl_ch256+=3;
+          }
+
+          if(nb_rb & 1)
+          {
+            dl_ch128=(__m128i *)dl_ch256;
+
+            dl_ch128[0] = _mm_mulhi_epi16(dl_ch128[0],ch_amp128);
+            dl_ch128[0] = _mm_slli_epi16(dl_ch128[0],3);
+            dl_ch128[1] = _mm_mulhi_epi16(dl_ch128[1],ch_amp128);
+            dl_ch128[1] = _mm_slli_epi16(dl_ch128[1],3);
+            dl_ch128[2] = _mm_mulhi_epi16(dl_ch128[2],ch_amp128);
+            dl_ch128[2] = _mm_slli_epi16(dl_ch128[2],3);
+
+          }
+      }
+    }
+  }
+
+#elif defined(__arm__)
+
+#endif
+}
 
 void dlsch_scale_channel(int **dl_ch_estimates_ext,
                          LTE_DL_FRAME_PARMS *frame_parms,
