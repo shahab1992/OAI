@@ -3342,7 +3342,7 @@ void dlsch_scale_channel_avx2(int **dl_ch_estimates_ext,
           for (rb=0; rb<nb_rb; rb++)
           {
               dl_ch256[0] = _mm256_mulhi_epi16(dl_ch256[0],ch_amp256);
-              _mm256_slli_epi16(dl_ch256[0],3);
+              dl_ch256[0] = _mm256_slli_epi16(dl_ch256[0],3);
               dl_ch256++;
           }
       }
@@ -3352,11 +3352,11 @@ void dlsch_scale_channel_avx2(int **dl_ch_estimates_ext,
           for (rb=0; rb<(nb_rb>>1); rb++)
           {
               dl_ch256[0] = _mm256_mulhi_epi16(dl_ch256[0],ch_amp256);
-              _mm256_slli_epi16(dl_ch256[0],3);
+              dl_ch256[0] = _mm256_slli_epi16(dl_ch256[0],3);
               dl_ch256[1] = _mm256_mulhi_epi16(dl_ch256[1],ch_amp256);
-              _mm256_slli_epi16(dl_ch256[1],3);
+              dl_ch256[1] = _mm256_slli_epi16(dl_ch256[1],3);
               dl_ch256[2] = _mm256_mulhi_epi16(dl_ch256[2],ch_amp256);
-              _mm256_slli_epi16(dl_ch256[2],3);
+              dl_ch256[2] = _mm256_slli_epi16(dl_ch256[2],3);
 
               dl_ch256+=3;
           }
