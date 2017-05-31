@@ -31,9 +31,11 @@
 */
 #include "PHY/defs.h"
 #include "PHY/extern.h"
+#include "SCHED/defs.h"
 #include "SCHED/extern.h"
 #include "LAYER2/MAC/defs.h"
 #include "SCHED/defs.h"
+#include "UTIL/LOG/vcd_signal_dumper.h"
 
 #include "assertions.h"
 
@@ -68,6 +70,7 @@ int generate_eNB_ulsch_params_from_rar(unsigned char *rar_pdu,
   uint8_t cqireq;
   uint16_t *RIV2nb_rb_LUT, *RIV2first_rb_LUT;
   uint16_t RIV_max;
+  uint16_t use_srs=0;
 
   LOG_D(PHY,"[eNB][RAPROC] generate_eNB_ulsch_params_from_rar: subframe %d (harq_pid %d)\n",subframe,harq_pid);
 
@@ -132,8 +135,6 @@ int generate_eNB_ulsch_params_from_rar(unsigned char *rar_pdu,
   ulsch->beta_offset_ri_times8                 = 10;
   ulsch->beta_offset_harqack_times8            = 16;
 
-
-  ulsch->harq_processes[harq_pid]->Nsymb_pusch                           = 12-(frame_parms->Ncp<<1);
   ulsch->rnti = (((uint16_t)rar[4])<<8)+rar[5];
 
   if (ulsch->harq_processes[harq_pid]->round == 0) {
@@ -149,6 +150,19 @@ int generate_eNB_ulsch_params_from_rar(unsigned char *rar_pdu,
     ulsch->harq_processes[harq_pid]->rvidx = 0;
     ulsch->harq_processes[harq_pid]->round++;
   }
+
+
+  ulsch->Msg3_active = 1;
+	      
+  get_Msg3_alloc(frame_parms,
+		 subframe,
+		 frame,
+		 &ulsch->Msg3_frame,
+		 &ulsch->Msg3_subframe);
+
+  use_srs = is_srs_occasion_common(frame_parms,ulsch->Msg3_frame,ulsch->Msg3_subframe);
+  ulsch->harq_processes[harq_pid]->Nsymb_pusch = 12-(frame_parms->Ncp<<1)-(use_srs==0?0:1);
+  ulsch->harq_processes[harq_pid]->srs_active                            = use_srs;
 
 #ifdef DEBUG_RAR
   msg("ulsch ra (eNB): harq_pid %d\n",harq_pid);
@@ -170,6 +184,8 @@ int generate_ue_ulsch_params_from_rar(PHY_VARS_UE *ue,
 				      UE_rxtx_proc_t *proc,
                                       unsigned char eNB_id )
 {
+
+  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_UE_TX_ULSCH_RAR,VCD_FUNCTION_IN);
 
   //  RA_HEADER_RAPID *rarh = (RA_HEADER_RAPID *)rar_pdu;
   uint8_t transmission_mode = ue->transmission_mode[eNB_id];
@@ -222,7 +238,7 @@ int generate_ue_ulsch_params_from_rar(PHY_VARS_UE *ue,
 
 
 
-  ulsch->harq_processes[harq_pid]->TPC                                   = (rar[3]>>3)&7;//rar->TPC;
+  ulsch->harq_processes[harq_pid]->TPC                                   = (rar[3]>>2)&7;//rar->TPC;
 
   rballoc = (((uint16_t)(rar[1]&7))<<7)|(rar[2]>>1);
   cqireq=rar[3]&1;
@@ -242,7 +258,7 @@ int generate_ue_ulsch_params_from_rar(PHY_VARS_UE *ue,
 
   if (ulsch->harq_processes[harq_pid]->nb_rb > 4) {
     msg("rar_tools.c: unlikely rb count for RAR grant : nb_rb > 3\n");
-    return(-1);
+	// return(-1);
   }
 
   //  ulsch->harq_processes[harq_pid]->Ndi                                   = 1;
@@ -315,6 +331,9 @@ int generate_ue_ulsch_params_from_rar(PHY_VARS_UE *ue,
   msg("ulsch ra (UE): TPC      %d\n",ulsch->harq_processes[harq_pid]->TPC);
   msg("ulsch ra (UE): O        %d\n",ulsch->O);
   msg("ulsch ra (UE): ORI      %d\n",ulsch->O_RI);
+
+  VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_UE_TX_ULSCH_RAR,VCD_FUNCTION_OUT);
+
   //#endif
   return(0);
 }

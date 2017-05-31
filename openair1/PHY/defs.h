@@ -32,6 +32,7 @@
 #ifndef __PHY_DEFS__H__
 #define __PHY_DEFS__H__
 
+#define _GNU_SOURCE 
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
@@ -153,10 +154,10 @@ enum transmission_access_mode {
 typedef enum  {
   eNodeB_3GPP=0,   // classical eNodeB function
   eNodeB_3GPP_BBU, // eNodeB with NGFI IF5
-  NGFI_RCC_IF4p5,  // NGFI_RCC (NGFI radio cloud center) 
+  NGFI_RCC_IF4p5,  // NGFI_RCC (NGFI radio cloud center)
   NGFI_RAU_IF4p5,
   NGFI_RRU_IF5,    // NGFI_RRU (NGFI remote radio-unit,IF5)
-  NGFI_RRU_IF4p5   // NGFI_RRU (NGFI remote radio-unit,IF4p5) 
+  NGFI_RRU_IF4p5   // NGFI_RRU (NGFI remote radio-unit,IF4p5)
 } eNB_func_t;
 
 typedef enum {
@@ -241,10 +242,16 @@ typedef struct eNB_proc_t_s {
   openair0_timestamp timestamp_tx;
   /// subframe to act upon for reception
   int subframe_rx;
+  /// symbol mask for IF4p5 reception per subframe
+  uint32_t symbol_mask[10];
   /// subframe to act upon for PRACH
   int subframe_prach;
   /// frame to act upon for reception
   int frame_rx;
+  /// frame to act upon for transmission
+  int frame_tx;
+  /// frame offset for secondary eNBs (to correct for frame asynchronism at startup)
+  int frame_offset;
   /// frame to act upon for PRACH
   int frame_prach;
   /// \internal This variable is protected by \ref mutex_fep.
@@ -259,6 +266,8 @@ typedef struct eNB_proc_t_s {
   /// \brief Instance count for rx processing thread.
   /// \internal This variable is protected by \ref mutex_prach.
   int instance_cnt_prach;
+  // instance count for over-the-air eNB synchronization
+  int instance_cnt_synch;
   /// \internal This variable is protected by \ref mutex_asynch_rxtx.
   int instance_cnt_asynch_rxtx;
   /// pthread structure for FH processing thread
@@ -283,6 +292,8 @@ typedef struct eNB_proc_t_s {
   pthread_attr_t attr_single;
   /// pthread attributes for prach processing thread
   pthread_attr_t attr_prach;
+  /// pthread attributes for over-the-air synch thread
+  pthread_attr_t attr_synch;
   /// pthread attributes for asynchronous RX thread
   pthread_attr_t attr_asynch_rxtx;
   /// scheduling parameters for parallel fep thread
@@ -297,6 +308,8 @@ typedef struct eNB_proc_t_s {
   struct sched_param sched_param_single;
   /// scheduling parameters for prach thread
   struct sched_param sched_param_prach;
+  /// scheduling parameters for over-the-air synchronization thread
+  struct sched_param sched_param_synch;
   /// scheduling parameters for asynch_rxtx thread
   struct sched_param sched_param_asynch_rxtx;
   /// pthread structure for parallel fep thread
@@ -307,6 +320,8 @@ typedef struct eNB_proc_t_s {
   pthread_t pthread_te;
   /// pthread structure for PRACH thread
   pthread_t pthread_prach;
+  /// pthread structure for eNB synch thread
+  pthread_t pthread_synch;
   /// condition variable for parallel fep thread
   pthread_cond_t cond_fep;
   /// condition variable for parallel turbo-decoder thread
@@ -317,6 +332,8 @@ typedef struct eNB_proc_t_s {
   pthread_cond_t cond_FH;
   /// condition variable for PRACH processing thread;
   pthread_cond_t cond_prach;
+  // condition variable for over-the-air eNB synchronization
+  pthread_cond_t cond_synch;
   /// condition variable for asynch RX/TX thread
   pthread_cond_t cond_asynch_rxtx;
   /// mutex for parallel fep thread
@@ -329,6 +346,8 @@ typedef struct eNB_proc_t_s {
   pthread_mutex_t mutex_FH;
   /// mutex for PRACH thread
   pthread_mutex_t mutex_prach;
+  // mutex for over-the-air eNB synchronization
+  pthread_mutex_t mutex_synch;
   /// mutex for asynch RX/TX thread
   pthread_mutex_t mutex_asynch_rxtx;
   /// parameters for turbo-decoding worker thread
@@ -346,6 +365,8 @@ typedef struct eNB_proc_t_s {
 
 /// Context data structure for RX/TX portion of subframe processing
 typedef struct {
+  /// index of the current UE RX/TX proc
+  int                  proc_id;
   /// Component Carrier index
   uint8_t              CC_id;
   /// timestamp transmitted to HW
@@ -371,6 +392,9 @@ typedef struct {
   pthread_mutex_t mutex_rxtx;
   /// scheduling parameters for RXn-TXnp4 thread
   struct sched_param sched_param_rxtx;
+  int sub_frame_start;
+  int sub_frame_step;
+  unsigned long long gotIQs;
 } UE_rxtx_proc_t;
 
 /// Context data structure for eNB subframe processing
@@ -410,11 +434,19 @@ typedef struct PHY_VARS_eNB_s {
   eNB_proc_t           proc;
   eNB_func_t           node_function;
   eNB_timing_t         node_timing;
+  eth_params_t         *eth_params;
   int                  single_thread_flag;
   openair0_rf_map      rf_map;
   int                  abstraction_flag;
-  void                 (*do_prach)(struct PHY_VARS_eNB_s *eNB);
-  void                 (*fep)(struct PHY_VARS_eNB_s *eNB);
+  openair0_timestamp   ts_offset;
+  // indicator for synchronization state of eNB
+  int                  in_synch;
+  // indicator for master/slave (RRU)
+  int                  is_slave;
+  // indicator for precoding function (eNB,3GPP_eNB_BBU)
+  int                  do_precoding;
+  void                 (*do_prach)(struct PHY_VARS_eNB_s *eNB,int frame,int subframe);
+  void                 (*fep)(struct PHY_VARS_eNB_s *eNB,eNB_rxtx_proc_t *proc);
   int                  (*td)(struct PHY_VARS_eNB_s *eNB,int UE_id,int harq_pid,int llr8_flag);
   int                  (*te)(struct PHY_VARS_eNB_s *,uint8_t *,uint8_t,LTE_eNB_DLSCH_t *,int,uint8_t,time_stats_t *,time_stats_t *,time_stats_t *);
   void                 (*proc_uespec_rx)(struct PHY_VARS_eNB_s *eNB,eNB_rxtx_proc_t *proc,const relaying_type_t r_type);
@@ -431,9 +463,6 @@ typedef struct PHY_VARS_eNB_s {
   LTE_eNB_COMMON       common_vars;
   LTE_eNB_SRS          srs_vars[NUMBER_OF_UE_MAX];
   LTE_eNB_PBCH         pbch;
-  /// \brief ?.
-  /// - first index: UE [0..NUMBER_OF_UE_MAX[ (hard coded)
-  /// - second index: UE [0..NUMBER_OF_UE_MAX[
   LTE_eNB_PUSCH       *pusch_vars[NUMBER_OF_UE_MAX];
   LTE_eNB_PRACH        prach_vars;
   LTE_eNB_DLSCH_t     *dlsch[NUMBER_OF_UE_MAX][2];   // Nusers times two spatial streams
@@ -445,6 +474,9 @@ typedef struct PHY_VARS_eNB_s {
 
   /// cell-specific reference symbols
   uint32_t         lte_gold_table[20][2][14];
+
+  /// UE-specific reference symbols (p=5), TM 7
+  uint32_t         lte_gold_uespec_port5_table[NUMBER_OF_UE_MAX][20][38];
 
   /// UE-specific reference symbols (p=7...14), TM 8/9/10
   uint32_t         lte_gold_uespec_table[2][20][2][21];
@@ -564,7 +596,7 @@ typedef struct PHY_VARS_eNB_s {
   uint32_t total_transmitted_bits;
   uint32_t total_system_throughput;
 
-  int              hw_timing_advance;
+  int hw_timing_advance;
 
   time_stats_t phy_proc;
   time_stats_t phy_proc_tx;
@@ -601,7 +633,7 @@ typedef struct PHY_VARS_eNB_s {
 #ifdef LOCALIZATION
   /// time state for localization
   time_stats_t localization_stats;
-#endif 
+#endif
 
   int32_t pucch1_stats_cnt[NUMBER_OF_UE_MAX][10];
   int32_t pucch1_stats[NUMBER_OF_UE_MAX][10*1024];
@@ -613,9 +645,9 @@ typedef struct PHY_VARS_eNB_s {
   int32_t pusch_stats_mcs[NUMBER_OF_UE_MAX][10240];
   int32_t pusch_stats_bsr[NUMBER_OF_UE_MAX][10240];
   int32_t pusch_stats_BO[NUMBER_OF_UE_MAX][10240];
-  
+
   /// RF and Interface devices per CC
-  openair0_device rfdevice; 
+  openair0_device rfdevice;
   openair0_device ifdevice;
   /// Pointer for ifdevice buffer struct
   if_buffer_t ifbuffer;
@@ -656,7 +688,7 @@ typedef struct {
   /// \brief Total gains with bypassed RF gain stage (ExpressMIMO2/Lime)
   uint32_t rx_gain_byp[4];
   /// \brief Current transmit power
-  int8_t tx_power_dBm[10];
+  int16_t tx_power_dBm[10];
   /// \brief Total number of REs in current transmission
   int tx_total_RE[10];
   /// \brief Maximum transmit power
@@ -674,16 +706,16 @@ typedef struct {
   LTE_DL_FRAME_PARMS  frame_parms_before_ho;
   LTE_UE_COMMON    common_vars;
 
-  LTE_UE_PDSCH     *pdsch_vars[NUMBER_OF_CONNECTED_eNB_MAX+1];
+  LTE_UE_PDSCH     *pdsch_vars[2][NUMBER_OF_CONNECTED_eNB_MAX+1]; // two RxTx Threads
   LTE_UE_PDSCH_FLP *pdsch_vars_flp[NUMBER_OF_CONNECTED_eNB_MAX+1];
   LTE_UE_PDSCH     *pdsch_vars_SI[NUMBER_OF_CONNECTED_eNB_MAX+1];
   LTE_UE_PDSCH     *pdsch_vars_ra[NUMBER_OF_CONNECTED_eNB_MAX+1];
   LTE_UE_PDSCH     *pdsch_vars_p[NUMBER_OF_CONNECTED_eNB_MAX+1];
   LTE_UE_PDSCH     *pdsch_vars_MCH[NUMBER_OF_CONNECTED_eNB_MAX];
   LTE_UE_PBCH      *pbch_vars[NUMBER_OF_CONNECTED_eNB_MAX];
-  LTE_UE_PDCCH     *pdcch_vars[NUMBER_OF_CONNECTED_eNB_MAX];
+  LTE_UE_PDCCH     *pdcch_vars[2][NUMBER_OF_CONNECTED_eNB_MAX];
   LTE_UE_PRACH     *prach_vars[NUMBER_OF_CONNECTED_eNB_MAX];
-  LTE_UE_DLSCH_t   *dlsch[NUMBER_OF_CONNECTED_eNB_MAX][2];
+  LTE_UE_DLSCH_t   *dlsch[2][NUMBER_OF_CONNECTED_eNB_MAX][2]; // two RxTx Threads
   LTE_UE_ULSCH_t   *ulsch[NUMBER_OF_CONNECTED_eNB_MAX];
   LTE_UE_DLSCH_t   *dlsch_SI[NUMBER_OF_CONNECTED_eNB_MAX];
   LTE_UE_DLSCH_t   *dlsch_ra[NUMBER_OF_CONNECTED_eNB_MAX];
@@ -706,8 +738,11 @@ typedef struct {
   /// cell-specific reference symbols
   uint32_t lte_gold_table[7][20][2][14];
 
+  /// UE-specific reference symbols (p=5), TM 7
+  uint32_t lte_gold_uespec_port5_table[20][38];
+
   /// ue-specific reference symbols
-  uint32_t         lte_gold_uespec_table[2][20][2][21];
+  uint32_t lte_gold_uespec_table[2][20][2][21];
 
   /// mbsfn reference symbols
   uint32_t lte_gold_mbsfn_table[10][3][42];
@@ -767,7 +802,10 @@ typedef struct {
   uint8_t               prach_cnt;
   uint8_t               prach_PreambleIndex;
   //  uint8_t               prach_timer;
+  uint8_t               decode_SIB;
+  uint8_t               decode_MIB;
   int              rx_offset; /// Timing offset
+  int              rx_offset_diff; /// Timing adjustment for ofdm symbol0 on HW USRP
   int              timing_advance; ///timing advance signalled from eNB
   int              hw_timing_advance;
   int              N_TA_offset; ///timing offset used in TDD
@@ -836,7 +874,7 @@ typedef struct {
 
   time_stats_t phy_proc;
   time_stats_t phy_proc_tx;
-  time_stats_t phy_proc_rx;
+  time_stats_t phy_proc_rx[2];
 
   uint32_t use_ia_receiver;
 
@@ -849,12 +887,16 @@ typedef struct {
   time_stats_t ulsch_interleaving_stats;
   time_stats_t ulsch_multiplexing_stats;
 
+  time_stats_t generic_stat;
+  time_stats_t pdsch_procedures_stat;
+  time_stats_t dlsch_procedures_stat;
+
   time_stats_t ofdm_demod_stats;
   time_stats_t dlsch_rx_pdcch_stats;
   time_stats_t rx_dft_stats;
   time_stats_t dlsch_channel_estimation_stats;
   time_stats_t dlsch_freq_offset_estimation_stats;
-  time_stats_t dlsch_decoding_stats;
+  time_stats_t dlsch_decoding_stats[2];
   time_stats_t dlsch_demodulation_stats;
   time_stats_t dlsch_rate_unmatching_stats;
   time_stats_t dlsch_turbo_decoding_stats;
@@ -874,7 +916,18 @@ typedef struct {
   time_stats_t tx_prach;
 
   /// RF and Interface devices per CC
-  openair0_device rfdevice; 
+  openair0_device rfdevice;
+  time_stats_t dlsch_encoding_SIC_stats;
+  time_stats_t dlsch_scrambling_SIC_stats;
+  time_stats_t dlsch_modulation_SIC_stats;
+  time_stats_t dlsch_llr_stripping_unit_SIC_stats;
+  time_stats_t dlsch_unscrambling_SIC_stats;
+
+#if ENABLE_RAL
+  hash_table_t    *ral_thresholds_timed;
+  SLIST_HEAD(ral_thresholds_gen_poll_s, ral_threshold_phy_t) ral_thresholds_gen_polled[RAL_LINK_PARAM_GEN_MAX];
+  SLIST_HEAD(ral_thresholds_lte_poll_s, ral_threshold_phy_t) ral_thresholds_lte_polled[RAL_LINK_PARAM_LTE_MAX];
+#endif
 
 } PHY_VARS_UE;
 
@@ -887,7 +940,7 @@ static inline int wait_on_condition(pthread_mutex_t *mutex,pthread_cond_t *cond,
     exit_fun("nothing to add");
     return(-1);
   }
-  
+
   while (*instance_cnt < 0) {
     // most of the time the thread is waiting here
     // proc->instance_cnt_rxtx is -1
@@ -909,7 +962,7 @@ static inline int wait_on_busy_condition(pthread_mutex_t *mutex,pthread_cond_t *
     exit_fun("nothing to add");
     return(-1);
   }
-  
+
   while (*instance_cnt == 0) {
     // most of the time the thread will skip this
     // waits only if proc->instance_cnt_rxtx is 0
@@ -931,9 +984,9 @@ static inline int release_thread(pthread_mutex_t *mutex,int *instance_cnt,char *
     exit_fun("nothing to add");
     return(-1);
   }
-  
+
   *instance_cnt=*instance_cnt-1;
-  
+
   if (pthread_mutex_unlock(mutex) != 0) {
     LOG_E( PHY, "[SCHED][eNB] error unlocking mutex for %s\n",name);
     exit_fun("nothing to add");

@@ -55,7 +55,7 @@ rlc_am_reassembly (
         lengthP);
 
   if (rlc_pP->output_sdu_in_construction == NULL) {
-    rlc_pP->output_sdu_in_construction = get_free_mem_block (RLC_SDU_MAX_SIZE);
+    rlc_pP->output_sdu_in_construction = get_free_mem_block (RLC_SDU_MAX_SIZE, __func__);
     rlc_pP->output_sdu_size_to_write = 0;
     assert(rlc_pP->output_sdu_in_construction != NULL);
   }
@@ -91,7 +91,7 @@ rlc_am_send_sdu (
   const protocol_ctxt_t* const ctxt_pP,
   rlc_am_entity_t * const      rlc_pP)
 {
-#   if TRACE_RLC_UM_PDU
+#   if TRACE_RLC_AM_PDU
   char                 message_string[7000];
   size_t               message_string_size = 0;
 #if ENABLE_ITTI
@@ -197,7 +197,7 @@ rlc_am_send_sdu (
       LOG_E(RLC, PROTOCOL_RLC_AM_CTXT_FMT"[SEND_SDU] ERROR SIZE <= 0 ... DO NOTHING, SET SDU SIZE TO 0\n",
             PROTOCOL_RLC_AM_CTXT_ARGS(ctxt_pP,rlc_pP));
       //msg("[RLC_AM][MOD %d] Freeing mem_block ...\n", rlc_pP->module_id);
-      //free_mem_block (rlc_pP->output_sdu_in_construction);
+      //free_mem_block (rlc_pP->output_sdu_in_construction, __func__);
       AssertFatal(3==4,
                   PROTOCOL_RLC_AM_CTXT_FMT" SEND SDU REQUESTED %d bytes",
                   PROTOCOL_RLC_AM_CTXT_ARGS(ctxt_pP,rlc_pP),
@@ -212,7 +212,8 @@ void
 rlc_am_reassemble_pdu(
   const protocol_ctxt_t* const ctxt_pP,
   rlc_am_entity_t * const      rlc_pP,
-  mem_block_t * const          tb_pP)
+  mem_block_t * const          tb_pP,
+  boolean_t free_rlc_pdu)
 {
   int i,j;
 
@@ -397,5 +398,7 @@ rlc_am_reassemble_pdu(
     }
   }
 
-  free_mem_block(tb_pP);
+  if (free_rlc_pdu) {
+	  free_mem_block(tb_pP, __func__);
+  }
 }

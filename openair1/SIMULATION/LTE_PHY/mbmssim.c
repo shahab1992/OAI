@@ -50,6 +50,7 @@
 PHY_VARS_eNB *eNB;
 PHY_VARS_UE *UE;
 
+double cpuf;
 
 DCI1E_5MHz_2A_M10PRB_TDD_t  DLSCH_alloc_pdu2_1E[2];
 #define UL_RB_ALLOC 0x1ff;
@@ -117,6 +118,8 @@ int main(int argc, char **argv)
   fl_show_form (form_ue->lte_phy_scope_ue, FL_PLACE_HOTSPOT, FL_FULLBORDER, title);
 #endif
   */
+
+  cpuf = get_cpu_freq_GHz();
 
   logInit();
   number_of_cards = 1;
@@ -238,6 +241,7 @@ int main(int argc, char **argv)
     n_tx=2;
 
   lte_param_init(n_tx,
+                 n_tx,
 		 n_rx,
 		 transmission_mode,
 		 extended_prefix_flag,
@@ -301,7 +305,7 @@ int main(int argc, char **argv)
                                 0);
 
   // Create transport channel structures for 2 transport blocks (MIMO)
-  eNB->dlsch_MCH = new_eNB_dlsch(1,8,Nsoft,N_RB_DL,0);
+  eNB->dlsch_MCH = new_eNB_dlsch(1,8,Nsoft,N_RB_DL,0,&eNB->frame_parms);
 
   if (!eNB->dlsch_MCH) {
     printf("Can't get eNB dlsch structures\n");
@@ -446,8 +450,8 @@ int main(int argc, char **argv)
 	    for(aa=0; aa<frame_parms->nb_antennas_tx; aa++) {
 	      for (aarx=0; aarx<frame_parms->nb_antennas_rx; aarx++) {
 		for (i=0; i<frame_parms->N_RB_DL*12; i++) {
-		  ((int16_t *) UE->common_vars.dl_ch_estimates[k][(aa<<1)+aarx])[2*i+(l*frame_parms->ofdm_symbol_size+LTE_CE_FILTER_LENGTH)*2]=(int16_t)(eNB2UE->chF[aarx+(aa*frame_parms->nb_antennas_rx)][i].x*AMP);
-		  ((int16_t *) UE->common_vars.dl_ch_estimates[k][(aa<<1)+aarx])[2*i+1+(l*frame_parms->ofdm_symbol_size+LTE_CE_FILTER_LENGTH)*2]=(int16_t)(eNB2UE->chF[aarx+(aa*frame_parms->nb_antennas_rx)][i].y*AMP);
+		  ((int16_t *) UE->common_vars.common_vars_rx_data_per_thread[subframe&0x1].dl_ch_estimates[k][(aa<<1)+aarx])[2*i+(l*frame_parms->ofdm_symbol_size+LTE_CE_FILTER_LENGTH)*2]=(int16_t)(eNB2UE->chF[aarx+(aa*frame_parms->nb_antennas_rx)][i].x*AMP);
+		  ((int16_t *) UE->common_vars.common_vars_rx_data_per_thread[subframe&0x1].dl_ch_estimates[k][(aa<<1)+aarx])[2*i+1+(l*frame_parms->ofdm_symbol_size+LTE_CE_FILTER_LENGTH)*2]=(int16_t)(eNB2UE->chF[aarx+(aa*frame_parms->nb_antennas_rx)][i].y*AMP);
 		}
 	      }
 	    }
@@ -475,11 +479,11 @@ int main(int argc, char **argv)
       }
 
       UE->dlsch_MCH[0]->harq_processes[0]->G = get_G(&UE->frame_parms,
-          UE->dlsch_MCH[0]->harq_processes[0]->nb_rb,
-          UE->dlsch_MCH[0]->harq_processes[0]->rb_alloc_even,
-          get_Qm(UE->dlsch_MCH[0]->harq_processes[0]->mcs),
-          1,2,
-          UE->proc.proc_rxtx[0].frame_tx,subframe);
+						     UE->dlsch_MCH[0]->harq_processes[0]->nb_rb,
+						     UE->dlsch_MCH[0]->harq_processes[0]->rb_alloc_even,
+						     get_Qm(UE->dlsch_MCH[0]->harq_processes[0]->mcs),
+						     1,2,
+						     UE->proc.proc_rxtx[0].frame_tx,subframe,0);
       UE->dlsch_MCH[0]->harq_processes[0]->Qm = get_Qm(UE->dlsch_MCH[0]->harq_processes[0]->mcs);
 
       dlsch_unscrambling(&UE->frame_parms,1,UE->dlsch_MCH[0],
@@ -491,6 +495,7 @@ int main(int argc, char **argv)
                            &UE->frame_parms,
                            UE->dlsch_MCH[0],
                            UE->dlsch_MCH[0]->harq_processes[0],
+                           trials,
                            subframe,
                            0,0,0);
 

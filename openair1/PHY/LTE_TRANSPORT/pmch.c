@@ -74,7 +74,7 @@ void dump_mch(PHY_VARS_UE *ue,uint8_t eNB_id,uint16_t coded_bits_per_codeword,in
   write_output(fname,vname,ue->pdsch_vars_MCH[eNB_id]->dl_ch_magb0[0],12*N_RB_DL*nsymb_pmch,1,1);
 
   write_output("mch00_ch0.m","pmch00_ch0",
-               &(ue->common_vars.dl_ch_estimates[eNB_id][0][0]),
+               &(ue->common_vars.common_vars_rx_data_per_thread[subframe&0x1].dl_ch_estimates[eNB_id][0][0]),
                ue->frame_parms.ofdm_symbol_size*12,1,1);
 
   write_output("rxsig_mch.m","rxs_mch",
@@ -305,7 +305,7 @@ void generate_mch(PHY_VARS_eNB *eNB,eNB_rxtx_proc_t *proc,uint8_t *a)
               eNB->frame_parms.N_RB_DL,
               eNB->dlsch_MCH->harq_processes[0]->rb_alloc,
               get_Qm(eNB->dlsch_MCH->harq_processes[0]->mcs),1,
-              2,proc->frame_tx,subframe);
+              2,proc->frame_tx,subframe,0);
 
     generate_mbsfn_pilot(eNB,proc,
                          eNB->common_vars.txdataF[0],
@@ -969,8 +969,8 @@ int rx_pmch(PHY_VARS_UE *ue,
 
   //printf("*********************mch: symbol %d\n",symbol);
 
-  mch_extract_rbs(common_vars->rxdataF,
-                  common_vars->dl_ch_estimates[eNB_id],
+  mch_extract_rbs(common_vars->common_vars_rx_data_per_thread[subframe&0x1].rxdataF,
+                  common_vars->common_vars_rx_data_per_thread[subframe&0x1].dl_ch_estimates[eNB_id],
                   pdsch_vars[eNB_id]->rxdataF_ext,
                   pdsch_vars[eNB_id]->dl_ch_estimates_ext,
                   symbol,

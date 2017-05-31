@@ -31,13 +31,14 @@
  */
 
 #include "PHY/defs.h"
+#include "SCHED/defs.h"
 #include "PHY/LTE_TRANSPORT/proto.h"
 #include "PHY/extern.h"
 
-int8_t pucch_power_cntl(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t subframe,uint8_t eNB_id,PUCCH_FMT_t pucch_fmt)
+int16_t pucch_power_cntl(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t subframe,uint8_t eNB_id,PUCCH_FMT_t pucch_fmt)
 {
 
-  int8_t Po_PUCCH;
+  int16_t Po_PUCCH;
   //uint8_t harq_pid;
 
   // P_pucch =  P_opucch+ PL + h(nCQI,nHARQ) + delta_pucchF(pucch_fmt) + g(i))
@@ -51,7 +52,7 @@ int8_t pucch_power_cntl(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t subframe,ui
 
   Po_PUCCH = get_PL(ue->Mod_id,ue->CC_id,eNB_id)+
     ue->frame_parms.ul_power_control_config_common.p0_NominalPUCCH+
-    ue->dlsch[eNB_id][0]->g_pucch;
+    ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->g_pucch;
 
   switch (pucch_fmt) {
   case pucch_format1:
@@ -85,24 +86,28 @@ int8_t pucch_power_cntl(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t subframe,ui
     }
 
     break;
+
+  case pucch_format3:
+    fprintf(stderr, "PUCCH format 3 not handled\n");
+    abort();
   }
 
   if (pucch_fmt!=pucch_format1) {
-    LOG_I(PHY,"[UE  %d][PDSCH %x] frame %d, subframe %d: Po_PUCCH %d dBm : Po_NOMINAL_PUCCH %d dBm, PL %d dB, g_pucch %d dB\n",
+    LOG_D(PHY,"[UE  %d][PDSCH %x] AbsSubframe %d.%d: Po_PUCCH %d dBm : Po_NOMINAL_PUCCH %d dBm, PL %d dB, g_pucch %d dB\n",
           ue->Mod_id,
-          ue->dlsch[eNB_id][0]->rnti,proc->frame_tx,subframe,
+          ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->rnti,proc->frame_tx%1024,subframe,
           Po_PUCCH,
           ue->frame_parms.ul_power_control_config_common.p0_NominalPUCCH,
           get_PL(ue->Mod_id,ue->CC_id,eNB_id),
-          ue->dlsch[eNB_id][0]->g_pucch);
+          ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->g_pucch);
   } else {
-    LOG_I(PHY,"[UE  %d][SR %x] frame %d, subframe %d: Po_PUCCH %d dBm : Po_NOMINAL_PUCCH %d dBm, PL %d dB g_pucch %d dB\n",
+    LOG_D(PHY,"[UE  %d][SR %x] AbsSubframe %d.%d: Po_PUCCH %d dBm : Po_NOMINAL_PUCCH %d dBm, PL %d dB g_pucch %d dB\n",
           ue->Mod_id,
-          ue->dlsch[eNB_id][0]->rnti,proc->frame_tx,subframe,
+          ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->rnti,proc->frame_tx%1024,subframe,
           Po_PUCCH,
           ue->frame_parms.ul_power_control_config_common.p0_NominalPUCCH,
           get_PL(ue->Mod_id,ue->CC_id,eNB_id),
-          ue->dlsch[eNB_id][0]->g_pucch);
+          ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->g_pucch);
   }
 
   return(Po_PUCCH);

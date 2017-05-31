@@ -62,24 +62,27 @@
 #endif //PHY_EMUL
 
 #include "SCHED/defs.h"
-
+/* TODO: this abstraction_flag here is very hackish - find a proper solution */
+extern uint8_t abstraction_flag;
 void dl_phy_sync_success(module_id_t   module_idP,
                          frame_t       frameP,
                          unsigned char eNB_index,
                          uint8_t            first_sync)   //init as MR
 {
   LOG_D(MAC,"[UE %d] Frame %d: PHY Sync to eNB_index %d successful \n", module_idP, frameP, eNB_index);
-#if ! defined(ENABLE_USE_MME)
+#if defined(ENABLE_USE_MME)
+  int mme_enabled=1;
+#else
+  int mme_enabled=0;
+#endif
 
-  if (first_sync==1) {
+  if (first_sync==1 && !(mme_enabled==1 && abstraction_flag==0)) {
     layer2_init_UE(module_idP);
     openair_rrc_ue_init(module_idP,eNB_index);
   } else
-#endif
   {
     rrc_in_sync_ind(module_idP,frameP,eNB_index);
   }
-
 }
 
 void mrbch_phy_sync_failure(module_id_t module_idP, frame_t frameP, uint8_t free_eNB_index) //init as CH
@@ -127,11 +130,11 @@ int mac_top_init(int eMBMS_active, char *uecap_xer, uint8_t cba_group_active, ui
     UE_mac_inst = (UE_MAC_INST*)malloc16(NB_UE_INST*sizeof(UE_MAC_INST));
 
     if (UE_mac_inst == NULL) {
-      LOG_C(MAC,"[MAIN] Can't ALLOCATE %d Bytes for %d UE_MAC_INST with size %d \n",NB_UE_INST*sizeof(UE_MAC_INST),NB_UE_INST,sizeof(UE_MAC_INST));
+      LOG_C(MAC,"[MAIN] Can't ALLOCATE %zu Bytes for %d UE_MAC_INST with size %zu \n",NB_UE_INST*sizeof(UE_MAC_INST),NB_UE_INST,sizeof(UE_MAC_INST));
       mac_xface->macphy_exit("[MAC][MAIN] not enough memory for UEs \n");
     }
 
-    LOG_D(MAC,"[MAIN] ALLOCATE %d Bytes for %d UE_MAC_INST @ %p\n",NB_UE_INST*sizeof(UE_MAC_INST),NB_UE_INST,UE_mac_inst);
+    LOG_D(MAC,"[MAIN] ALLOCATE %zu Bytes for %d UE_MAC_INST @ %p\n",NB_UE_INST*sizeof(UE_MAC_INST),NB_UE_INST,UE_mac_inst);
 
     bzero(UE_mac_inst,NB_UE_INST*sizeof(UE_MAC_INST));
 
@@ -148,10 +151,10 @@ int mac_top_init(int eMBMS_active, char *uecap_xer, uint8_t cba_group_active, ui
     eNB_mac_inst = (eNB_MAC_INST*)malloc16(NB_eNB_INST*sizeof(eNB_MAC_INST));
 
     if (eNB_mac_inst == NULL) {
-      LOG_D(MAC,"[MAIN] can't ALLOCATE %d Bytes for %d eNB_MAC_INST with size %d \n",NB_eNB_INST*sizeof(eNB_MAC_INST*),NB_eNB_INST,sizeof(eNB_MAC_INST));
+      LOG_D(MAC,"[MAIN] can't ALLOCATE %zu Bytes for %d eNB_MAC_INST with size %zu \n",NB_eNB_INST*sizeof(eNB_MAC_INST*),NB_eNB_INST,sizeof(eNB_MAC_INST));
       mac_xface->macphy_exit("[MAC][MAIN] not enough memory for eNB \n");
     } else {
-      LOG_D(MAC,"[MAIN] ALLOCATE %d Bytes for %d eNB_MAC_INST @ %p\n",sizeof(eNB_MAC_INST),NB_eNB_INST,eNB_mac_inst);
+      LOG_D(MAC,"[MAIN] ALLOCATE %zu Bytes for %d eNB_MAC_INST @ %p\n",sizeof(eNB_MAC_INST),NB_eNB_INST,eNB_mac_inst);
       bzero(eNB_mac_inst,NB_eNB_INST*sizeof(eNB_MAC_INST));
     }
   } else {
@@ -178,7 +181,7 @@ int mac_top_init(int eMBMS_active, char *uecap_xer, uint8_t cba_group_active, ui
 #ifdef PHY_EMUL
     Mac_rlc_xface->Is_cluster_head[Mod_id]=2;//0: MR, 1: CH, 2: not CH neither MR
 #endif
-    /*#ifdef Rel10
+    /*#if defined(Rel10) || defined(Rel14)
     int n;
     for (n=0;n<4096;n++)
     eNB_mac_inst[Mod_id].MCH_pdu.payload[n] = taus();
@@ -476,7 +479,7 @@ int l2_init(LTE_DL_FRAME_PARMS *frame_parms,int eMBMS_active, char *uecap_xer,ui
   mac_xface->ue_decode_si              = ue_decode_si;
   mac_xface->ue_decode_p               = ue_decode_p;
   mac_xface->ue_send_sdu               = ue_send_sdu;
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
   mac_xface->ue_send_mch_sdu           = ue_send_mch_sdu;
   mac_xface->ue_query_mch              = ue_query_mch;
 #endif
@@ -514,7 +517,7 @@ int l2_init(LTE_DL_FRAME_PARMS *frame_parms,int eMBMS_active, char *uecap_xer,ui
   mac_xface->phy_config_sib2_eNB        = phy_config_sib2_eNB;
   mac_xface->phy_config_sib2_ue         = phy_config_sib2_ue;
   mac_xface->phy_config_afterHO_ue      = phy_config_afterHO_ue;
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
   mac_xface->phy_config_sib13_eNB        = phy_config_sib13_eNB;
   mac_xface->phy_config_sib13_ue         = phy_config_sib13_ue;
 #endif
@@ -527,6 +530,7 @@ int l2_init(LTE_DL_FRAME_PARMS *frame_parms,int eMBMS_active, char *uecap_xer,ui
 
   mac_xface->phy_config_dedicated_eNB    = phy_config_dedicated_eNB;
   mac_xface->phy_config_dedicated_ue     = phy_config_dedicated_ue;
+  mac_xface->phy_config_harq_ue          = phy_config_harq_ue;
 
   mac_xface->get_lte_frame_parms        = get_lte_frame_parms;
   mac_xface->get_mu_mimo_mode           = get_mu_mimo_mode;
@@ -538,7 +542,7 @@ int l2_init(LTE_DL_FRAME_PARMS *frame_parms,int eMBMS_active, char *uecap_xer,ui
   mac_xface->get_prach_prb_offset       = get_prach_prb_offset;
   mac_xface->is_prach_subframe          = is_prach_subframe;
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
   mac_xface->get_mch_sdu                 = get_mch_sdu;
   mac_xface->phy_config_dedicated_scell_eNB= phy_config_dedicated_scell_eNB;
   mac_xface->phy_config_dedicated_scell_ue= phy_config_dedicated_scell_ue;

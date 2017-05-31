@@ -120,27 +120,34 @@ int compareints (const void * a, const void * b)
   return ( *(unsigned short*)a - *(unsigned short*)b );
 }
 
-
-int32_t generate_srs_tx(PHY_VARS_UE *ue,
-                        uint8_t eNB_id,
-                        int16_t amp,
-                        uint32_t subframe)
+#define DEBUG_SRS
+int32_t generate_srs(LTE_DL_FRAME_PARMS *frame_parms,
+		     SOUNDINGRS_UL_CONFIG_DEDICATED *soundingrs_ul_config_dedicated,
+		     int32_t *txptr,
+		     int16_t amp,
+		     uint32_t subframe)
 {
 
-  LTE_DL_FRAME_PARMS *frame_parms=&ue->frame_parms;
-  SOUNDINGRS_UL_CONFIG_DEDICATED *soundingrs_ul_config_dedicated=&ue->soundingrs_ul_config_dedicated[eNB_id];
-  int32_t *txdataF = ue->common_vars.txdataF[0];
-  uint16_t msrsb=0,Nb=0,nb,b,msrs0=0,k,Msc_RS,Msc_RS_idx,carrier_pos,symbol_offset;
+  uint16_t msrsb=0,Nb=0,nb,b,msrs0=0,k,Msc_RS,Msc_RS_idx,carrier_pos;
   uint16_t *Msc_idx_ptr;
   int32_t k0;
-  uint32_t T_SFC;
-  uint32_t subframe_offset;
+  //uint32_t subframe_offset;
   uint8_t Bsrs  = soundingrs_ul_config_dedicated->srs_Bandwidth;
   uint8_t Csrs  = frame_parms->soundingrs_ul_config_common.srs_BandwidthConfig;
   uint8_t Ssrs  = frame_parms->soundingrs_ul_config_common.srs_SubframeConfig;
   uint8_t n_RRC = soundingrs_ul_config_dedicated->freqDomainPosition;
   uint8_t kTC   = soundingrs_ul_config_dedicated->transmissionComb;
 
+  // u is the PUCCH sequence-group number defined in Section 5.5.1.3
+  // ν is the base sequence number defined in Section 5.5.1.4
+  uint32_t u=frame_parms->pucch_config_common.grouphop[1+(subframe<<1)];;
+  uint32_t v=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.seqhop[1+(subframe<<1)];
+
+  LOG_D(PHY,"SRS root sequence: u %d, v %d\n",u,v);
+  LOG_D(PHY,"CommonSrsConfig:    Csrs %d, Ssrs %d, AnSrsSimultan %d \n",Csrs,Ssrs,frame_parms->soundingrs_ul_config_common.ackNackSRS_SimultaneousTransmission);
+  LOG_D(PHY,"DedicatedSrsConfig: Bsrs %d, bhop %d, nRRC %d, Isrs %d, kTC %d, n_SRS %d\n",Bsrs,soundingrs_ul_config_dedicated->srs_HoppingBandwidth,n_RRC
+                                                                                       ,soundingrs_ul_config_dedicated->srs_ConfigIndex,kTC
+                                                                                       ,soundingrs_ul_config_dedicated->cyclicShift);
 
   if (frame_parms->N_RB_UL < 41) {
     msrs0 = msrsb_6_40[Csrs][0];
@@ -161,7 +168,7 @@ int32_t generate_srs_tx(PHY_VARS_UE *ue,
   }
 
   Msc_RS = msrsb * 6;
-  k0 = (((frame_parms->N_RB_UL>>1)-(msrs0>>1))*12) + kTC;
+  k0 = ( ( (int16_t)(frame_parms->N_RB_UL>>1) - (int16_t)(msrs0>>1) ) * 12 ) + kTC;
   nb  = (4*n_RRC/msrsb)%Nb;
 
   for (b=0; b<=Bsrs; b++) {
@@ -169,7 +176,7 @@ int32_t generate_srs_tx(PHY_VARS_UE *ue,
   }
 
   if (k0<0) {
-    msg("generate_srs: invalid parameter set msrs0=%d, msrsb=%d, Nb=%d => nb=%d, k0=%d\n",msrs0,msrsb,Nb,nb,k0);
+    LOG_E(PHY,"generate_srs: invalid parameter set msrs0=%d, msrsb=%d, Nb=%d => nb=%d, k0=%d\n",msrs0,msrsb,Nb,nb,k0);
     return(-1);
   }
 
@@ -179,7 +186,7 @@ int32_t generate_srs_tx(PHY_VARS_UE *ue,
   if (Msc_idx_ptr)
     Msc_RS_idx = Msc_idx_ptr - dftsizes;
   else {
-    msg("generate_srs: index for Msc_RS=%d not found\n",Msc_RS);
+    LOG_E(PHY,"generate_srs: index for Msc_RS=%d not found\n",Msc_RS);
     return(-1);
   }
 
@@ -190,62 +197,32 @@ int32_t generate_srs_tx(PHY_VARS_UE *ue,
   else if (Msc_RS==144)
     Msc_RS_idx = 9;
   else {
-    msg("generate_srs: index for Msc_RS=%d not implemented\n",Msc_RS);
+    LOG_E(PHY,"generate_srs: index for Msc_RS=%d not implemented\n",Msc_RS);
     return(-1);
   }
 
 #endif
 
 #ifdef DEBUG_SRS
-  msg("generate_srs_tx: Msc_RS = %d, Msc_RS_idx = %d\n",Msc_RS, Msc_RS_idx);
+  LOG_D(PHY,"generate_srs_tx: Msc_RS = %d, Msc_RS_idx = %d, k0 = %d\n",Msc_RS, Msc_RS_idx,k0);
 #endif
 
-  T_SFC = (Ssrs<=7 ? 5 : 10);
-
-  if ((1<<(subframe%T_SFC))&transmission_offset_tdd[Ssrs]) {
-
-#ifndef IFFT_FPGA_UE
-    carrier_pos = (frame_parms->first_carrier_offset + k0) % frame_parms->ofdm_symbol_size;
-    //msg("carrier_pos = %d\n",carrier_pos);
-
-    subframe_offset = subframe*frame_parms->symbols_per_tti*frame_parms->ofdm_symbol_size;
-    symbol_offset = subframe_offset+(frame_parms->symbols_per_tti-1)*frame_parms->ofdm_symbol_size;
+    carrier_pos = (frame_parms->first_carrier_offset + k0);
+    if (carrier_pos>frame_parms->ofdm_symbol_size) {
+        carrier_pos -= frame_parms->ofdm_symbol_size;
+    }
 
     for (k=0; k<Msc_RS; k++) {
-      ((short*) txdataF)[2*(symbol_offset + carrier_pos)]   = (short) (((int32_t) amp * (int32_t) ul_ref_sigs[0][0][Msc_RS_idx][k<<1])>>15);
-      ((short*) txdataF)[2*(symbol_offset + carrier_pos)+1] = (short) (((int32_t) amp * (int32_t) ul_ref_sigs[0][0][Msc_RS_idx][(k<<1)+1])>>15);
-      carrier_pos+=2;
+      int32_t real = ((int32_t) amp * (int32_t) ul_ref_sigs[u][v][Msc_RS_idx][k<<1])     >> 15;
+      int32_t imag = ((int32_t) amp * (int32_t) ul_ref_sigs[u][v][Msc_RS_idx][(k<<1)+1]) >> 15;
+      txptr[carrier_pos] = (real&0xFFFF) + ((imag<<16)&0xFFFF0000);
+
+
+      carrier_pos = carrier_pos+2;
 
       if (carrier_pos >= frame_parms->ofdm_symbol_size)
-        carrier_pos=1;
+        carrier_pos=carrier_pos-frame_parms->ofdm_symbol_size;
     }
-
-#else
-    carrier_pos = (frame_parms->N_RB_UL*12/2 + k0) % (frame_parms->N_RB_UL*12);
-    //msg("carrier_pos = %d\n",carrier_pos);
-
-    subframe_offset = subframe*frame_parms->symbols_per_tti*frame_parms->N_RB_UL*12;
-    symbol_offset = subframe_offset+(frame_parms->symbols_per_tti-1)*frame_parms->N_RB_UL*12;
-
-    for (k=0; k<Msc_RS; k++) {
-      if ((ul_ref_sigs[0][0][Msc_RS_idx][k<<1] >= 0) && (ul_ref_sigs[0][0][Msc_RS_idx][(k<<1)+1] >= 0))
-        txdataF[symbol_offset+carrier_pos] = (int32_t) 4;
-      else if ((ul_ref_sigs[0][0][Msc_RS_idx][k<<1] >= 0) && (ul_ref_sigs[0][0][Msc_RS_idx][(k<<1)+1] < 0))
-        txdataF[symbol_offset+carrier_pos] = (int32_t) 2;
-      else if ((ul_ref_sigs[0][0][Msc_RS_idx][k<<1] < 0) && (ul_ref_sigs[0][0][Msc_RS_idx][(k<<1)+1] >= 0))
-        txdataF[symbol_offset+carrier_pos] = (int32_t) 3;
-      else if ((ul_ref_sigs[0][0][Msc_RS_idx][k<<1] < 0) && (ul_ref_sigs[0][0][Msc_RS_idx][(k<<1)+1] < 0))
-        txdataF[symbol_offset+carrier_pos] = (int32_t) 1;
-
-      carrier_pos+=2;
-
-      if (carrier_pos >= frame_parms->N_RB_UL*12)
-        carrier_pos=0;
-    }
-
-#endif
-    //  write_output("srs_txF.m","srstxF",&txdataF[symbol_offset],512,1,1);
-  }
 
   return(0);
 }
@@ -257,6 +234,7 @@ int generate_srs_tx_emul(PHY_VARS_UE *phy_vars_ue,uint8_t subframe)
   return(0);
 }
 
+#if 0
 int generate_srs_rx(LTE_DL_FRAME_PARMS *frame_parms,
                     SOUNDINGRS_UL_CONFIG_DEDICATED *soundingrs_ul_config_dedicated,
                     int *txdataF)
@@ -297,7 +275,7 @@ int generate_srs_rx(LTE_DL_FRAME_PARMS *frame_parms,
   }
 
   if (k0<0) {
-    msg("Invalid parameter set msrs0=%d, msrsb=%d, Nb=%d => nb=%d, k0=%d\n",msrs0,msrsb,Nb,nb,k0);
+    LOG_E(PHY,"Invalid parameter set msrs0=%d, msrsb=%d, Nb=%d => nb=%d, k0=%d\n",msrs0,msrsb,Nb,nb,k0);
     return(-1);
   }
 
@@ -307,7 +285,7 @@ int generate_srs_rx(LTE_DL_FRAME_PARMS *frame_parms,
   if (Msc_idx_ptr)
     Msc_RS_idx = Msc_idx_ptr - dftsizes;
   else {
-    msg("generate_srs: index for Msc_RS=%d not found\n",Msc_RS);
+    LOG_E(PHY,"generate_srs: index for Msc_RS=%d not found\n",Msc_RS);
     return(-1);
   }
 
@@ -318,23 +296,21 @@ int generate_srs_rx(LTE_DL_FRAME_PARMS *frame_parms,
   else if (Msc_RS==144)
     Msc_RS_idx = 9;
   else {
-    msg("generate_srs: index for Msc_RS=%d not implemented\n",Msc_RS);
+    LOG_E(PHY,"generate_srs: index for Msc_RS=%d not implemented\n",Msc_RS);
     return(-1);
   }
 
 #endif
 
 #ifdef DEBUG_SRS
-  msg("generate_srs_rx: Msc_RS = %d, Msc_RS_idx = %d, k0=%d\n",Msc_RS, Msc_RS_idx,k0);
+  LOG_I(PHY,"generate_srs_rx: Msc_RS = %d, Msc_RS_idx = %d, k0=%d\n",Msc_RS, Msc_RS_idx,k0);
 #endif
 
   carrier_pos = (frame_parms->first_carrier_offset + k0) % frame_parms->ofdm_symbol_size;
 
   for (k=0; k<Msc_RS; k++) {
-    ((short*) txdataF)[carrier_pos<<2]   = ul_ref_sigs_rx[0][0][Msc_RS_idx][k<<2];
-    ((short*) txdataF)[(carrier_pos<<2)+1] = ul_ref_sigs_rx[0][0][Msc_RS_idx][(k<<2)+1];
-    ((short*) txdataF)[(carrier_pos<<2)+2] = ul_ref_sigs_rx[0][0][Msc_RS_idx][(k<<2)+2];
-    ((short*) txdataF)[(carrier_pos<<2)+3] = ul_ref_sigs_rx[0][0][Msc_RS_idx][(k<<2)+3];
+    ((short*) txdataF)[carrier_pos<<1]   = ul_ref_sigs_rx[0][0][Msc_RS_idx][k<<1];
+    ((short*) txdataF)[(carrier_pos<<1)+1] = ul_ref_sigs_rx[0][0][Msc_RS_idx][(k<<1)+1];
     carrier_pos+=2;
 
     if (carrier_pos >= frame_parms->ofdm_symbol_size)
@@ -377,7 +353,7 @@ int generate_srs_rx(LTE_DL_FRAME_PARMS *frame_parms,
   //  write_output("srs_rx.m","srsrx",txdataF,1024,2,1);
   return(0);
 }
-
+#endif
 
 #ifdef MAIN
 main()

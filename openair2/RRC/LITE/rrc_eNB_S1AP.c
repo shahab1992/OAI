@@ -69,7 +69,7 @@ static const uint16_t S1AP_ENCRYPTION_EEA2_MASK = 0x4000;
 static const uint16_t S1AP_INTEGRITY_EIA1_MASK = 0x8000;
 static const uint16_t S1AP_INTEGRITY_EIA2_MASK = 0x4000;
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
 # define INTEGRITY_ALGORITHM_NONE SecurityAlgorithmConfig__integrityProtAlgorithm_eia0_v920
 #else
 #ifdef EXMIMO_IOT
@@ -115,7 +115,7 @@ rrc_eNB_S1AP_get_ue_ids(
 		    		               (hash_key_t)eNB_ue_s1ap_id,
 		    		               result2);
             if (h_rc != HASH_TABLE_OK) {
-              LOG_E(S1AP, "[eNB %u] Error while hashtable_insert in s1ap_id2_s1ap_ids eNB_ue_s1ap_id %u\n",
+              LOG_E(S1AP, "[eNB %ld] Error while hashtable_insert in s1ap_id2_s1ap_ids eNB_ue_s1ap_id %"PRIu32"\n",
 		    		  rrc_instance_pP - eNB_rrc_inst, eNB_ue_s1ap_id);
             }
 		  }
@@ -228,21 +228,21 @@ rrc_eNB_get_ue_context_from_s1ap_ids(
  *\param algorithms The bit mask of available algorithms received from S1AP.
  *\return the selected algorithm.
  */
-static e_SecurityAlgorithmConfig__cipheringAlgorithm rrc_eNB_select_ciphering(uint16_t algorithms)
+static CipheringAlgorithm_r12_t rrc_eNB_select_ciphering(uint16_t algorithms)
 {
 
 //#warning "Forced   return SecurityAlgorithmConfig__cipheringAlgorithm_eea0, to be deleted in future"
-  return SecurityAlgorithmConfig__cipheringAlgorithm_eea0;
+  return CipheringAlgorithm_r12_eea0;
 
   if (algorithms & S1AP_ENCRYPTION_EEA2_MASK) {
-    return SecurityAlgorithmConfig__cipheringAlgorithm_eea2;
+    return CipheringAlgorithm_r12_eea2;
   }
 
   if (algorithms & S1AP_ENCRYPTION_EEA1_MASK) {
-    return SecurityAlgorithmConfig__cipheringAlgorithm_eea1;
+    return CipheringAlgorithm_r12_eea1;
   }
 
-  return SecurityAlgorithmConfig__cipheringAlgorithm_eea0;
+  return CipheringAlgorithm_r12_eea0;
 }
 
 /*! \fn e_SecurityAlgorithmConfig__integrityProtAlgorithm rrc_eNB_select_integrity(uint16_t algorithms)
@@ -279,7 +279,7 @@ rrc_eNB_process_security(
 )
 {
   boolean_t                                         changed = FALSE;
-  e_SecurityAlgorithmConfig__cipheringAlgorithm cipheringAlgorithm;
+  CipheringAlgorithm_r12_t                          cipheringAlgorithm;
   e_SecurityAlgorithmConfig__integrityProtAlgorithm integrityProtAlgorithm;
 
   /* Save security parameters */
@@ -287,10 +287,10 @@ rrc_eNB_process_security(
 
   // translation
   LOG_D(RRC,
-        "[eNB %d] NAS security_capabilities.encryption_algorithms %u AS ciphering_algorithm %u NAS security_capabilities.integrity_algorithms %u AS integrity_algorithm %u\n",
+        "[eNB %d] NAS security_capabilities.encryption_algorithms %u AS ciphering_algorithm %lu NAS security_capabilities.integrity_algorithms %u AS integrity_algorithm %u\n",
         ctxt_pP->module_id,
         ue_context_pP->ue_context.security_capabilities.encryption_algorithms,
-        ue_context_pP->ue_context.ciphering_algorithm,
+        (unsigned long)ue_context_pP->ue_context.ciphering_algorithm,
         ue_context_pP->ue_context.security_capabilities.integrity_algorithms,
         ue_context_pP->ue_context.integrity_algorithm);
   /* Select relevant algorithms */
@@ -308,11 +308,11 @@ rrc_eNB_process_security(
     changed = TRUE;
   }
 
-  LOG_I (RRC, "[eNB %d][UE %x] Selected security algorithms (%x): %x, %x, %s\n",
+  LOG_I (RRC, "[eNB %d][UE %x] Selected security algorithms (%p): %lx, %x, %s\n",
          ctxt_pP->module_id,
          ue_context_pP->ue_context.rnti,
          security_capabilities_pP,
-         cipheringAlgorithm,
+         (unsigned long)cipheringAlgorithm,
          integrityProtAlgorithm,
          changed ? "changed" : "same");
 
@@ -774,8 +774,8 @@ rrc_eNB_process_S1AP_DOWNLINK_NAS(
   ue_initial_id = S1AP_DOWNLINK_NAS (msg_p).ue_initial_id;
   eNB_ue_s1ap_id = S1AP_DOWNLINK_NAS (msg_p).eNB_ue_s1ap_id;
   ue_context_p = rrc_eNB_get_ue_context_from_s1ap_ids(instance, ue_initial_id, eNB_ue_s1ap_id);
-  srb_id = ue_context_p->ue_context.Srb2.Srb_info.Srb_id;
-  
+
+
   LOG_I(RRC, "[eNB %d] Received %s: ue_initial_id %d, eNB_ue_s1ap_id %d\n",
         instance,
         msg_name,
@@ -821,6 +821,9 @@ rrc_eNB_process_S1AP_DOWNLINK_NAS(
     return (-1);
   } else {
     PROTOCOL_CTXT_SET_BY_INSTANCE(&ctxt, instance, ENB_FLAG_YES, ue_context_p->ue_context.rnti, 0, 0);
+
+    srb_id = ue_context_p->ue_context.Srb2.Srb_info.Srb_id;
+  
 
     /* Is it the first income from S1AP ? */
     if (ue_context_p->ue_context.eNB_ue_s1ap_id == 0) {
@@ -1005,7 +1008,7 @@ int rrc_eNB_process_S1AP_UE_CTXT_MODIFICATION_REQ(MessageDef *msg_p, const char 
     /* Can not associate this message to an UE index, send a failure to S1AP and discard it! */
     MessageDef *msg_fail_p;
 
-    LOG_W(RRC, "[eNB %d] In S1AP_UE_CTXT_MODIFICATION_REQ: unknown UE from eNB_ue_s1ap_id (%d) for eNB %d\n", instance, eNB_ue_s1ap_id);
+    LOG_W(RRC, "[eNB %d] In S1AP_UE_CTXT_MODIFICATION_REQ: unknown UE from eNB_ue_s1ap_id (%d)\n", instance, eNB_ue_s1ap_id);
 
     msg_fail_p = itti_alloc_new_message (TASK_RRC_ENB, S1AP_UE_CTXT_MODIFICATION_FAIL);
     S1AP_UE_CTXT_MODIFICATION_FAIL (msg_fail_p).eNB_ue_s1ap_id = eNB_ue_s1ap_id;

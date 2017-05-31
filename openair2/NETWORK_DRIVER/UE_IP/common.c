@@ -99,7 +99,8 @@ ue_ip_common_class_wireless2ip(
   hard_header_len = ue_ip_dev[instP]->hard_header_len;
 
   skb_set_mac_header(skb_p, 0);
-
+  skb_set_network_header(skb_p, hard_header_len);
+skb_p->mark = rb_idP;
   //printk("[NAC_COMMIN_RECEIVE]: Packet Type %d (%d,%d)",skb_p->pkt_type,PACKET_HOST,PACKET_BROADCAST);
   skb_p->pkt_type = PACKET_HOST;
 
@@ -122,9 +123,7 @@ ue_ip_common_class_wireless2ip(
 
   // LG TEST skb_p->ip_summed = CHECKSUM_NONE;
   skb_p->ip_summed = CHECKSUM_UNNECESSARY;
-
-
-  ipv_p = (struct ipversion*)((void*)&(skb_p->data[hard_header_len]));
+  ipv_p = (ipversion_t *)((void *)&(skb_p->data[hard_header_len]));
 
   switch (ipv_p->version) {
 

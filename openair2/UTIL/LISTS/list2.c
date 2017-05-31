@@ -75,7 +75,7 @@ list2_free (list2_t * listP)
   mem_block_t      *le;
 
   while ((le = list2_remove_head (listP))) {
-    free_mem_block (le);
+    free_mem_block (le, __func__);
   }
 }
 
@@ -233,6 +233,8 @@ list2_add_head (mem_block_t * elementP, list2_t * listP)
 
     // almost one element
     if (head == NULL) {
+      elementP->previous = NULL;
+      elementP->next = NULL;
       listP->head = elementP;
       listP->tail = elementP;
     } else {

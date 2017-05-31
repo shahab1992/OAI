@@ -112,7 +112,7 @@ typedef struct {
                               AdditionalSpectrumEmission_t *additionalSpectrumEmission,
                               struct MBSFN_SubframeConfigList *mbsfn_SubframeConfigList);
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
   /// Configure Common PHY parameters from SIB13
   void (*phy_config_sib13_eNB)(module_id_t Mod_id,int CC_id, int mbsfn_Area_idx,
                                long mbsfn_AreaId_r9);
@@ -127,7 +127,7 @@ typedef struct {
   void (*phy_config_dedicated_eNB)(module_id_t Mod_id,int CC_id,rnti_t rnti,
                                    struct PhysicalConfigDedicated *physicalConfigDedicated);
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
   /// Get MCH sdu and corresponding MCS for particular MBSFN subframe
   MCH_PDU* (*get_mch_sdu)(module_id_t Mod_id, int CC_id, frame_t frameP,sub_frame_t subframe);
 #endif
@@ -152,9 +152,9 @@ typedef struct {
   void (*ue_decode_p)(module_id_t Mod_id,int CC_id,frame_t frameP, uint8_t CH_index, void *pdu, uint16_t len);
 
   /// Send a received DLSCH sdu to MAC
-  void (*ue_send_sdu)(module_id_t Mod_id,uint8_t CC_id,frame_t frameP,uint8_t *sdu,uint16_t sdu_len,uint8_t CH_index);
+  void (*ue_send_sdu)(module_id_t Mod_id,uint8_t CC_id,frame_t frameP,sub_frame_t subframe,uint8_t *sdu,uint16_t sdu_len,uint8_t CH_index);
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
   /// Send a received MCH sdu to MAC
   void (*ue_send_mch_sdu)(module_id_t Mod_id,uint8_t CC_id, frame_t frameP,uint8_t *sdu,uint16_t sdu_len,uint8_t eNB_index,uint8_t sync_area);
 
@@ -170,7 +170,7 @@ typedef struct {
   PRACH_RESOURCES_t* (*ue_get_rach)(module_id_t Mod_id,int CC_id,frame_t frameP,uint8_t Msg3_flag,sub_frame_t subframe);
 
   /// Process Random-Access Response
-  uint16_t (*ue_process_rar)(module_id_t Mod_id,int CC_id,frame_t frameP,uint8_t *dlsch_buffer,uint16_t *t_crnti,uint8_t preamble_index);
+  uint16_t (*ue_process_rar)(module_id_t Mod_id,int CC_id,frame_t frameP, uint16_t ra_rnti, uint8_t *dlsch_buffer, uint16_t *t_crnti,uint8_t preamble_index, uint8_t* selected_rar_buffer);
 
   /// Get SR payload (0,1) from UE MAC
   uint32_t (*ue_get_SR)(module_id_t Mod_id,int CC_id,frame_t frameP,uint8_t eNB_id,rnti_t rnti,sub_frame_t subframe);
@@ -179,12 +179,15 @@ typedef struct {
   void (*dl_phy_sync_success) (module_id_t Mod_id,frame_t frameP, uint8_t CH_index,uint8_t first_sync);
 
   /// Only calls the PDCP for now
-  UE_L2_STATE_t (*ue_scheduler)(module_id_t Mod_id, frame_t frameP,sub_frame_t subframe, lte_subframe_t direction, uint8_t eNB_id, int CC_id);
+  UE_L2_STATE_t (*ue_scheduler)(module_id_t Mod_id, frame_t rxFrameP,sub_frame_t rxSubframe, frame_t txFrameP,sub_frame_t txSubframe, lte_subframe_t direction, uint8_t eNB_id, int CC_id);
 
   /// PHY-Config-Dedicated UE
   void (*phy_config_dedicated_ue)(module_id_t Mod_id,int CC_id,uint8_t CH_index,
                                   struct PhysicalConfigDedicated *physicalConfigDedicated);
 
+  /// PHY-Config-harq UE
+  void (*phy_config_harq_ue)(module_id_t Mod_id,int CC_id,uint8_t CH_index,
+                             uint16_t max_harq_tx);
   /// Configure Common PHY parameters from SIB1
   void (*phy_config_sib1_ue)(module_id_t Mod_id,int CC_id,uint8_t CH_index,
                              TDD_Config_t *tdd_config,
@@ -199,7 +202,7 @@ typedef struct {
                              AdditionalSpectrumEmission_t *additionalSpectrumEmission,
                              struct MBSFN_SubframeConfigList  *mbsfn_SubframeConfigList);
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
   /// Configure Common PHY parameters from SIB13
   void (*phy_config_sib13_ue)(uint8_t Mod_id,int CC_id, uint8_t eNB_index,int mbsfn_Area_idx,
                               long mbsfn_AreaId_r9);

@@ -57,7 +57,7 @@
 #include "RACH-ConfigCommon.h"
 #include "MeasObjectToAddModList.h"
 #include "MobilityControlInfo.h"
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
 #include "MBSFN-AreaInfoList-r9.h"
 #include "MBSFN-SubframeConfigList.h"
 #include "PMCH-InfoList-r9.h"
@@ -80,7 +80,7 @@
 #define SCH_PAYLOAD_SIZE_MAX 4096
 /// Logical channel ids from 36-311 (Note BCCH is not specified in 36-311, uses the same as first DRB)
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
 
 // Mask for identifying subframe for MBMS
 #define MBSFN_TDD_SF3 0x80// for TDD
@@ -132,10 +132,25 @@
 #define MIN_CQI_VALUE  0
 /*!\brief maximum value for channel quality indicator */
 #define MAX_CQI_VALUE  15
+/*!\briefmaximum number of supported bandwidth (1.4, 5, 10, 20 MHz) */
+#define MAX_SUPPORTED_BW  4  
+/*!\brief CQI values range from 1 to 15 (4 bits) */
+#define CQI_VALUE_RANGE 16 
 
+/*!\brief value for indicating BSR Timer is not running */
+#define MAC_UE_BSR_TIMER_NOT_RUNNING   (0xFFFF)
 
 #define LCID_EMPTY 0
 #define LCID_NOT_EMPTY 1
+
+/*!\brief minimum RLC PDU size to be transmitted = min RLC Status PDU or RLC UM PDU SN 5 bits */
+#define MIN_RLC_PDU_SIZE    (2)
+
+/*!\brief minimum MAC data needed for transmitting 1 min RLC PDU size + 1 byte MAC subHeader */
+#define MIN_MAC_HDR_RLC_SIZE    (1 + MIN_RLC_PDU_SIZE)
+
+/*!\brief maximum number of slices / groups */
+#define MAX_NUM_SLICES 4 
 
 /* 
  * eNB part 
@@ -222,11 +237,10 @@ typedef struct {
 typedef BSR_SHORT BSR_TRUNCATED;
 /*!\brief  mac control element: long buffer status report for all logical channel group ID*/
 typedef struct {
-  uint32_t Buffer_size3:6;
-  uint32_t Buffer_size2:6;
-  uint32_t Buffer_size1:6;
-  uint32_t Buffer_size0:6;
-  uint32_t padding:8;
+  uint8_t Buffer_size3:6;
+  uint8_t Buffer_size2:6;
+  uint8_t Buffer_size1:6;
+  uint8_t Buffer_size0:6;
 } __attribute__((__packed__))BSR_LONG;
 
 #define BSR_LONG_SIZE  (sizeof(BSR_LONG))
@@ -262,7 +276,7 @@ typedef struct {
   uint8_t payload[PCCH_PAYLOAD_SIZE_MAX] ;
 } __attribute__((__packed__))PCCH_PDU;
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
 /*! \brief MCCH payload */
 typedef struct {
   uint8_t payload[MCCH_PAYLOAD_SIZE_MAX] ;
@@ -313,7 +327,7 @@ typedef struct {
 /*!\brief LCID of padding LCID for DLSCH */
 #define SHORT_PADDING 31
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
 // MCH LCHAN IDs (table6.2.1-4 TS36.321)
 /*!\brief LCID of MCCH for DL */
 #define MCCH_LCHANID 0
@@ -336,6 +350,12 @@ typedef struct {
 #define SHORT_BSR 29
 /*!\brief LCID of long BSR for ULSCH */
 #define LONG_BSR 30
+/*!\bitmaps for BSR Triggers */
+#define	BSR_TRIGGER_NONE		(0)			/* No BSR Trigger */
+#define	BSR_TRIGGER_REGULAR		(1)			/* For Regular and ReTxBSR Expiry Triggers */
+#define	BSR_TRIGGER_PERIODIC	(2)			/* For BSR Periodic Timer Expiry Trigger */
+#define	BSR_TRIGGER_PADDING		(4)			/* For Padding BSR Trigger */
+
 
 /*! \brief Downlink SCH PDU Structure */
 typedef struct {
@@ -869,7 +889,7 @@ typedef struct {
   struct MBSFN_SubframeConfig *mbsfn_SubframeConfig[8];
   /// number of subframe allocation pattern available for MBSFN sync area
   uint8_t num_sf_allocation_pattern;
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
   /// MBMS Flag
   uint8_t MBMS_flag;
   /// Outgoing MCCH pdu for PHY
@@ -958,8 +978,12 @@ typedef enum {
 typedef struct {
   /// buffer status for each lcgid
   uint8_t  BSR[MAX_NUM_LCGID]; // should be more for mesh topology
-  /// keep the number of bytes in rlc buffer for each lcid
-  uint16_t  BSR_bytes[MAX_NUM_LCGID];
+  /// keep the number of bytes in rlc buffer for each lcgid
+  int32_t  BSR_bytes[MAX_NUM_LCGID];
+  /// after multiplexing buffer remain for each lcid
+  int32_t  LCID_buffer_remain[MAX_NUM_LCID];
+  /// sum of all lcid buffer size
+  uint16_t  All_lcid_buffer_size_lastTTI;
   /// buffer status for each lcid
   uint8_t  LCID_status[MAX_NUM_LCID];
   /// SR pending as defined in 36.321
@@ -971,11 +995,11 @@ typedef struct {
   /// retxBSR-Timer, default value is sf2560
   uint16_t retxBSR_Timer;
   /// retxBSR_SF, number of subframe before triggering a regular BSR
-  int16_t retxBSR_SF;
+  uint16_t retxBSR_SF;
   /// periodicBSR-Timer, default to infinity
   uint16_t periodicBSR_Timer;
   /// periodicBSR_SF, number of subframe before triggering a periodic BSR
-  int16_t periodicBSR_SF;
+  uint16_t periodicBSR_SF;
   /// default value is 0: not configured
   uint16_t sr_ProhibitTimer;
   /// sr ProhibitTime running
@@ -1000,6 +1024,12 @@ typedef struct {
   int16_t prohibitPHR_SF;
   ///DL Pathloss Change in db
   uint16_t PathlossChange_db;
+
+  /// default value is false
+  uint16_t extendedBSR_Sizes_r10;
+  /// default value is false
+  uint16_t extendedPHR_r10;
+
   //Bj bucket usage per  lcid
   int16_t Bj[MAX_NUM_LCID];
   // Bucket size per lcid
@@ -1008,10 +1038,14 @@ typedef struct {
 /*!\brief Top level UE MAC structure */
 typedef struct {
   uint16_t Node_id;
-  /// frame counter
-  frame_t     frame;
-  /// subframe counter
-  sub_frame_t subframe;
+  /// RX frame counter
+  frame_t     rxFrame;
+  /// RX subframe counter
+  sub_frame_t rxSubframe;
+  /// TX frame counter
+  frame_t     txFrame;
+  /// TX subframe counter
+  sub_frame_t txSubframe;
   /// C-RNTI of UE
   uint16_t crnti;
   /// C-RNTI of UE before HO
@@ -1024,7 +1058,7 @@ typedef struct {
   struct RACH_ConfigDedicated *rach_ConfigDedicated;
   /// pointer to RRC PHY configuration
   struct PhysicalConfigDedicated *physicalConfigDedicated;
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
   /// pointer to RRC PHY configuration SCEll
   struct PhysicalConfigDedicatedSCell_r10 *physicalConfigDedicatedSCell_r10;
 #endif
@@ -1087,11 +1121,18 @@ typedef struct {
   uint8_t PHR_reporting_active;
   /// power backoff due to power management (as allowed by P-MPRc) for this cell
   uint8_t power_backoff_db[NUMBER_OF_eNB_MAX];
+  /// BSR report falg management
+  uint8_t BSR_reporting_active;
+  /// retxBSR-Timer expires flag
+  uint8_t retxBSRTimer_expires_flag;
+  /// periodBSR-Timer expires flag
+  uint8_t periodBSRTimer_expires_flag;
+
   /// MBSFN_Subframe Configuration
   struct MBSFN_SubframeConfig *mbsfn_SubframeConfig[8]; // FIXME replace 8 by MAX_MBSFN_AREA?
   /// number of subframe allocation pattern available for MBSFN sync area
   uint8_t num_sf_allocation_pattern;
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
   /// number of active MBSFN area
   uint8_t num_active_mbsfn_area;
   /// MBSFN Area Info

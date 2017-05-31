@@ -29,7 +29,8 @@ void config_req_rlc_tm (
   const protocol_ctxt_t* const  ctxt_pP,
   const srb_flag_t  srb_flagP,
   const rlc_tm_info_t * const config_tmP,
-  const rb_id_t     rb_idP
+  const rb_id_t rb_idP,
+  const logical_chan_id_t chan_idP
 )
 {
   rlc_union_t     *rlc_union_p  = NULL;
@@ -48,7 +49,7 @@ void config_req_rlc_tm (
 
     rlc_tm_init(ctxt_pP, rlc_p);
     rlc_p->protocol_state = RLC_DATA_TRANSFER_READY_STATE;
-    rlc_tm_set_debug_infos(ctxt_pP, rlc_p, rb_idP, srb_flagP);
+    rlc_tm_set_debug_infos(ctxt_pP, rlc_p, srb_flagP, rb_idP, chan_idP);
     rlc_tm_configure(ctxt_pP, rlc_p, config_tmP->is_uplink_downlink);
   } else {
     LOG_E(RLC, PROTOCOL_RLC_TM_CTXT_FMT" CONFIG_REQ RB %u RLC NOT FOUND\n",
@@ -81,7 +82,7 @@ void rlc_tm_init (
   rlcP->size_input_sdus_buffer = 16;
 
   if ((rlcP->input_sdus_alloc == NULL) && (rlcP->size_input_sdus_buffer > 0)) {
-    rlcP->input_sdus_alloc = get_free_mem_block (rlcP->size_input_sdus_buffer * sizeof (void *));
+    rlcP->input_sdus_alloc = get_free_mem_block (rlcP->size_input_sdus_buffer * sizeof (void *), __func__);
     rlcP->input_sdus = (mem_block_t **) (rlcP->input_sdus_alloc->data);
     memset (rlcP->input_sdus, 0, rlcP->size_input_sdus_buffer * sizeof (void *));
   }
@@ -113,17 +114,17 @@ rlc_tm_cleanup (
   if (rlcP->input_sdus_alloc) {
     for (index = 0; index < rlcP->size_input_sdus_buffer; index++) {
       if (rlcP->input_sdus[index]) {
-        free_mem_block (rlcP->input_sdus[index]);
+        free_mem_block (rlcP->input_sdus[index], __func__);
       }
     }
 
-    free_mem_block (rlcP->input_sdus_alloc);
+    free_mem_block (rlcP->input_sdus_alloc, __func__);
     rlcP->input_sdus_alloc = NULL;
   }
 
   // RX SIDE
   if ((rlcP->output_sdu_in_construction)) {
-    free_mem_block (rlcP->output_sdu_in_construction);
+    free_mem_block (rlcP->output_sdu_in_construction, __func__);
   }
 
   memset(rlcP, 0, sizeof(rlc_tm_entity_t));
@@ -144,9 +145,11 @@ void rlc_tm_set_debug_infos(
   const protocol_ctxt_t* const  ctxt_pP,
   rlc_tm_entity_t * const rlcP,
   const srb_flag_t  srb_flagP,
-  const rb_id_t     rb_idP)
+  const rb_id_t     rb_idP,
+  const logical_chan_id_t chan_idP) 
 {
-  rlcP->rb_id     = rb_idP;
+  rlcP->rb_id      = rb_idP;
+  rlcP->channel_id = chan_idP;
 
   if (srb_flagP) {
     rlcP->is_data_plane = 0;

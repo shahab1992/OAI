@@ -99,11 +99,13 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
   int           result;
 #endif
   DCI_PDU *DCI_pdu[MAX_NUM_CCs];
-  int CC_id,i,next_i;
+  int CC_id,i; //,next_i;
   UE_list_t *UE_list=&eNB_mac_inst[module_idP].UE_list;
   rnti_t rnti;
   void         *DLSCH_dci=NULL;
   int size_bits=0,size_bytes=0;
+  
+  LTE_eNB_UE_stats  *eNB_UE_stats   = NULL;
 
 #if defined(FLEXRAN_AGENT_SB_IF)
   Protocol__FlexranMessage *msg;
@@ -121,17 +123,31 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     memset(eNB_mac_inst[module_idP].common_channels[CC_id].vrb_map,0,100);
   }
 
-  // refresh UE list based on UEs dropped by PHY in previous subframe
-  i = UE_list->head;
+  // clear DCI and BCCH contents before scheduling
+  for (CC_id=0; CC_id<MAX_NUM_CCs; CC_id++) {
+    DCI_pdu[CC_id]->Num_common_dci  = 0;
+    DCI_pdu[CC_id]->Num_ue_spec_dci = 0;
+#if defined(Rel10) || defined(Rel14)
+    eNB_mac_inst[module_idP].common_channels[CC_id].mcch_active =0;
+#endif
+    eNB_mac_inst[module_idP].frame    = frameP;
+    eNB_mac_inst[module_idP].subframe = subframeP;
+  }
 
-  while (i>=0) {
+  // refresh UE list based on UEs dropped by PHY in previous subframe
+  for (i = 0; i < NUMBER_OF_UE_MAX; i++) {
+    if (UE_list->active[i] != TRUE) continue;
+
     rnti = UE_RNTI(module_idP, i);
     CC_id = UE_PCCID(module_idP, i);
-    if ((frameP==0)&&(subframeP==0))
-      LOG_I(MAC,"UE  rnti %x : %s\n", rnti, 
-	    UE_list->UE_sched_ctrl[i].ul_out_of_sync==0 ? "in synch" : "out of sync");
-
-    next_i= UE_list->next[i];
+    if ((frameP==0)&&(subframeP==0)) {
+      LTE_eNB_UE_stats *eNB_UE_stats = mac_xface->get_eNB_UE_stats(module_idP, CC_id, rnti);
+      int cqi = eNB_UE_stats == NULL ? -1 : eNB_UE_stats->DL_cqi[0];
+      LOG_I(MAC,"UE  rnti %x : %s, PHR %d dB CQI %d\n", rnti,
+            UE_list->UE_sched_ctrl[i].ul_out_of_sync==0 ? "in synch" : "out of sync",
+            UE_list->UE_template[CC_id][i].phr_info,
+            cqi);
+    }
 
     PHY_vars_eNB_g[module_idP][CC_id]->pusch_stats_bsr[i][(frameP*10)+subframeP]=-63;
     if (i==UE_list->head)
@@ -140,9 +156,9 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     eNB_mac_inst[module_idP].UE_list.UE_sched_ctrl[i].ul_inactivity_timer++;
 
     eNB_mac_inst[module_idP].UE_list.UE_sched_ctrl[i].cqi_req_timer++;
-    
+    eNB_UE_stats = mac_xface->get_eNB_UE_stats(module_idP,CC_id,rnti);
 
-    if (mac_xface->get_eNB_UE_stats(module_idP, CC_id, rnti)==NULL) {
+    if (eNB_UE_stats==NULL) {
 	//mac_remove_ue(module_idP, i, frameP, subframeP);
       //Inform the controller about the UE deactivation. Should be moved to RRC agent in the future
 #if defined(FLEXRAN_AGENT_SB_IF)
@@ -237,8 +253,8 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
 	  add_ue_spec_dci(DCI_pdu[CC_id],
 			  DLSCH_dci,
 			  rnti,
-			    size_bytes,
-			  process_ue_cqi (module_idP,i),//aggregation,
+			  size_bytes,
+			  get_aggregation(get_bw_index(module_idP,CC_id),eNB_UE_stats->DL_cqi[0],format1A),
 			  size_bits,
 			  format1A,
 			  0);
@@ -253,15 +269,13 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
 	// check threshold
 	if (UE_list->UE_sched_ctrl[i].ul_failure_timer > 200) {
 	  // inform RRC of failure and clear timer
-	  LOG_I(MAC,"UE %d rnti %x: UL Failure after repeated PDCCH orders: Triggering RRC \n",i,rnti,UE_list->UE_sched_ctrl[i].ul_failure_timer);
+	  LOG_I(MAC,"UE %d rnti %x: UL Failure after repeated PDCCH orders: Triggering RRC \n",i,rnti);
 	  mac_eNB_rrc_ul_failure(module_idP,CC_id,frameP,subframeP,rnti);
 	  UE_list->UE_sched_ctrl[i].ul_failure_timer=0;
 	  UE_list->UE_sched_ctrl[i].ul_out_of_sync=1;
 	}
       }
     } // ul_failure_timer>0
-    
-    i = next_i;
   }
 
 #if defined(ENABLE_ITTI)
@@ -295,7 +309,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
         // TODO process CCCH data req.
         break;
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
 
       case RRC_MAC_MCCH_DATA_REQ:
         LOG_D(MAC, "Received %s from %s: instance %d, frameP %d, eNB_index %d, mbsfn_sync_area %d\n",
@@ -318,22 +332,6 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
 
 #endif
 
-  // clear DCI and BCCH contents before scheduling
-  for (CC_id=0; CC_id<MAX_NUM_CCs; CC_id++) {
-    DCI_pdu[CC_id]->Num_common_dci  = 0;
-    DCI_pdu[CC_id]->Num_ue_spec_dci = 0;
-
-
-#ifdef Rel10
-    eNB_mac_inst[module_idP].common_channels[CC_id].mcch_active =0;
-#endif
-
-    eNB_mac_inst[module_idP].frame    = frameP;
-    eNB_mac_inst[module_idP].subframe = subframeP;
-
-
-  }
-  
 /* #ifndef DISABLE_SF_TRIGGER */
 /*   //Send subframe trigger to the controller */
 /*   if (mac_agent_registered[module_idP]) { */
@@ -352,7 +350,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
             0, // eNB index, unused in eNB
             CC_id);
 
-#ifdef Rel10
+#if defined(Rel10) || defined(Rel14)
 
   for (CC_id=0; CC_id<MAX_NUM_CCs; CC_id++) {
     if (eNB_mac_inst[module_idP].common_channels[CC_id].MBMS_flag >0) {
@@ -389,10 +387,10 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
 
     if (mac_xface->frame_parms->frame_type == FDD) {  //FDD
       schedule_ulsch(module_idP,frameP,cooperation_flag,0,4);//,calibration_flag);
-    } else if  ((mac_xface->frame_parms->tdd_config == TDD) || //TDD
+    } else if  ((mac_xface->frame_parms->tdd_config == 0) || //TDD
                 (mac_xface->frame_parms->tdd_config == 3) ||
                 (mac_xface->frame_parms->tdd_config == 6)) {
-      //schedule_ulsch(module_idP,frameP,cooperation_flag,subframeP,4);//,calibration_flag);
+      schedule_ulsch(module_idP,frameP,cooperation_flag,subframeP,4);//,calibration_flag);
     }
 #ifndef FLEXRAN_AGENT_SB_IF
     schedule_ue_spec(module_idP,frameP,subframeP,mbsfn_status);
