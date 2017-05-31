@@ -1773,7 +1773,7 @@ target_link_libraries (lte-hwlat
   -Wl,--end-group )
 
 target_link_libraries (lte-hwlat rt pthread m )
-target_link_libraries (lte-hwlat ${option_HW_lib} )
+target_link_libraries (lte-hwlat ${CMAKE_DL_LIBS}  )
 
 
 # rrh
