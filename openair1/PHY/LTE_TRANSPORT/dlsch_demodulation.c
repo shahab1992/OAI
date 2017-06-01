@@ -383,7 +383,7 @@ int rx_pdsch(PHY_VARS_UE *ue,
   if (first_symbol_flag==1) {
     if (beamforming_mode==0){
       if (dlsch0_harq->mimo_mode<LARGE_CDD) {
-        dlsch_channel_level(pdsch_vars[eNB_id]->dl_ch_estimates_ext,
+        dlsch_channel_level_avx2(pdsch_vars[eNB_id]->dl_ch_estimates_ext,
                            frame_parms,
                            avg,
                            symbol,
@@ -441,7 +441,7 @@ int rx_pdsch(PHY_VARS_UE *ue,
         }
         else if (dlsch0_harq->dl_power_off==1) { //TM6
 
-          dlsch_channel_level(pdsch_vars[eNB_id]->dl_ch_estimates_ext,
+          dlsch_channel_level_avx2(pdsch_vars[eNB_id]->dl_ch_estimates_ext,
                                    frame_parms,
                                    avg,
                                    symbol,
@@ -3507,7 +3507,7 @@ void dlsch_channel_level(int **dl_ch_estimates_ext,
                             ((int32_t*)&avg128D)[1] +
                             ((int32_t*)&avg128D)[2] +
                             ((int32_t*)&avg128D)[3]);
-                //  printf("Channel level : %d\n",avg[(aatx<<1)+aarx]);
+      printf("Channel level : %d\n",avg[(aatx<<1)+aarx]);
     }
 
   _mm_empty();
@@ -3570,6 +3570,102 @@ void dlsch_channel_level(int **dl_ch_estimates_ext,
       //            printf("Channel level : %d\n",avg[(aatx<<1)+aarx]);
     }
 
+
+#endif
+}
+
+//compute average channel_level on each (TX,RX) antenna pair
+void dlsch_channel_level_avx2(int **dl_ch_estimates_ext,
+                         LTE_DL_FRAME_PARMS *frame_parms,
+                         int32_t *avg,
+                         uint8_t symbol,
+                         unsigned short nb_rb)
+{
+
+#if defined(__x86_64__)||defined(__i386__)
+
+  short rb;
+  unsigned char aatx,aarx,nre=12,symbol_mod;
+  __m128i *dl_ch128, avg128D, coeff128;
+  __m256i *dl_ch256, avg256D, coeff256;
+
+  symbol_mod = (symbol>=(7-frame_parms->Ncp)) ? symbol-(7-frame_parms->Ncp) : symbol;
+
+  if (((symbol_mod == 0) || (symbol_mod == (frame_parms->Ncp-1))))
+    nre=8;
+  else
+    nre=12;
+
+  double one_over_nb_re = 0.0;
+  one_over_nb_re = 1/((double)(nb_rb*nre));
+  int16_t one_over_nb_re_q1_15 = (int16_t)(one_over_nb_re * (double)(1<<15) );
+  coeff256 = _mm256_set_epi16(one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,
+                              one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,
+                              one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,
+                              one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15);
+  coeff128 = _mm_set_epi16(one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,
+                           one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15);
+
+  for (aatx=0; aatx<frame_parms->nb_antenna_ports_eNB; aatx++)
+    for (aarx=0; aarx<frame_parms->nb_antennas_rx; aarx++) {
+      //clear average level
+      avg256D = _mm256_set_epi32(0,0,0,0,0,0,0,0);
+      // 5 is always a symbol with no pilots for both normal and extended prefix
+
+      dl_ch256=(__m256i *)&dl_ch_estimates_ext[(aatx<<1)+aarx][symbol*frame_parms->N_RB_DL*12];
+
+      if (((symbol_mod == 0) || (symbol_mod == (frame_parms->Ncp-1))))
+      {
+          for (rb=0;rb<nb_rb;rb++)
+          {
+              avg256D = _mm256_add_epi32(avg256D,_mm256_madd_epi16(dl_ch256[0],_mm256_srli_epi16(_mm256_mulhi_epi16(dl_ch256[0], coeff256),15)));
+              dl_ch256++;
+          }
+      }
+      else
+      {
+          for (rb=0;rb<(nb_rb>>1);rb++)
+          {
+
+              avg256D = _mm256_add_epi32(avg256D,_mm256_madd_epi16(dl_ch256[0],_mm256_srai_epi16(_mm256_mulhi_epi16(dl_ch256[0], coeff256),15)));
+              avg256D = _mm256_add_epi32(avg256D,_mm256_madd_epi16(dl_ch256[1],_mm256_srai_epi16(_mm256_mulhi_epi16(dl_ch256[1], coeff256),15)));
+              avg256D = _mm256_add_epi32(avg256D,_mm256_madd_epi16(dl_ch256[2],_mm256_srai_epi16(_mm256_mulhi_epi16(dl_ch256[2], coeff256),15)));
+/*
+              tmpMult    = _mm256_srai_epi16(_mm256_mulhi_epi16(dl_ch256[1], coeff256),15);
+              tmpChanAbs = _mm256_madd_epi16(dl_ch256[1],tmpMult);
+              avg256D = _mm256_add_epi32(avg256D,tmpChanAbs);
+
+              tmpMult    = _mm256_srai_epi16(_mm256_mulhi_epi16(dl_ch256[2], coeff256),15);
+              tmpChanAbs = _mm256_madd_epi16(dl_ch256[2],tmpMult);
+              avg256D = _mm256_add_epi32(avg256D,tmpChanAbs);
+*/
+              dl_ch256+=3;
+          }
+
+          if(nb_rb & 1)
+          {
+            dl_ch128=(__m128i *)dl_ch256;
+            avg128D = _mm_setzero_si128();
+            avg128D = _mm_add_epi32(avg128D,_mm_madd_epi16(dl_ch128[0],_mm_srai_epi16(_mm_mulhi_epi16(dl_ch128[0], coeff128),15)));
+            avg128D = _mm_add_epi32(avg128D,_mm_madd_epi16(dl_ch128[1],_mm_srai_epi16(_mm_mulhi_epi16(dl_ch128[1], coeff128),15)));
+            avg128D = _mm_add_epi32(avg128D,_mm_madd_epi16(dl_ch128[2],_mm_srai_epi16(_mm_mulhi_epi16(dl_ch128[2], coeff128),15)));
+          }
+      }
+
+
+      avg[(aatx<<1)+aarx] =(((int32_t*)&avg256D)[0] + ((int32_t*)&avg256D)[1] +
+                            ((int32_t*)&avg256D)[2] + ((int32_t*)&avg256D)[3] +
+                            ((int32_t*)&avg256D)[4] + ((int32_t*)&avg256D)[5] +
+                            ((int32_t*)&avg256D)[6] + ((int32_t*)&avg256D)[7] +
+                            ((int32_t*)&avg128D)[0] + ((int32_t*)&avg128D)[1] +
+                            ((int32_t*)&avg128D)[2] + ((int32_t*)&avg128D)[3]);
+     printf("Channel level : %d\n",avg[(aatx<<1)+aarx]);
+    }
+
+  _mm_empty();
+  _m_empty();
+
+#elif defined(__arm__)
 
 #endif
 }

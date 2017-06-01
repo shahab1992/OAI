@@ -1215,6 +1215,11 @@ void dlsch_channel_level(int32_t **dl_ch_estimates_ext,
                          uint8_t pilots_flag,
                          uint16_t nb_rb);
 
+void dlsch_channel_level_avx2(int **dl_ch_estimates_ext,
+                         LTE_DL_FRAME_PARMS *frame_parms,
+                         int32_t *avg,
+                         uint8_t symbol,
+                         unsigned short nb_rb);
 
 void dlsch_channel_level_TM34(int **dl_ch_estimates_ext,
                               LTE_DL_FRAME_PARMS *frame_parms,
