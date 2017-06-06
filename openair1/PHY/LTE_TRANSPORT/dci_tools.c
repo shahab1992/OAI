@@ -1066,8 +1066,8 @@ int generate_eNB_dlsch_params_from_dci(int frame,
       // 36-213 sec.7.1.7.2 p.26
       I_mcs     = mcs;
     } else {
-      if (harq_pid>=8) {
-        LOG_E(PHY,"ERROR: Format 1A: harq_pid=%d >= 8\n", harq_pid);
+      if (harq_pid>=((frame_parms->frame_type == TDD && frame_parms->tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8)) {
+        LOG_E(PHY,"ERROR: Format 1A: harq_pid=%d >= 10\n", harq_pid);
         return(-1);
       }
 
@@ -1210,8 +1210,8 @@ int generate_eNB_dlsch_params_from_dci(int frame,
 
     }
 
-    if (harq_pid>=8) {
-      LOG_E(PHY,"ERROR: Format 1: harq_pid=%d >= 8\n", harq_pid);
+    if (harq_pid>=((frame_parms->frame_type == TDD && frame_parms->tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8)) {
+      LOG_E(PHY,"ERROR: Format 1: harq_pid=%d >= 10\n", harq_pid);
       return(-1);
     }
 
@@ -1495,8 +1495,8 @@ int generate_eNB_dlsch_params_from_dci(int frame,
     }
 
 
-    if (harq_pid>=8) {
-      LOG_E(PHY,"ERROR: Format 2_2A: harq_pid=%d >= 8\n", harq_pid);
+    if (harq_pid>=((frame_parms->frame_type == TDD && frame_parms->tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8)) {
+      LOG_E(PHY,"ERROR: Format 2_2A: harq_pid=%d >= 10\n", harq_pid);
       return(-1);
     }
 
@@ -1938,8 +1938,8 @@ int generate_eNB_dlsch_params_from_dci(int frame,
     }
 
 
-    if (harq_pid>=8) {
-      LOG_E(PHY,"ERROR: Format 2_2A: harq_pid=%d >= 8\n", harq_pid);
+    if (harq_pid>=((frame_parms->frame_type == TDD && frame_parms->tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8)) {
+      LOG_E(PHY,"ERROR: Format 2_2A: harq_pid=%d >= 10\n", harq_pid);
       return(-1);
     }
 
@@ -2209,8 +2209,8 @@ int generate_eNB_dlsch_params_from_dci(int frame,
     }
 
 
-    if (harq_pid>=8) {
-      LOG_E(PHY,"ERROR: Format 2_2A: harq_pid=%d >= 8\n", harq_pid);
+    if (harq_pid>=((frame_parms->frame_type == TDD && frame_parms->tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8)) {
+      LOG_E(PHY,"ERROR: Format 2_2A: harq_pid=%d >= 10\n", harq_pid);
       return(-1);
     }
 
@@ -2376,8 +2376,8 @@ int generate_eNB_dlsch_params_from_dci(int frame,
     }
 
 
-    if (harq_pid>=8) {
-      LOG_E(PHY,"ERROR: Format 2_2A: harq_pid=%d >= 8\n", harq_pid);
+    if (harq_pid>=((frame_parms->frame_type == TDD && frame_parms->tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8)) {
+      LOG_E(PHY,"ERROR: Format 2_2A: harq_pid=%d >= 10\n", harq_pid);
       return(-1);
     }
 
@@ -2551,8 +2551,8 @@ int generate_eNB_dlsch_params_from_dci(int frame,
     }
 
 
-    if (harq_pid>=8) {
-      LOG_E(PHY,"ERROR: Format 2_2A: harq_pid=%d >= 8\n", harq_pid);
+    if (harq_pid>=((frame_parms->frame_type == TDD && frame_parms->tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8)) {
+      LOG_E(PHY,"ERROR: Format 2_2A: harq_pid=%d >= 10\n", harq_pid);
       return(-1);
     }
 
@@ -2633,8 +2633,8 @@ int generate_eNB_dlsch_params_from_dci(int frame,
 
     harq_pid  = ((DCI1E_5MHz_2A_M10PRB_TDD_t *)dci_pdu)->harq_pid;
 
-    if (harq_pid>=8) {
-      LOG_E(PHY,"ERROR: Format 1E_2A_M10PRB: harq_pid=%d >= 8\n", harq_pid);
+    if (harq_pid>=((frame_parms->frame_type == TDD && frame_parms->tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8)) {
+      LOG_E(PHY,"ERROR: Format 1E_2A_M10PRB: harq_pid=%d >= 10\n", harq_pid);
       return(-1);
     }
 
@@ -4108,6 +4108,7 @@ void extract_dci1_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, void *dci_p
     uint8_t TPC=0;
     uint8_t ndi=0;
     uint8_t harq_pid=0;
+    uint8_t dai=0;
 
     switch (N_RB_DL) {
     case 6:
@@ -4119,6 +4120,7 @@ void extract_dci1_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, void *dci_p
             TPC       = ((DCI1_1_5MHz_TDD_t *)dci_pdu)->TPC;
             ndi       = ((DCI1_1_5MHz_TDD_t *)dci_pdu)->ndi;
             harq_pid  = ((DCI1_1_5MHz_TDD_t *)dci_pdu)->harq_pid;
+            dai       = ((DCI1_1_5MHz_TDD_t *)dci_pdu)->dai;
         } else {
             mcs      = ((DCI1_1_5MHz_FDD_t *)dci_pdu)->mcs;
             rah      = ((DCI1_1_5MHz_FDD_t *)dci_pdu)->rah;
@@ -4140,6 +4142,7 @@ void extract_dci1_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, void *dci_p
             TPC       = ((DCI1_5MHz_TDD_t *)dci_pdu)->TPC;
             ndi       = ((DCI1_5MHz_TDD_t *)dci_pdu)->ndi;
             harq_pid  = ((DCI1_5MHz_TDD_t *)dci_pdu)->harq_pid;
+            dai       = ((DCI1_5MHz_TDD_t *)dci_pdu)->dai;
         } else {
             mcs      = ((DCI1_5MHz_FDD_t *)dci_pdu)->mcs;
             rah      = ((DCI1_5MHz_FDD_t *)dci_pdu)->rah;
@@ -4161,6 +4164,7 @@ void extract_dci1_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, void *dci_p
             TPC       = ((DCI1_10MHz_TDD_t *)dci_pdu)->TPC;
             ndi       = ((DCI1_10MHz_TDD_t *)dci_pdu)->ndi;
             harq_pid  = ((DCI1_10MHz_TDD_t *)dci_pdu)->harq_pid;
+            dai       = ((DCI1_10MHz_TDD_t *)dci_pdu)->dai;
         } else {
             mcs      = ((DCI1_10MHz_FDD_t *)dci_pdu)->mcs;
             rah      = ((DCI1_10MHz_FDD_t *)dci_pdu)->rah;
@@ -4182,6 +4186,7 @@ void extract_dci1_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, void *dci_p
             TPC        = ((DCI1_20MHz_TDD_t *)dci_pdu)->TPC;
             ndi       = ((DCI1_20MHz_TDD_t *)dci_pdu)->ndi;
             harq_pid  = ((DCI1_20MHz_TDD_t *)dci_pdu)->harq_pid;
+            dai       = ((DCI1_20MHz_TDD_t *)dci_pdu)->dai;
         } else {
             mcs      = ((DCI1_20MHz_FDD_t *)dci_pdu)->mcs;
             rah      = ((DCI1_20MHz_FDD_t *)dci_pdu)->rah;
@@ -4202,6 +4207,7 @@ void extract_dci1_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, void *dci_p
     pdci_info_extarcted->TPC      = TPC;
     pdci_info_extarcted->ndi1     = ndi;
     pdci_info_extarcted->harq_pid = harq_pid;
+    pdci_info_extarcted->dai      = dai;
 
 }
 
@@ -4220,6 +4226,7 @@ void extract_dci2_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb_
     uint8_t tpmi=0;
     uint8_t harq_pid=0;
     uint8_t TPC=0;
+    uint8_t dai=0;
 
     switch (N_RB_DL) {
 
@@ -4238,6 +4245,7 @@ void extract_dci2_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb_
                 TPC       = ((DCI2_5MHz_2A_TDD_t *)dci_pdu)->TPC;
                 ndi1      = ((DCI2_5MHz_2A_TDD_t *)dci_pdu)->ndi1;
                 ndi2      = ((DCI2_5MHz_2A_TDD_t *)dci_pdu)->ndi2;
+                dai       = ((DCI2_5MHz_2A_TDD_t *)dci_pdu)->dai;
             } else {
                 rah       = ((DCI2_5MHz_2A_FDD_t *)dci_pdu)->rah;
                 mcs1      = ((DCI2_5MHz_2A_FDD_t *)dci_pdu)->mcs1;
@@ -4266,6 +4274,7 @@ void extract_dci2_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb_
                 TPC       = ((DCI2_5MHz_4A_TDD_t *)dci_pdu)->TPC;
                 ndi1      = ((DCI2_5MHz_4A_TDD_t *)dci_pdu)->ndi1;
                 ndi2      = ((DCI2_5MHz_4A_TDD_t *)dci_pdu)->ndi2;
+                dai       = ((DCI2_5MHz_2A_TDD_t *)dci_pdu)->dai;
             } else {
                 rah       = ((DCI2_5MHz_4A_FDD_t *)dci_pdu)->rah;
                 mcs1      = ((DCI2_5MHz_4A_FDD_t *)dci_pdu)->mcs1;
@@ -4301,6 +4310,7 @@ void extract_dci2_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb_
                 TPC       = ((DCI2_5MHz_2A_TDD_t *)dci_pdu)->TPC;
                 ndi1      = ((DCI2_5MHz_2A_TDD_t *)dci_pdu)->ndi1;
                 ndi2      = ((DCI2_5MHz_2A_TDD_t *)dci_pdu)->ndi2;
+                dai       = ((DCI2_5MHz_2A_TDD_t *)dci_pdu)->dai;
             } else {
                 rah       = ((DCI2_5MHz_2A_FDD_t *)dci_pdu)->rah;
                 mcs1      = ((DCI2_5MHz_2A_FDD_t *)dci_pdu)->mcs1;
@@ -4329,6 +4339,7 @@ void extract_dci2_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb_
                 TPC       = ((DCI2_5MHz_4A_TDD_t *)dci_pdu)->TPC;
                 ndi1      = ((DCI2_5MHz_2A_TDD_t *)dci_pdu)->ndi1;
                 ndi2      = ((DCI2_5MHz_2A_TDD_t *)dci_pdu)->ndi2;
+                dai       = ((DCI2_5MHz_4A_TDD_t *)dci_pdu)->dai;
             } else {
                 rah       = ((DCI2_5MHz_4A_FDD_t *)dci_pdu)->rah;
                 mcs1      = ((DCI2_5MHz_4A_FDD_t *)dci_pdu)->mcs1;
@@ -4364,6 +4375,7 @@ void extract_dci2_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb_
                 TPC       = ((DCI2_10MHz_2A_TDD_t *)dci_pdu)->TPC;
                 ndi1      = ((DCI2_10MHz_2A_TDD_t *)dci_pdu)->ndi1;
                 ndi2      = ((DCI2_10MHz_2A_TDD_t *)dci_pdu)->ndi2;
+                dai       = ((DCI2_10MHz_2A_TDD_t *)dci_pdu)->dai;
             } else {
                 rah       = ((DCI2_10MHz_2A_FDD_t *)dci_pdu)->rah;
                 mcs1      = ((DCI2_10MHz_2A_FDD_t *)dci_pdu)->mcs1;
@@ -4392,6 +4404,7 @@ void extract_dci2_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb_
                 TPC       = ((DCI2_10MHz_4A_TDD_t *)dci_pdu)->TPC;
                 ndi1      = ((DCI2_10MHz_4A_TDD_t *)dci_pdu)->ndi1;
                 ndi2      = ((DCI2_10MHz_4A_TDD_t *)dci_pdu)->ndi2;
+                dai       = ((DCI2_10MHz_4A_TDD_t *)dci_pdu)->dai;
             } else {
                 rah       = ((DCI2_10MHz_4A_FDD_t *)dci_pdu)->rah;
                 mcs1      = ((DCI2_10MHz_4A_FDD_t *)dci_pdu)->mcs1;
@@ -4427,6 +4440,7 @@ void extract_dci2_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb_
                 TPC       = ((DCI2_20MHz_2A_TDD_t *)dci_pdu)->TPC;
                 ndi1      = ((DCI2_20MHz_2A_TDD_t *)dci_pdu)->ndi1;
                 ndi2      = ((DCI2_20MHz_2A_TDD_t *)dci_pdu)->ndi2;
+                dai       = ((DCI2_20MHz_2A_TDD_t *)dci_pdu)->dai;
             } else {
                 rah       = ((DCI2_20MHz_2A_FDD_t *)dci_pdu)->rah;
                 mcs1      = ((DCI2_20MHz_2A_FDD_t *)dci_pdu)->mcs1;
@@ -4455,6 +4469,7 @@ void extract_dci2_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb_
                 TPC       = ((DCI2_20MHz_4A_TDD_t *)dci_pdu)->TPC;
                 ndi1      = ((DCI2_20MHz_4A_TDD_t *)dci_pdu)->ndi1;
                 ndi2      = ((DCI2_20MHz_4A_TDD_t *)dci_pdu)->ndi2;
+                dai       = ((DCI2_20MHz_4A_TDD_t *)dci_pdu)->dai;
             } else {
                 rah       = ((DCI2_20MHz_4A_FDD_t *)dci_pdu)->rah;
                 mcs1      = ((DCI2_20MHz_4A_FDD_t *)dci_pdu)->mcs1;
@@ -4488,6 +4503,7 @@ void extract_dci2_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb_
     pdci_info_extarcted->TPC      = TPC;
     pdci_info_extarcted->ndi1     = ndi1;
     pdci_info_extarcted->ndi2     = ndi2;
+    pdci_info_extarcted->dai      = dai;
 
 }
 
@@ -4506,6 +4522,7 @@ void extract_dci2A_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb
     uint8_t tpmi=0;
     uint8_t harq_pid=0;
     uint8_t TPC=0;
+    uint8_t dai=0;
 
     AssertFatal( (nb_antenna_ports_eNB == 2) || (nb_antenna_ports_eNB == 4), "unsupported nb_antenna_ports_eNB %d\n", nb_antenna_ports_eNB);
     switch (N_RB_DL) {
@@ -4523,6 +4540,7 @@ void extract_dci2A_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb
           harq_pid  = ((DCI2A_1_5MHz_2A_TDD_t *)dci_pdu)->harq_pid;
           tbswap    = ((DCI2A_1_5MHz_2A_TDD_t *)dci_pdu)->tb_swap;
           TPC       = ((DCI2A_1_5MHz_2A_TDD_t *)dci_pdu)->TPC;
+          dai       = ((DCI2A_1_5MHz_2A_TDD_t *)dci_pdu)->dai;
         } else {
           mcs1      = ((DCI2A_1_5MHz_2A_FDD_t *)dci_pdu)->mcs1;
           mcs2      = ((DCI2A_1_5MHz_2A_FDD_t *)dci_pdu)->mcs2;
@@ -4548,6 +4566,7 @@ void extract_dci2A_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb
           tbswap    = ((DCI2A_1_5MHz_4A_TDD_t *)dci_pdu)->tb_swap;
           tpmi      = ((DCI2A_1_5MHz_4A_TDD_t *)dci_pdu)->tpmi;
           TPC       = ((DCI2A_1_5MHz_4A_TDD_t *)dci_pdu)->TPC;
+          dai       = ((DCI2A_1_5MHz_4A_TDD_t *)dci_pdu)->dai;
         } else {
           mcs1      = ((DCI2A_1_5MHz_4A_FDD_t *)dci_pdu)->mcs1;
           mcs2      = ((DCI2A_1_5MHz_4A_FDD_t *)dci_pdu)->mcs2;
@@ -4579,6 +4598,7 @@ void extract_dci2A_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb
           harq_pid  = ((DCI2A_5MHz_2A_TDD_t *)dci_pdu)->harq_pid;
           tbswap    = ((DCI2A_5MHz_2A_TDD_t *)dci_pdu)->tb_swap;
           TPC       = ((DCI2A_5MHz_2A_TDD_t *)dci_pdu)->TPC;
+          dai       = ((DCI2A_5MHz_2A_TDD_t *)dci_pdu)->dai;
         } else {
           mcs1      = ((DCI2A_5MHz_2A_FDD_t *)dci_pdu)->mcs1;
           mcs2      = ((DCI2A_5MHz_2A_FDD_t *)dci_pdu)->mcs2;
@@ -4606,6 +4626,7 @@ void extract_dci2A_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb
           tbswap    = ((DCI2A_5MHz_4A_TDD_t *)dci_pdu)->tb_swap;
           tpmi      = ((DCI2A_5MHz_4A_TDD_t *)dci_pdu)->tpmi;
           TPC       = ((DCI2A_5MHz_4A_TDD_t *)dci_pdu)->TPC;
+          dai       = ((DCI2A_5MHz_4A_TDD_t *)dci_pdu)->dai;
         } else {
           mcs1      = ((DCI2A_5MHz_4A_FDD_t *)dci_pdu)->mcs1;
           mcs2      = ((DCI2A_5MHz_4A_FDD_t *)dci_pdu)->mcs2;
@@ -4637,6 +4658,7 @@ void extract_dci2A_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb
           harq_pid  = ((DCI2A_10MHz_2A_TDD_t *)dci_pdu)->harq_pid;
           tbswap    = ((DCI2A_10MHz_2A_TDD_t *)dci_pdu)->tb_swap;
           TPC       = ((DCI2A_10MHz_2A_TDD_t *)dci_pdu)->TPC;
+          dai       = ((DCI2A_10MHz_2A_TDD_t *)dci_pdu)->dai;
         } else {
           mcs1      = ((DCI2A_10MHz_2A_FDD_t *)dci_pdu)->mcs1;
           mcs2      = ((DCI2A_10MHz_2A_FDD_t *)dci_pdu)->mcs2;
@@ -4664,6 +4686,7 @@ void extract_dci2A_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb
           tbswap    = ((DCI2A_10MHz_4A_TDD_t *)dci_pdu)->tb_swap;
           tpmi      = ((DCI2A_10MHz_4A_TDD_t *)dci_pdu)->tpmi;
           TPC       = ((DCI2A_10MHz_4A_TDD_t *)dci_pdu)->TPC;
+          dai       = ((DCI2A_10MHz_4A_TDD_t *)dci_pdu)->dai;
         } else {
           mcs1      = ((DCI2A_10MHz_4A_FDD_t *)dci_pdu)->mcs1;
           mcs2      = ((DCI2A_10MHz_4A_FDD_t *)dci_pdu)->mcs2;
@@ -4696,6 +4719,7 @@ void extract_dci2A_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb
           harq_pid  = ((DCI2A_20MHz_2A_TDD_t *)dci_pdu)->harq_pid;
           tbswap    = ((DCI2A_20MHz_2A_TDD_t *)dci_pdu)->tb_swap;
           TPC       = ((DCI2A_20MHz_2A_TDD_t *)dci_pdu)->TPC;
+          dai       = ((DCI2A_20MHz_2A_TDD_t *)dci_pdu)->dai;
         } else {
           mcs1      = ((DCI2A_20MHz_2A_FDD_t *)dci_pdu)->mcs1;
           mcs2      = ((DCI2A_20MHz_2A_FDD_t *)dci_pdu)->mcs2;
@@ -4723,6 +4747,7 @@ void extract_dci2A_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb
           tbswap    = ((DCI2A_20MHz_4A_TDD_t *)dci_pdu)->tb_swap;
           tpmi      = ((DCI2A_20MHz_4A_TDD_t *)dci_pdu)->tpmi;
           TPC       = ((DCI2A_20MHz_4A_TDD_t *)dci_pdu)->TPC;
+          dai       = ((DCI2A_20MHz_4A_TDD_t *)dci_pdu)->dai;
         } else {
           mcs1      = ((DCI2A_20MHz_4A_FDD_t *)dci_pdu)->mcs1;
           mcs2      = ((DCI2A_20MHz_4A_FDD_t *)dci_pdu)->mcs2;
@@ -4754,6 +4779,7 @@ void extract_dci2A_info(uint8_t N_RB_DL, lte_frame_type_t frame_type, uint8_t nb
     pdci_info_extarcted->tb_swap  = tbswap;
     pdci_info_extarcted->TPC      = TPC;
     pdci_info_extarcted->tpmi     = tpmi;
+    pdci_info_extarcted->dai      = dai;
 }
 
 int check_dci_format1_1a_coherency(DCI_format_t dci_format,
@@ -6221,8 +6247,8 @@ int generate_ue_dlsch_params_from_dci(int frame,
 
       harq_pid  = ((DCI1E_5MHz_2A_M10PRB_TDD_t *)dci_pdu)->harq_pid;
 
-      if (harq_pid>=8) {
-        LOG_E(PHY,"Format 1E_2A_M10PRB: harq_pid=%d >= 8\n", harq_pid);
+      if (harq_pid>=((frame_parms->frame_type == TDD && frame_parms->tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8)) {
+        LOG_E(PHY,"Format 1E_2A_M10PRB: harq_pid=%d >= 10\n", harq_pid);
         return(-1);
       }
 

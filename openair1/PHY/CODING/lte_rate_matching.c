@@ -485,7 +485,7 @@ uint32_t lte_rate_matching_turbo(uint32_t RTC,
 #endif
 
   if (Mdlharq>0) {  // Downlink
-    Nir = Nsoft/Kmimo/cmin(8,Mdlharq);
+    Nir = Nsoft/Kmimo/cmin(NUMBER_OF_HARQ_PID_MAX,Mdlharq);
     Ncb = cmin(Nir/C,3*(RTC<<5));
   }
   else {  // Uplink
@@ -712,7 +712,7 @@ int lte_rate_matching_turbo_rx(uint32_t RTC,
   }
 
   if (Mdlharq>0) { // Downlink
-    Nir = Nsoft/Kmimo/cmin(8,Mdlharq);
+    Nir = Nsoft/Kmimo/cmin(NUMBER_OF_HARQ_PID_MAX,Mdlharq);
     Ncb = cmin(Nir/C,3*(RTC<<5));
   }
   else {  // Uplink
@@ -933,7 +933,7 @@ void main()
                             e,
                             1,           //C
                             1827072,     //Nsoft,
-                            8,           //Mdlharq,
+                            NUMBER_OF_HARQ_PID_MAX,           //Mdlharq,
                             1,           //Kmimo,
                             rvidx,       //rvidx,
                             mod_order,   //Qm,

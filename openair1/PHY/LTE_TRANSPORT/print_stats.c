@@ -481,7 +481,7 @@ int dump_ue_stats(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc,char* buffer, int length
       if (ue->transmission_mode[eNB] == 6)
         len += sprintf(&buffer[len], "[UE PROC] Mode 6 Wideband CQI eNB %d : %d dB\n",eNB,ue->measurements.precoded_cqi_dB[eNB][0]);
 
-      for (harq_pid=0;harq_pid<8;harq_pid++) {
+      for (harq_pid=0;harq_pid<((ue->frame_parms.frame_type == TDD && ue->frame_parms.tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8);harq_pid++) {
 	len+=sprintf(&buffer[len],"[UE PROC] eNB %d: CW 0 harq_pid %d, mcs %d:",eNB,harq_pid,ue->dlsch[0][0][0]->harq_processes[harq_pid]->mcs);
 	for (round=0;round<8;round++)
 	  len+=sprintf(&buffer[len],"%d/%d ",
@@ -494,7 +494,7 @@ int dump_ue_stats(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc,char* buffer, int length
 
         len += sprintf(&buffer[len], "[UE PROC] eNB %d: dl_power_off = %d\n",eNB,ue->dlsch[0][0][0]->harq_processes[0]->dl_power_off);
 
-	for (harq_pid=0;harq_pid<8;harq_pid++) {
+	for (harq_pid=0;harq_pid<((ue->frame_parms.frame_type == TDD && ue->frame_parms.tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8);harq_pid++) {
 	  len+=sprintf(&buffer[len],"[UE PROC] eNB %d: CW 1 harq_pid %d, mcs %d:",eNB,harq_pid,ue->dlsch[0][0][1]->harq_processes[0]->mcs);
 	  for (round=0;round<8;round++)
 	    len+=sprintf(&buffer[len],"%d/%d ",
@@ -608,7 +608,7 @@ int dump_eNB_stats(PHY_VARS_eNB *eNB, char* buffer, int length)
 
         //eNB->total_system_throughput = eNB->UE_stats[UE_id].total_transmitted_bits + eNB->total_system_throughput;
          
-	for (i=0; i<8; i++)
+	for (i=0; i<((eNB->frame_parms.frame_type == TDD && eNB->frame_parms.tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8); i++)
 	  success = success + (eNB->UE_stats[UE_id].dlsch_trials[i][0] - eNB->UE_stats[UE_id].dlsch_l2_errors[i]);
 
     
@@ -719,7 +719,8 @@ int dump_eNB_stats(PHY_VARS_eNB *eNB, char* buffer, int length)
 
         len += sprintf(&buffer[len],"ULSCH errors/attempts per harq (per round): \n");
 
-        for (i=0; i<8; i++) {
+        for (i=0; i<((eNB->frame_parms.frame_type == TDD && eNB->frame_parms.tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8); i++) {
+
           len += sprintf(&buffer[len],"   harq %d: %d/%d (fer %d) (%d/%d, %d/%d, %d/%d, %d/%d) ",
                          i,
                          eNB->UE_stats[UE_id].ulsch_errors[i],
@@ -761,7 +762,7 @@ int dump_eNB_stats(PHY_VARS_eNB *eNB, char* buffer, int length)
 
         len += sprintf(&buffer[len],"DLSCH errors/attempts per harq (per round): \n");
 
-        for (i=0; i<8; i++) {
+        for (i=0; i<((eNB->frame_parms.frame_type == TDD && eNB->frame_parms.tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8); i++) {
           len += sprintf(&buffer[len],"   harq %d: %d/%d (%d/%d/%d, %d/%d/%d, %d/%d/%d, %d/%d/%d) ",
                          i,
                          eNB->UE_stats[UE_id].dlsch_l2_errors[i],

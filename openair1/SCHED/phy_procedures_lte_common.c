@@ -80,6 +80,28 @@ void get_Msg3_alloc(LTE_DL_FRAME_PARMS *frame_parms,
         *frame = (current_frame+1) & 1023;
         break;
       }
+    } else if (frame_parms->tdd_config == 2) {
+		//LOG_TDD("### get_Msg3_alloc: current_subframe=%d\n",current_subframe);
+      switch (current_subframe) {
+
+      case 0:
+        *subframe = 7;
+        *frame = current_frame;
+        break;
+
+      case 3:
+      case 4:
+      case 5:
+        *subframe = 2;
+        *frame = (current_frame+1) & 1023;
+        break;
+
+      case 8:
+      case 9:
+        *subframe = 7;
+        *frame = (current_frame+1) & 1023;
+        break;
+      }
     } else if (frame_parms->tdd_config == 3) {
       switch (current_subframe) {
 
@@ -172,6 +194,11 @@ void get_Msg3_alloc_ret(LTE_DL_FRAME_PARMS *frame_parms,
       // original PUSCH in 7, PHICH in 1 (S), ret in 7
       // original PUSCH in 8, PHICH in 4, ret in 8
       *frame = (current_frame+1) & 1023;
+    } else if (frame_parms->tdd_config == 2) {
+		//LOG_TDD("### get_Msg3_alloc_ret: current_frame=%d\n",current_frame);
+      // original PUSCH in 2, PHICH in 8, ret in 2 next frame
+      // original PUSCH in 7, PHICH in 3, ret in 7 next frame
+      *frame=(current_frame+1) & 1023;
     } else if (frame_parms->tdd_config == 3) {
       // original PUSCH in 2, PHICH in 8, ret in 2 next frame
       // original PUSCH in 3, PHICH in 9, ret in 3 next frame
@@ -217,6 +244,27 @@ uint8_t get_Msg3_harq_pid(LTE_DL_FRAME_PARMS *frame_parms,
       }
 
       break;
+
+
+    case 2:
+    	//LOG_TDD("### get_Msg3_alloc: current_subframe=%d\n",current_subframe);
+      switch (current_subframe) {
+
+      case 0:
+      case 8:
+      case 9:
+        ul_subframe = 7;
+        break;
+
+      case 3:
+      case 4:
+      case 5:
+        ul_subframe = 2;
+        break;
+      }
+
+      break;
+
 
     case 3:
       switch (current_subframe) {
@@ -275,13 +323,33 @@ uint8_t get_Msg3_harq_pid(LTE_DL_FRAME_PARMS *frame_parms,
 
 }
 
+
+unsigned char ACK_Subframe_TDD_Config2_TBL[2][4] = { {4 , 5 , 8 , 99} , {9 , 0 , 3 , 99} } ;
+
 unsigned char ul_ACK_subframe2_dl_subframe(LTE_DL_FRAME_PARMS *frame_parms,unsigned char subframe,unsigned char ACK_index)
 {
 
+
+	//LOG_TDD("ul_ACK_subframe2_dl_subframe start\n");
+	
   if (frame_parms->frame_type == FDD) {
     return((subframe<4) ? subframe+6 : subframe-4);
   } else {
     switch (frame_parms->tdd_config) {
+
+	case 2:
+      if (subframe == 2) {  // ACK subframes 4 , 5 and 8
+        return(ACK_Subframe_TDD_Config2_TBL[0][ACK_index]);
+      } else if (subframe == 7) { // ACK subframe 9 , 0 and 3
+        return(ACK_Subframe_TDD_Config2_TBL[1][ACK_index]);
+      } else {
+        LOG_E(PHY,"phy_procedures_lte_common.c/ul_ACK_subframe2_dl_subframe: illegal subframe %d for tdd_config %d\n",
+              subframe,frame_parms->tdd_config);
+        return(99);
+      }
+
+      break;
+
     case 3:
       if (subframe == 2) {  // ACK subframes 5 and 6
         if (ACK_index==2)
@@ -293,7 +361,7 @@ unsigned char ul_ACK_subframe2_dl_subframe(LTE_DL_FRAME_PARMS *frame_parms,unsig
       } else if (subframe == 4) { // ACK subframes 9 and 0
         return((9+ACK_index)%10);
       } else {
-        LOG_E(PHY,"phy_procedures_lte_common.c/subframe2_dl_harq_pid: illegal subframe %d for tdd_config %d\n",
+        LOG_E(PHY,"phy_procedures_lte_common.c/ul_ACK_subframe2_dl_subframe: illegal subframe %d for tdd_config %d\n",
               subframe,frame_parms->tdd_config);
         return(0);
       }
@@ -311,7 +379,7 @@ unsigned char ul_ACK_subframe2_dl_subframe(LTE_DL_FRAME_PARMS *frame_parms,unsig
           } else if (subframe == 3) { // ACK subframes 6, 7 8 and 9
             return(6+ACK_index);  // To be updated
           } else {
-            LOG_E(PHY,"phy_procedures_lte_common.c/subframe2_dl_harq_pid: illegal subframe %d for tdd_config %d\n",
+            LOG_E(PHY,"phy_procedures_lte_common.c/ul_ACK_subframe2_dl_subframe: illegal subframe %d for tdd_config %d\n",
                   subframe,frame_parms->tdd_config);
             return(0);
           }
@@ -343,10 +411,25 @@ unsigned char ul_ACK_subframe2_dl_subframe(LTE_DL_FRAME_PARMS *frame_parms,unsig
 unsigned char ul_ACK_subframe2_M(LTE_DL_FRAME_PARMS *frame_parms,unsigned char subframe)
 {
 
+	//LOG_TDD("ul_ACK_subframe2_M start\n");
+
   if (frame_parms->frame_type == FDD) {
     return(1);
   } else {
     switch (frame_parms->tdd_config) {
+		
+	case 2:
+      if (subframe == 2) {  // ACK subframes 4 , 5 and 8 
+        return(3); // should be 4
+      } else if (subframe == 7) { // ACK subframes 9 , 0 and 3
+        return(3); // should be 4
+      } else {
+        LOG_E(PHY,"phy_procedures_lte_common.c/ul_ACK_subframe2_M: illegal subframe %d for tdd_config %d\n",
+              subframe,frame_parms->tdd_config);
+        return(0);
+      }
+
+      break;
     case 3:
       if (subframe == 2) {  // ACK subframes 5 and 6
         return(2); // should be 3
@@ -355,7 +438,7 @@ unsigned char ul_ACK_subframe2_M(LTE_DL_FRAME_PARMS *frame_parms,unsigned char s
       } else if (subframe == 4) { // ACK subframes 9 and 0
         return(2);
       } else {
-        LOG_E(PHY,"phy_procedures_lte_common.c/subframe2_dl_harq_pid: illegal subframe %d for tdd_config %d\n",
+        LOG_E(PHY,"phy_procedures_lte_common.c/ul_ACK_subframe2_M: illegal subframe %d for tdd_config %d\n",
               subframe,frame_parms->tdd_config);
         return(0);
       }
@@ -368,7 +451,7 @@ unsigned char ul_ACK_subframe2_M(LTE_DL_FRAME_PARMS *frame_parms,unsigned char s
           } else if (subframe == 3) { // ACK subframes 6,7,8 and 9
             return(4);
           } else {
-            LOG_E(PHY,"phy_procedures_lte_common.c/subframe2_dl_harq_pid: illegal subframe %d for tdd_config %d\n",
+            LOG_E(PHY,"phy_procedures_lte_common.c/ul_ACK_subframe2_M: illegal subframe %d for tdd_config %d\n",
                   subframe,frame_parms->tdd_config);
             return(0);
           }
@@ -379,7 +462,7 @@ unsigned char ul_ACK_subframe2_M(LTE_DL_FRAME_PARMS *frame_parms,unsigned char s
               if (subframe == 2) {  // ACK subframes 0,3,4,5,6,7,8 and 9
                 return(8); // should be 3
               } else {
-                LOG_E(PHY,"phy_procedures_lte_common.c/subframe2_dl_harq_pid: illegal subframe %d for tdd_config %d\n",
+                LOG_E(PHY,"phy_procedures_lte_common.c/ul_ACK_subframe2_M: illegal subframe %d for tdd_config %d\n",
                       subframe,frame_parms->tdd_config);
                 return(0);
               }
@@ -422,7 +505,7 @@ uint8_t get_reset_ack(LTE_DL_FRAME_PARMS *frame_parms,
   uint8_t status=0;
   uint8_t subframe_ul=0xff, subframe_dl0=0xff, subframe_dl1=0xff,subframe_dl2=0xff, subframe_dl3=0xff;
 
-  //  printf("get_ack: SF %d\n",subframe);
+  //printf("get_ack: SF %d\n",subframe_tx);
   if (frame_parms->frame_type == FDD) {
     if (subframe_tx < 4)
       subframe_dl0 = subframe_tx + 6;
@@ -435,7 +518,7 @@ uint8_t get_reset_ack(LTE_DL_FRAME_PARMS *frame_parms,
     //LOG_I(PHY,"dl subframe %d send_harq_status %d cw_idx %d, reset %d\n",subframe_dl0, status, cw_idx, do_reset);
     if(do_reset)
     	harq_ack[subframe_dl0].send_harq_status = 0;
-    //printf("get_ack: Getting ACK/NAK for PDSCH (subframe %d) => %d\n",subframe_dl,o_ACK[0]);
+    //printf("get_ack: Getting ACK/NAK for PDSCH (subframe %d) => %d\n",subframe_dl0,o_ACK[0]);
   } else {
     switch (frame_parms->tdd_config) {
     case 1:
@@ -524,6 +607,12 @@ uint8_t get_reset_ack(LTE_DL_FRAME_PARMS *frame_parms,
       }
 
       break;
+
+	case 2:
+		//printf("get_reset_ack: case 2 in.\n");
+		break;
+
+
 
     case 3:
       if (subframe_tx == 2) {  // ACK subframes 5 and 6
@@ -743,6 +832,27 @@ lte_subframe_t subframe_select(LTE_DL_FRAME_PARMS *frame_parms,unsigned char sub
       break;
     }
 
+  case 2:
+    switch (subframe) {
+    case 0:
+    case 3:
+    case 4:
+    case 5:
+    case 8:
+    case 9:
+      return(SF_DL);
+      break;
+
+    case 2:
+    case 7:
+      return(SF_UL);
+      break;
+
+    default:
+      return(SF_S);
+      break;
+    }
+
   case 3:
     if  ((subframe<1) || (subframe>=5))
       return(SF_DL);
@@ -842,6 +952,12 @@ unsigned int is_phich_subframe(LTE_DL_FRAME_PARMS *frame_parms,unsigned char sub
     case 1:
       if ((subframe == 1) || (subframe == 4) || (subframe == 6) || (subframe == 9))
         return(1);
+
+      break;
+
+    case 2:
+      if ((subframe == 3) || (subframe == 8))
+          return(1);
 
       break;
 

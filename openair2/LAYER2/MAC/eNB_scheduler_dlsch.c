@@ -325,6 +325,9 @@ set_ul_DAI(
   UE_list_t            *UE_list  = &eNB->UE_list;
   unsigned char         DAI;
 
+
+	//LOG_TDD("### set_ul_DAI start. module_idP=%d, UE_idP=%d,CC_idP=%d,frameP=%d,subframeP=%d\n",module_idP,UE_idP,CC_idP,frameP,subframeP);
+
   if (frame_parms[CC_idP]->frame_type == TDD) {
     DAI = (UE_list->UE_template[CC_idP][UE_idP].DAI-1)&3;
     LOG_D(MAC,"[eNB %d] CC_id %d Frame %d, subframe %d: DAI %d for UE %d\n",module_idP,CC_idP,frameP,subframeP,DAI,UE_idP);
@@ -355,8 +358,25 @@ set_ul_DAI(
       }
 
     case 2:
-      //      if ((subframeP==3)||(subframeP==8))
-      //  UE_list->UE_template[CC_idP][UE_idP].DAI_ul = DAI;
+      switch (subframeP) {
+      case 4:
+      case 5:
+      case 6:
+      case 8:
+        UE_list->UE_template[CC_idP][UE_idP].DAI_ul[2] = DAI;
+        break;
+
+      case 9:
+      case 0:
+      case 1:
+      case 3:
+        UE_list->UE_template[CC_idP][UE_idP].DAI_ul[7] = DAI;
+        break;
+
+      default:
+        break;
+      }
+
       break;
 
     case 3:
@@ -2040,6 +2060,8 @@ void set_ue_dai(
 //------------------------------------------------------------------------------
 {
 
+	//LOG_TDD("### set_ue_dai start. subframeP=%d, tdd_config=%d,UE_id=%d,CC_id=%d\n",subframeP,tdd_config,UE_id,CC_id);
+
   switch (tdd_config) {
   case 0:
     if ((subframeP==0)||(subframeP==1)||(subframeP==3)||(subframeP==5)||(subframeP==6)||(subframeP==8)) {
@@ -2056,7 +2078,7 @@ void set_ue_dai(
     break;
 
   case 2:
-    if ((subframeP==4)||(subframeP==5)) {
+    if ((subframeP==4)||(subframeP==9)) {
       UE_list->UE_template[CC_id][UE_id].DAI = 0;
     }
 

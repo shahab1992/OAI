@@ -2013,8 +2013,12 @@ uint8_t get_num_pdcch_symbols(uint8_t num_dci,
   else if (CCE_max_used_index < get_nCCE(2, frame_parms, get_mi(frame_parms, subframe)))
     return(cmax(2,nCCEmin));
   //else if ((9*numCCE) <= (frame_parms->N_RB_DL*((frame_parms->nb_antenna_ports_eNB==4) ? 7 : 8)))
-  else if (CCE_max_used_index < get_nCCE(3, frame_parms, get_mi(frame_parms, subframe)))
-    return(cmax(3,nCCEmin));
+  else if (CCE_max_used_index < get_nCCE(3, frame_parms, get_mi(frame_parms, subframe))){
+      if ((frame_parms->frame_type == TDD) && ((subframe == 1) || (subframe == 6)))
+        return(cmax(2,nCCEmin));
+      else
+        return(cmax(3,nCCEmin));
+  }
   else if (frame_parms->N_RB_DL<=10) {
     if (frame_parms->Ncp == 0) { // normal CP
       printf("numCCE %d, N_RB_DL = %d : should be returning 4 PDCCH symbols (%d,%d,%d)\n",numCCE,frame_parms->N_RB_DL,

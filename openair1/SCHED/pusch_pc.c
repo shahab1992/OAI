@@ -46,7 +46,7 @@ int16_t get_hundred_times_delta_IF_eNB(PHY_VARS_eNB *eNB,uint8_t UE_id,uint8_t h
   uint16_t beta_offset_pusch;
 
   DevAssert( UE_id < NUMBER_OF_UE_MAX+1 );
-  DevAssert( harq_pid < 8 );
+  DevAssert( harq_pid < ((eNB->frame_parms.frame_type == TDD && eNB->frame_parms.tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8) );
 
   Nre = eNB->ulsch[UE_id]->harq_processes[harq_pid]->Nsymb_initial *
         eNB->ulsch[UE_id]->harq_processes[harq_pid]->nb_rb*12;

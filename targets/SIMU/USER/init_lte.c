@@ -71,7 +71,7 @@ PHY_VARS_eNB* init_lte_eNB(LTE_DL_FRAME_PARMS *frame_parms,
   for (i=0; i<NUMBER_OF_UE_MAX; i++) {
     LOG_I(PHY,"Allocating Transport Channel Buffers for DLSCH, UE %d\n",i);
     for (j=0; j<2; j++) {
-      PHY_vars_eNB->dlsch[i][j] = new_eNB_dlsch(1,8,NSOFT,frame_parms->N_RB_DL,abstraction_flag,frame_parms);
+      PHY_vars_eNB->dlsch[i][j] = new_eNB_dlsch(1,((frame_parms->frame_type == TDD && frame_parms->tdd_config == 2) ? 10 : 8),NSOFT,frame_parms->N_RB_DL,abstraction_flag,frame_parms);
       if (!PHY_vars_eNB->dlsch[i][j]) {
 	LOG_E(PHY,"Can't get eNB dlsch structures for UE %d \n", i);
 	exit(-1);

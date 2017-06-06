@@ -517,7 +517,7 @@ void phy_scope_UE(FD_lte_phy_scope_ue *form,
   if (phy_vars_ue->dlsch[subframe&0x1][eNB_id][0]!=NULL) {
     harq_pid = phy_vars_ue->dlsch[subframe&0x1][eNB_id][0]->current_harq_pid;
 
-    if (harq_pid>=8)
+    if (harq_pid>=((frame_parms->frame_type == TDD && frame_parms->tdd_config == 2) ? NUMBER_OF_HARQ_PID_MAX : 8))
       return;
 
     mcs = phy_vars_ue->dlsch[subframe&0x1][eNB_id][0]->harq_processes[harq_pid]->mcs;

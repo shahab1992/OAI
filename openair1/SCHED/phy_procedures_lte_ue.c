@@ -329,7 +329,7 @@ void ra_succeeded(uint8_t Mod_id,uint8_t CC_id,uint8_t eNB_index)
   PHY_vars_UE_g[Mod_id][CC_id]->ulsch_Msg3_active[eNB_index] = 0;
   PHY_vars_UE_g[Mod_id][CC_id]->UE_mode[eNB_index] = PUSCH;
 
-  for (i=0; i<8; i++) {
+  for (i=0; i<NUMBER_OF_HARQ_PID_MAX; i++) {
     if (PHY_vars_UE_g[Mod_id][CC_id]->ulsch[eNB_index]->harq_processes[i]) {
       PHY_vars_UE_g[Mod_id][CC_id]->ulsch[eNB_index]->harq_processes[i]->status=IDLE;
       PHY_vars_UE_g[Mod_id][CC_id]->dlsch[0][eNB_index][0]->harq_processes[i]->round=0;
@@ -708,6 +708,8 @@ uint16_t get_n1_pucch(PHY_VARS_UE *ue,
   int sf;
   int M;
   uint8_t ack_counter=0;
+  int subframe_offset;
+  uint8_t rcv_subframe;
   // clear this, important for case where n1_pucch selection is not used
   int subframe=proc->subframe_tx;
 
@@ -813,6 +815,53 @@ uint16_t get_n1_pucch(PHY_VARS_UE *ue,
 
 
       break;
+
+    case 2:  // DL:S:UL:DL:DL:DL:S:UL:DL:DL
+      if (SR == 0) {
+        
+        M = 4;
+        
+        if(subframe==2) {
+            if ( ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[8].dai==0 ) {
+                rcv_subframe = 8;
+                subframe_offset = 2;
+            } else if ( ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[5].dai==0 ) {
+                rcv_subframe = 5;
+                subframe_offset = 1;
+            } else if ( ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[4].dai==0 ) {
+                rcv_subframe = 4;
+                subframe_offset = 0;
+            } else {
+                return(0);
+            }
+        } else if(subframe==7) {
+            if ( ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[3].dai==0 ) {
+                rcv_subframe = 3;
+                subframe_offset = 2;
+            } else if ( ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[0].dai==0 ) {
+                rcv_subframe = 0;
+                subframe_offset = 1;
+            } else if ( ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[9].dai==0 ) {
+                rcv_subframe = 9;
+                subframe_offset = 0;
+            } else {
+                return(0);
+            }
+        } else {
+            return(0);
+        }
+        
+        nCCE0 =  ue->pdcch_vars[proc->subframe_rx & 0x1][eNB_id]->nCCE[rcv_subframe];
+        
+        // n1_pucch = (M - m - 1) * N_c + m N_c+1 + nCCE,m + N1_PUCCH
+        n1_pucch0 = (M-subframe_offset-1)*(get_Np(frame_parms->N_RB_DL,nCCE0,0)) + subframe_offset*(get_Np(frame_parms->N_RB_DL,nCCE0,1)) + nCCE0 + frame_parms->pucch_config_common.n1PUCCH_AN;
+        return(n1_pucch0);
+      } else {
+        return( ue->scheduling_request_config[eNB_id].sr_PUCCH_ResourceIndex );
+      }
+      break;
+
+
 
     case 3:  // DL:S:UL:UL:UL:DL:DL:DL:DL:DL
       // in this configuration we have M=2 from pg 68 of 36.213 (v8.6)
@@ -1480,6 +1529,7 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
   uint8_t ack_status_cw1=0;
   uint8_t cqi_status = 0;
   uint8_t ri_status  = 0;
+  LTE_DL_FRAME_PARMS *frame_parms=&ue->frame_parms;
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_UE_TX_ULSCH_UESPEC,VCD_FUNCTION_IN);
 
   // get harq_pid from subframe relationship
@@ -1521,6 +1571,79 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
       Msg3_flag=0;
     }
   }
+  
+	if (frame_parms->frame_type == FDD) {
+	// for FDD
+
+	// current subframe to dl subframe
+	int dl_subframe = (subframe_tx < 4) ? (subframe_tx + 6) : (subframe_tx - 4);
+
+	// check DLSCH recieve
+	if (ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[dl_subframe].send_harq_status > 0) {
+	  ue->ulsch[eNB_id]->harq_processes[harq_pid]->O_ACK = 1;
+	} else {
+	  ue->ulsch[eNB_id]->harq_processes[harq_pid]->O_ACK = 0;
+	}
+	} else {
+	// for TDD
+	if (ue->ulsch[eNB_id]->harq_processes[harq_pid]->rcv_ulgrant != 1) {
+	  // for onPUSCH not based on PDCCH
+	  // note: for onPUSCH based on PDCCH, set O_ACK in generate_ue_ulsch_params_from_dci().
+
+	  uint8_t O_ACK = 0;
+
+	  // get M value
+	  uint8_t M = ul_ACK_subframe2_M(&ue->frame_parms, subframe_tx);
+
+	  // check DLSCH recieve
+	  uint8_t rx_flag = 0;
+	  for (uint8_t m = 0; m < M; m++) {
+	    // current subframe to dl subframe
+	    int dl_subframe = ul_ACK_subframe2_dl_subframe(&ue->frame_parms, subframe_tx, m);
+
+	    if ((ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[dl_subframe].send_harq_status > 0) ||
+	        (ue->dlsch[proc->subframe_rx&0x1][eNB_id][1]->harq_ack[dl_subframe].send_harq_status > 0)) {
+	      rx_flag = 1;
+		  break;
+	    }
+	  }
+
+	  if (rx_flag == 1) {
+	    // recieve DLSCH at least 1 time.
+	    if (ue->ulsch[eNB_id]->bundling) {
+	      // for HARQ-ACK bundling
+	//            if (ue->transmission_mode[eNB_id] == TM_5G) {
+	//              // Transmission mode 10(TM_5G) supports up to two transport blocks
+	//              O_ACK = 2;
+	//            } else {
+	        O_ACK = 1;
+	//            }
+	    } else {
+	      // for HARQ-ACK multiplexing
+
+	      // if special subframe configuration=0,5(Normal CP) or 0,4(Extended CP),
+	      // DLSCH transmission at special subframe is disable.
+	      if ( ((frame_parms->tdd_config_S==0) && (frame_parms->Ncp==0)) ||
+	           ((frame_parms->tdd_config_S==5) && (frame_parms->Ncp==0)) ||
+	           ((frame_parms->tdd_config_S==0) && (frame_parms->Ncp==1)) ||
+	           ((frame_parms->tdd_config_S==4) && (frame_parms->Ncp==1)) ) {
+	        M--;
+	      }
+
+	      O_ACK = M;
+	//            if (ue->transmission_mode[eNB_id] == TM_5G) {
+	//              // Transmission mode 10(TM_5G) supports up to two transport blocks
+	//              O_ACK *= 2;
+	//            }
+	    }
+	  }
+	  // set O_ACK
+	  ue->ulsch[eNB_id]->harq_processes[harq_pid]->O_ACK = O_ACK;
+	}
+	}
+
+  
+  
   
   if (ue->ulsch[eNB_id]->harq_processes[harq_pid]->subframe_scheduling_flag == 1) {
 
@@ -1577,6 +1700,7 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
         LOG_D(PHY,"PUSCH MAX Retransmission achieved ==> send last pusch\n");
         ue->ulsch[eNB_id]->harq_processes[harq_pid]->subframe_scheduling_flag = 0;
         ue->ulsch[eNB_id]->harq_processes[harq_pid]->round  = 0;
+        ue->ulsch[eNB_id]->harq_processes[harq_pid]->rcv_ulgrant = 0;
     }
     
     ack_status_cw0 = reset_ack(&ue->frame_parms,
@@ -3541,7 +3665,7 @@ void ue_pdsch_procedures(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc, int eNB_id, PDSC
       if (ue->transmission_mode[eNB_id]==7) {
         if (ue->frame_parms.Ncp==0) {
           if ((m==3) || (m==6) || (m==9) || (m==12))
-            //LOG_D(PHY,"[UE %d] dlsch->active in subframe %d => %d, l=%d\n",phy_vars_ue->Mod_id,subframe_rx,phy_vars_ue->dlsch_ue[eNB_id][0]->active, l);
+            //LOG_D(PHY,"[UE %d] dlsch->active in subframe %d => %d, l=%d\n",phy_vars_ue->Mod_id,subframe_rx,phy_vars_ue->dlsch[eNB_id][0]->active, l);
             lte_dl_bf_channel_estimation(ue,eNB_id,0,subframe_rx*2+(m>6?1:0),5,m);
         } else {
           LOG_E(PHY,"[UE %d]Beamforming channel estimation not supported yet for TM7 extented CP.\n",ue->Mod_id);

@@ -621,9 +621,9 @@ typedef struct {
   /// C-RNTI of UE
   rnti_t rnti;
   /// NDI from last scheduling
-  uint8_t oldNDI[8];
+  uint8_t oldNDI[NUMBER_OF_HARQ_PID_MAX];
   /// NDI from last UL scheduling
-  uint8_t oldNDI_UL[8];
+  uint8_t oldNDI_UL[NUMBER_OF_HARQ_PID_MAX];
   /// Flag to indicate UL has been scheduled at least once
   boolean_t ul_active;
   /// Flag to indicate UE has been configured (ACK from RRCConnectionSetup received)
@@ -649,13 +649,13 @@ typedef struct {
   /// DCI buffer for DLSCH
   /* rounded to 32 bits unit (actual value should be 8 due to the logic
    * of the function generate_dci0) */
-  uint8_t DLSCH_DCI[8][(((MAX_DCI_SIZE_BITS)+31)>>5)*4];
+  uint8_t DLSCH_DCI[NUMBER_OF_HARQ_PID_MAX][(((MAX_DCI_SIZE_BITS)+31)>>5)*4];
 
   /// Number of Allocated RBs for DL after scheduling (prior to frequency allocation)
-  uint16_t nb_rb[8]; // num_max_harq
+  uint16_t nb_rb[NUMBER_OF_HARQ_PID_MAX]; // num_max_harq
 
   /// Number of Allocated RBs for UL after scheduling (prior to frequency allocation)
-  uint16_t nb_rb_ul[8]; // num_max_harq
+  uint16_t nb_rb_ul[NUMBER_OF_HARQ_PID_MAX]; // num_max_harq
 
   /// Number of Allocated RBs by the ulsch preprocessor
   uint8_t pre_allocated_nb_rb_ul;
@@ -675,7 +675,7 @@ typedef struct {
   /// DCI buffer for ULSCH
   /* rounded to 32 bits unit (actual value should be 8 due to the logic
    * of the function generate_dci0) */
-  uint8_t ULSCH_DCI[8][(((MAX_DCI_SIZE_BITS)+31)>>5)*4];
+  uint8_t ULSCH_DCI[NUMBER_OF_HARQ_PID_MAX][(((MAX_DCI_SIZE_BITS)+31)>>5)*4];
 
   /// DL DAI
   uint8_t DAI;
@@ -687,7 +687,7 @@ typedef struct {
   uint8_t ul_SR;
 
   ///Resource Block indication for each sub-band in MU-MIMO
-  uint8_t rballoc_subband[8][50];
+  uint8_t rballoc_subband[NUMBER_OF_HARQ_PID_MAX][50];
 
   // Logical channel info for link with RLC
 

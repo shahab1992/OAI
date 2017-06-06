@@ -394,7 +394,7 @@ void reset_stats(FL_OBJECT *button, long arg) {
     PHY_VARS_eNB *phy_vars_eNB = PHY_vars_eNB_g[0][0];
 
     for (i=0; i<NUMBER_OF_UE_MAX; i++) {
-        for (k=0; k<8; k++) { //harq_processes
+        for (k=0; k<NUMBER_OF_HARQ_PID_MAX; k++) { //harq_processes
             for (j=0; j<phy_vars_eNB->dlsch[i][0]->Mlimit; j++) {
                 phy_vars_eNB->UE_stats[i].dlsch_NAK[k][j]=0;
                 phy_vars_eNB->UE_stats[i].dlsch_ACK[k][j]=0;

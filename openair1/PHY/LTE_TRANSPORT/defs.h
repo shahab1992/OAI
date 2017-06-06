@@ -181,6 +181,8 @@ typedef struct {
   uint8_t subframe_scheduling_flag;
   /// Subframe cba scheduling indicator (i.e. Transmission opportunity indicator)
   uint8_t subframe_cba_scheduling_flag;
+  /// PUSCH transmission adjusted based on a detected PDCCH with DCI format 0 indicator
+  uint8_t rcv_ulgrant;
   /// First Allocated RB
   uint16_t first_rb;
   /// Current Number of RBs
@@ -266,7 +268,10 @@ typedef struct {
   /// First-round error threshold for fine-grain rate adaptation
   uint8_t error_threshold;
   /// Pointers to 8 HARQ processes for the DLSCH
-  LTE_DL_eNB_HARQ_t *harq_processes[8];
+  LTE_DL_eNB_HARQ_t *harq_processes[NUMBER_OF_HARQ_PID_MAX];
+  /// circular list of free harq PIDs (the oldest come first)
+  /// (12 is arbitrary value, must be > to max number of DL HARQ processes in LTE)
+  int harq_pid_freelist[12];
   /// Number of soft channel bits
   uint32_t G;
   /// Codebook index for this dlsch (0,1,2,3)
@@ -283,7 +288,12 @@ typedef struct {
   int16_t sqrt_rho_a;
   /// amplitude of PDSCH (compared to RS) in symbols containing pilots
   int16_t sqrt_rho_b;
-
+  /// Indicator of TX activation per subframe.  Used during PUCCH detection for ACK/NAK.
+  uint8_t subframe_tx_reserved[2];
+  /// Process ID's per subframe.  Used to associate received ACKs on PUSCH/PUCCH to DLSCH harq process ids
+  uint8_t harq_ids_reserved[2];
+  /// First CCE of last PDSCH scheduling per subframe.  Again used during PUCCH detection for ACK/NAK.
+  uint8_t nCCE_reserved[2];
 } LTE_eNB_DLSCH_t;
 
 #define PUSCH_x 2
@@ -295,7 +305,7 @@ typedef struct {
   /// SRS active flag
   uint8_t srs_active;
   /// Pointers to 8 HARQ processes for the ULSCH
-  LTE_UL_UE_HARQ_t *harq_processes[8];
+  LTE_UL_UE_HARQ_t *harq_processes[NUMBER_OF_HARQ_PID_MAX];
   /// Pointer to CQI data
   uint8_t o[MAX_CQI_BYTES];
   /// Length of CQI data (bits)
@@ -483,7 +493,7 @@ typedef struct {
 
 typedef struct {
   /// Pointers to 8 HARQ processes for the ULSCH
-  LTE_UL_eNB_HARQ_t *harq_processes[8];
+  LTE_UL_eNB_HARQ_t *harq_processes[NUMBER_OF_HARQ_PID_MAX];
   /// Maximum number of HARQ rounds
   uint8_t Mlimit;
   /// Maximum number of iterations used in eNB turbo decoder
@@ -638,23 +648,23 @@ typedef struct {
   uint8_t sector;
 
   /// dlsch l2 errors
-  uint32_t dlsch_l2_errors[8];
+  uint32_t dlsch_l2_errors[NUMBER_OF_HARQ_PID_MAX];
   /// dlsch trials per harq and round
-  uint32_t dlsch_trials[8][8];
+  uint32_t dlsch_trials[NUMBER_OF_HARQ_PID_MAX][8];
   /// dlsch ACK/NACK per hard_pid and round
-  uint32_t dlsch_ACK[8][8];
-  uint32_t dlsch_NAK[8][8];
+  uint32_t dlsch_ACK[NUMBER_OF_HARQ_PID_MAX][8];
+  uint32_t dlsch_NAK[NUMBER_OF_HARQ_PID_MAX][8];
 
   /// ulsch l2 errors per harq_pid
-  uint32_t ulsch_errors[8];
+  uint32_t ulsch_errors[NUMBER_OF_HARQ_PID_MAX];
   /// ulsch l2 consecutive errors per harq_pid
   uint32_t ulsch_consecutive_errors; //[8];
   /// ulsch trials/errors/fer per harq and round
-  uint32_t ulsch_decoding_attempts[8][8];
-  uint32_t ulsch_round_errors[8][8];
-  uint32_t ulsch_decoding_attempts_last[8][8];
-  uint32_t ulsch_round_errors_last[8][8];
-  uint32_t ulsch_round_fer[8][8];
+  uint32_t ulsch_decoding_attempts[NUMBER_OF_HARQ_PID_MAX][8];
+  uint32_t ulsch_round_errors[NUMBER_OF_HARQ_PID_MAX][8];
+  uint32_t ulsch_decoding_attempts_last[NUMBER_OF_HARQ_PID_MAX][8];
+  uint32_t ulsch_round_errors_last[NUMBER_OF_HARQ_PID_MAX][8];
+  uint32_t ulsch_round_fer[NUMBER_OF_HARQ_PID_MAX][8];
   uint32_t sr_received;
   uint32_t sr_total;
 
@@ -695,6 +705,8 @@ typedef struct {
   uint8_t vDAI_DL;
   /// DAI value detected from DCI0/4. 0xff indicates not touched
   uint8_t vDAI_UL;
+  /// Downlink Assingment Index(DAI) (36.213 7.3.2.1)
+  uint8_t dai;
 } harq_status_t;
 
 typedef struct {
@@ -723,7 +735,7 @@ typedef struct {
   /// HARQ-ACKs
   harq_status_t harq_ack[10];
   /// Pointers to up to 8 HARQ processes
-  LTE_DL_UE_HARQ_t *harq_processes[8];
+  LTE_DL_UE_HARQ_t *harq_processes[NUMBER_OF_HARQ_PID_MAX];
   /// Maximum number of HARQ processes(for definition see 36-212 V8.6 2009-03, p.17
   uint8_t Mdlharq;
   /// MIMO transmission mode indicator for this sub-frame (for definition see 36-212 V8.6 2009-03, p.17)

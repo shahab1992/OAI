@@ -439,7 +439,8 @@ void process_HARQ_feedback(uint8_t UE_id,
                            uint8_t pusch_flag,
                            uint8_t *pucch_payload,
                            uint8_t pucch_sel,
-                           uint8_t SR_payload);
+                           uint8_t SR_payload,
+                           uint8_t UL_status);
 
 /*! \brief This function retrieves the PHY UE mode. It is used as a helper function for the UE MAC.
   @param Mod_id Local UE index on which to act
