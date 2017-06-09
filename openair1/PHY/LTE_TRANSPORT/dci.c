@@ -1707,16 +1707,16 @@ int32_t rx_pdcch(PHY_VARS_UE *ue,
 
   for (s=0; s<n_pdcch_symbols; s++) {
     if (is_secondary_ue == 1) {
-      pdcch_extract_rbs_single(common_vars->common_vars_rx_data_per_thread[subframe&0x1].rxdataF,
-                               common_vars->common_vars_rx_data_per_thread[subframe&0x1].dl_ch_estimates[eNB_id+1], //add 1 to eNB_id to compensate for the shifted B/F'd pilots from the SeNB
+      pdcch_extract_rbs_single(common_vars->common_vars_rx_data_per_thread[subframe%RX_NB_TH].rxdataF,
+                               common_vars->common_vars_rx_data_per_thread[subframe%RX_NB_TH].dl_ch_estimates[eNB_id+1], //add 1 to eNB_id to compensate for the shifted B/F'd pilots from the SeNB
                                pdcch_vars[eNB_id]->rxdataF_ext,
                                pdcch_vars[eNB_id]->dl_ch_estimates_ext,
                                s,
                                high_speed_flag,
                                frame_parms);
 #ifdef MU_RECEIVER
-      pdcch_extract_rbs_single(common_vars->common_vars_rx_data_per_thread[subframe&0x1].rxdataF,
-                               common_vars->common_vars_rx_data_per_thread[subframe&0x1].dl_ch_estimates[eNB_id_i - 1],//subtract 1 to eNB_id_i to compensate for the non-shifted pilots from the PeNB
+      pdcch_extract_rbs_single(common_vars->common_vars_rx_data_per_thread[subframe%RX_NB_TH].rxdataF,
+                               common_vars->common_vars_rx_data_per_thread[subframe%RX_NB_TH].dl_ch_estimates[eNB_id_i - 1],//subtract 1 to eNB_id_i to compensate for the non-shifted pilots from the PeNB
                                pdcch_vars[eNB_id_i]->rxdataF_ext,//shift by two to simulate transmission from a second antenna
                                pdcch_vars[eNB_id_i]->dl_ch_estimates_ext,//shift by two to simulate transmission from a second antenna
                                s,
@@ -1724,16 +1724,16 @@ int32_t rx_pdcch(PHY_VARS_UE *ue,
                                frame_parms);
 #endif //MU_RECEIVER
     } else if (frame_parms->nb_antenna_ports_eNB>1) {
-      pdcch_extract_rbs_dual(common_vars->common_vars_rx_data_per_thread[subframe&0x1].rxdataF,
-                             common_vars->common_vars_rx_data_per_thread[subframe&0x1].dl_ch_estimates[eNB_id],
+      pdcch_extract_rbs_dual(common_vars->common_vars_rx_data_per_thread[subframe%RX_NB_TH].rxdataF,
+                             common_vars->common_vars_rx_data_per_thread[subframe%RX_NB_TH].dl_ch_estimates[eNB_id],
                              pdcch_vars[eNB_id]->rxdataF_ext,
                              pdcch_vars[eNB_id]->dl_ch_estimates_ext,
                              s,
                              high_speed_flag,
                              frame_parms);
     } else {
-      pdcch_extract_rbs_single(common_vars->common_vars_rx_data_per_thread[subframe&0x1].rxdataF,
-                               common_vars->common_vars_rx_data_per_thread[subframe&0x1].dl_ch_estimates[eNB_id],
+      pdcch_extract_rbs_single(common_vars->common_vars_rx_data_per_thread[subframe%RX_NB_TH].rxdataF,
+                               common_vars->common_vars_rx_data_per_thread[subframe%RX_NB_TH].dl_ch_estimates[eNB_id],
                                pdcch_vars[eNB_id]->rxdataF_ext,
                                pdcch_vars[eNB_id]->dl_ch_estimates_ext,
                                s,
@@ -2817,12 +2817,12 @@ void dci_decoding_procedure0(LTE_UE_PDCCH **pdcch_vars,
       dci_decoding(sizeof_bits,
                    L,
                    &pdcch_vars[eNB_id]->e_rx[CCEind*72],
-                   &dci_decoded_output[subframe&0x1][0]);
+                   &dci_decoded_output[subframe%RX_NB_TH][0]);
       /*
         for (i=0;i<3+(sizeof_bits>>3);i++)
         printf("dci_decoded_output[%d] => %x\n",i,dci_decoded_output[i]);
       */
-      crc = (crc16(&dci_decoded_output[subframe&0x1][0],sizeof_bits)>>16) ^ extract_crc(&dci_decoded_output[subframe&0x1][0],sizeof_bits);
+      crc = (crc16(&dci_decoded_output[subframe%RX_NB_TH][0],sizeof_bits)>>16) ^ extract_crc(&dci_decoded_output[subframe%RX_NB_TH][0],sizeof_bits);
 #ifdef DEBUG_DCI_DECODING
       printf("crc =>%x\n",crc);
 #endif
@@ -2838,29 +2838,29 @@ void dci_decoding_procedure0(LTE_UE_PDCCH **pdcch_vars,
 
         //printf("DCI FOUND !!! crc =>%x,  sizeof_bits %d, sizeof_bytes %d \n",crc, sizeof_bits, sizeof_bytes);
         if (sizeof_bytes<=4) {
-          dci_alloc[*dci_cnt].dci_pdu[3] = dci_decoded_output[subframe&0x1][0];
-          dci_alloc[*dci_cnt].dci_pdu[2] = dci_decoded_output[subframe&0x1][1];
-          dci_alloc[*dci_cnt].dci_pdu[1] = dci_decoded_output[subframe&0x1][2];
-          dci_alloc[*dci_cnt].dci_pdu[0] = dci_decoded_output[subframe&0x1][3];
+          dci_alloc[*dci_cnt].dci_pdu[3] = dci_decoded_output[subframe%RX_NB_TH][0];
+          dci_alloc[*dci_cnt].dci_pdu[2] = dci_decoded_output[subframe%RX_NB_TH][1];
+          dci_alloc[*dci_cnt].dci_pdu[1] = dci_decoded_output[subframe%RX_NB_TH][2];
+          dci_alloc[*dci_cnt].dci_pdu[0] = dci_decoded_output[subframe%RX_NB_TH][3];
 #ifdef DEBUG_DCI_DECODING
-          printf("DCI => %x,%x,%x,%x\n",dci_decoded_output[subframe&0x1][0],
-                  dci_decoded_output[subframe&0x1][1],
-                  dci_decoded_output[subframe&0x1][2],
-                  dci_decoded_output[subframe&0x1][3]);
+          printf("DCI => %x,%x,%x,%x\n",dci_decoded_output[subframe%RX_NB_TH][0],
+                  dci_decoded_output[subframe%RX_NB_TH][1],
+                  dci_decoded_output[subframe%RX_NB_TH][2],
+                  dci_decoded_output[subframe%RX_NB_TH][3]);
 #endif
         } else {
-          dci_alloc[*dci_cnt].dci_pdu[7] = dci_decoded_output[subframe&0x1][0];
-          dci_alloc[*dci_cnt].dci_pdu[6] = dci_decoded_output[subframe&0x1][1];
-          dci_alloc[*dci_cnt].dci_pdu[5] = dci_decoded_output[subframe&0x1][2];
-          dci_alloc[*dci_cnt].dci_pdu[4] = dci_decoded_output[subframe&0x1][3];
-          dci_alloc[*dci_cnt].dci_pdu[3] = dci_decoded_output[subframe&0x1][4];
-          dci_alloc[*dci_cnt].dci_pdu[2] = dci_decoded_output[subframe&0x1][5];
-          dci_alloc[*dci_cnt].dci_pdu[1] = dci_decoded_output[subframe&0x1][6];
-          dci_alloc[*dci_cnt].dci_pdu[0] = dci_decoded_output[subframe&0x1][7];
+          dci_alloc[*dci_cnt].dci_pdu[7] = dci_decoded_output[subframe%RX_NB_TH][0];
+          dci_alloc[*dci_cnt].dci_pdu[6] = dci_decoded_output[subframe%RX_NB_TH][1];
+          dci_alloc[*dci_cnt].dci_pdu[5] = dci_decoded_output[subframe%RX_NB_TH][2];
+          dci_alloc[*dci_cnt].dci_pdu[4] = dci_decoded_output[subframe%RX_NB_TH][3];
+          dci_alloc[*dci_cnt].dci_pdu[3] = dci_decoded_output[subframe%RX_NB_TH][4];
+          dci_alloc[*dci_cnt].dci_pdu[2] = dci_decoded_output[subframe%RX_NB_TH][5];
+          dci_alloc[*dci_cnt].dci_pdu[1] = dci_decoded_output[subframe%RX_NB_TH][6];
+          dci_alloc[*dci_cnt].dci_pdu[0] = dci_decoded_output[subframe%RX_NB_TH][7];
 #ifdef DEBUG_DCI_DECODING
           printf("DCI => %x,%x,%x,%x,%x,%x,%x,%x\n",
-              dci_decoded_output[subframe&0x1][0],dci_decoded_output[subframe&0x1][1],dci_decoded_output[subframe&0x1][2],dci_decoded_output[subframe&0x1][3],
-              dci_decoded_output[subframe&0x1][4],dci_decoded_output[subframe&0x1][5],dci_decoded_output[subframe&0x1][6],dci_decoded_output[subframe&0x1][7]);
+              dci_decoded_output[subframe%RX_NB_TH][0],dci_decoded_output[subframe%RX_NB_TH][1],dci_decoded_output[subframe%RX_NB_TH][2],dci_decoded_output[subframe%RX_NB_TH][3],
+              dci_decoded_output[subframe%RX_NB_TH][4],dci_decoded_output[subframe%RX_NB_TH][5],dci_decoded_output[subframe%RX_NB_TH][6],dci_decoded_output[subframe%RX_NB_TH][7]);
 #endif
         }
 
@@ -2877,7 +2877,7 @@ void dci_decoding_procedure0(LTE_UE_PDCCH **pdcch_vars,
           *dci_cnt = *dci_cnt+1;
         } else if (crc==pdcch_vars[eNB_id]->crnti) {
 
-          if ((mode&UL_DCI)&&(format_c == format0)&&((dci_decoded_output[subframe&0x1][0]&0x80)==0)) {// check if pdu is format 0 or 1A
+          if ((mode&UL_DCI)&&(format_c == format0)&&((dci_decoded_output[subframe%RX_NB_TH][0]&0x80)==0)) {// check if pdu is format 0 or 1A
             if (*format0_found == 0) {
               dci_alloc[*dci_cnt].format     = format0;
               *format0_found = 1;
