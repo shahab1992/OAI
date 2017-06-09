@@ -1572,6 +1572,282 @@ void dlsch_channel_compensation(int **rxdataF_ext,
 #endif
 }
 
+
+
+void dlsch_channel_compensation_avx2(int **rxdataF_ext,
+                                int **dl_ch_estimates_ext,
+                                int **dl_ch_mag,
+                                int **dl_ch_magb,
+                                int **rxdataF_comp,
+                                int **rho,
+                                LTE_DL_FRAME_PARMS *frame_parms,
+                                unsigned char symbol,
+                                uint8_t first_symbol_flag,
+                                unsigned char mod_order,
+                                unsigned short nb_rb,
+                                unsigned char output_shift,
+                                PHY_MEASUREMENTS *measurements)
+{
+
+#if defined(__i386) || defined(__x86_64)
+
+  unsigned short rb;
+  unsigned char aatx,aarx,symbol_mod,pilots=0;
+  //__m128i *dl_ch128,*dl_ch128_2,*dl_ch_mag128,*dl_ch_mag128b,*rxdataF128,*rxdataF_comp128,*rho128;
+  //__m128i mmtmpD0,mmtmpD1,mmtmpD2,mmtmpD3,QAM_amp128,QAM_amp128b;
+  __m256i *dl_ch256,*dl_ch256_2,*dl_ch_mag256,*dl_ch_mag256b,*rxdataF256,*rxdataF_comp256,*rho256;
+  __m256i mmtmpD0,mmtmpD1,mmtmpD2,mmtmpD3,QAM_amp256,QAM_amp256b;
+
+  symbol_mod = (symbol>=(7-frame_parms->Ncp)) ? symbol-(7-frame_parms->Ncp) : symbol;
+
+  if ((symbol_mod == 0) || (symbol_mod == (4-frame_parms->Ncp))) {
+
+    if (frame_parms->mode1_flag==1) // 10 out of 12 so don't reduce size
+      nb_rb=1+(5*nb_rb/6);
+    else
+      pilots=1;
+  }
+
+  for (aatx=0; aatx<frame_parms->nb_antenna_ports_eNB; aatx++) {
+    if (mod_order == 4) {
+      QAM_amp256 = _mm256_set1_epi16(QAM16_n1);  // 2/sqrt(10)
+      QAM_amp256b = _mm256_set_epi32(0,0,0,0,0,0,0,0);
+
+    } else if (mod_order == 6) {
+      QAM_amp256  = _mm256_set1_epi16(QAM64_n1); //
+      QAM_amp256b = _mm256_set1_epi16(QAM64_n2);
+    }
+
+    //    printf("comp: rxdataF_comp %p, symbol %d\n",rxdataF_comp[0],symbol);
+
+    for (aarx=0; aarx<frame_parms->nb_antennas_rx; aarx++) {
+
+      dl_ch256          = (__m256i *)&dl_ch_estimates_ext[(aatx<<1)+aarx][symbol*frame_parms->N_RB_DL*12];
+      dl_ch_mag256      = (__m256i *)&dl_ch_mag[(aatx<<1)+aarx][symbol*frame_parms->N_RB_DL*12];
+      dl_ch_mag256b     = (__m256i *)&dl_ch_magb[(aatx<<1)+aarx][symbol*frame_parms->N_RB_DL*12];
+      rxdataF256        = (__m256i *)&rxdataF_ext[aarx][symbol*frame_parms->N_RB_DL*12];
+      rxdataF_comp256   = (__m256i *)&rxdataF_comp[(aatx<<1)+aarx][symbol*frame_parms->N_RB_DL*12];
+
+
+      for (rb=0; rb<(nb_rb<<1); rb++) {
+        if (mod_order>2) {
+          // get channel amplitude if not QPSK
+
+          mmtmpD0 = _mm256_madd_epi16(dl_ch256[0],dl_ch256[0]);
+          mmtmpD0 = _mm256_srai_epi32(mmtmpD0,output_shift);
+
+          mmtmpD1 = _mm256_madd_epi16(dl_ch256[1],dl_ch256[1]);
+          mmtmpD1 = _mm256_srai_epi32(mmtmpD1,output_shift);
+
+          mmtmpD0 = _mm256_packs_epi32(mmtmpD0,mmtmpD1);
+
+          // store channel magnitude here in a new field of dlsch
+
+          dl_ch_mag256[0] = _mm256_unpacklo_epi16(mmtmpD0,mmtmpD0);
+          dl_ch_mag256b[0] = dl_ch_mag256[0];
+          dl_ch_mag256[0] = _mm256_mulhi_epi16(dl_ch_mag256[0],QAM_amp256);
+          dl_ch_mag256[0] = _mm256_slli_epi16(dl_ch_mag256[0],1);
+    //print_ints("Re(ch):",(int16_t*)&mmtmpD0);
+    //print_shorts("QAM_amp:",(int16_t*)&QAM_amp128);
+    //print_shorts("mag:",(int16_t*)&dl_ch_mag128[0]);
+          dl_ch_mag256[1] = _mm256_unpackhi_epi16(mmtmpD0,mmtmpD0);
+          dl_ch_mag256b[1] = dl_ch_mag256[1];
+          dl_ch_mag256[1] = _mm256_mulhi_epi16(dl_ch_mag256[1],QAM_amp256);
+          dl_ch_mag256[1] = _mm256_slli_epi16(dl_ch_mag256[1],1);
+
+          if (pilots==0) {
+            mmtmpD0 = _mm256_madd_epi16(dl_ch256[2],dl_ch256[2]);
+            mmtmpD0 = _mm256_srai_epi32(mmtmpD0,output_shift);
+            mmtmpD1 = _mm256_packs_epi32(mmtmpD0,mmtmpD0);
+
+            dl_ch_mag256[2] = _mm256_unpacklo_epi16(mmtmpD1,mmtmpD1);
+            dl_ch_mag256b[2] = dl_ch_mag256[2];
+
+            dl_ch_mag256[2] = _mm256_mulhi_epi16(dl_ch_mag256[2],QAM_amp256);
+            dl_ch_mag256[2] = _mm256_slli_epi16(dl_ch_mag256[2],1);
+          }
+
+          dl_ch_mag256b[0] = _mm256_mulhi_epi16(dl_ch_mag256b[0],QAM_amp256b);
+          dl_ch_mag256b[0] = _mm256_slli_epi16(dl_ch_mag256b[0],1);
+
+
+          dl_ch_mag256b[1] = _mm256_mulhi_epi16(dl_ch_mag256b[1],QAM_amp256b);
+          dl_ch_mag256b[1] = _mm256_slli_epi16(dl_ch_mag256b[1],1);
+
+          if (pilots==0) {
+              dl_ch_mag256b[2] = _mm256_mulhi_epi16(dl_ch_mag256b[2],QAM_amp256b);
+              dl_ch_mag256b[2] = _mm256_slli_epi16(dl_ch_mag256b[2],1);
+          }
+        }
+
+        // multiply by conjugated channel
+        mmtmpD0 = _mm256_madd_epi16(dl_ch256[0],rxdataF256[0]);
+        //  print_ints("re",&mmtmpD0);
+
+        // mmtmpD0 contains real part of 4 consecutive outputs (32-bit)
+        mmtmpD1 = _mm256_shufflelo_epi16(dl_ch256[0],_MM_SHUFFLE(2,3,0,1));
+        mmtmpD1 = _mm256_shufflehi_epi16(mmtmpD1,_MM_SHUFFLE(2,3,0,1));
+        mmtmpD1 = _mm256_sign_epi16(mmtmpD1,*(__m256i*)&conjugate[0]);
+        //  print_ints("im",&mmtmpD1);
+        mmtmpD1 = _mm256_madd_epi16(mmtmpD1,rxdataF256[0]);
+        // mmtmpD1 contains imag part of 4 consecutive outputs (32-bit)
+        mmtmpD0 = _mm256_srai_epi32(mmtmpD0,output_shift);
+        //  print_ints("re(shift)",&mmtmpD0);
+        mmtmpD1 = _mm256_srai_epi32(mmtmpD1,output_shift);
+        //  print_ints("im(shift)",&mmtmpD1);
+        mmtmpD2 = _mm256_unpacklo_epi32(mmtmpD0,mmtmpD1);
+        mmtmpD3 = _mm256_unpackhi_epi32(mmtmpD0,mmtmpD1);
+        //        print_ints("c0",&mmtmpD2);
+        //  print_ints("c1",&mmtmpD3);
+        rxdataF_comp256[0] = _mm256_packs_epi32(mmtmpD2,mmtmpD3);
+        //  print_shorts("rx:",rxdataF128);
+        //  print_shorts("ch:",dl_ch128);
+        //  print_shorts("pack:",rxdataF_comp128);
+
+        // multiply by conjugated channel
+        mmtmpD0 = _mm256_madd_epi16(dl_ch256[1],rxdataF256[1]);
+        // mmtmpD0 contains real part of 4 consecutive outputs (32-bit)
+        mmtmpD1 = _mm256_shufflelo_epi16(dl_ch256[1],_MM_SHUFFLE(2,3,0,1));
+        mmtmpD1 = _mm256_shufflehi_epi16(mmtmpD1,_MM_SHUFFLE(2,3,0,1));
+        mmtmpD1 = _mm256_sign_epi16(mmtmpD1,*(__m256i*)conjugate);
+        mmtmpD1 = _mm256_madd_epi16(mmtmpD1,rxdataF256[1]);
+        // mmtmpD1 contains imag part of 4 consecutive outputs (32-bit)
+        mmtmpD0 = _mm256_srai_epi32(mmtmpD0,output_shift);
+        mmtmpD1 = _mm256_srai_epi32(mmtmpD1,output_shift);
+        mmtmpD2 = _mm256_unpacklo_epi32(mmtmpD0,mmtmpD1);
+        mmtmpD3 = _mm256_unpackhi_epi32(mmtmpD0,mmtmpD1);
+
+        rxdataF_comp256[1] = _mm256_packs_epi32(mmtmpD2,mmtmpD3);
+        //  print_shorts("rx:",rxdataF128+1);
+        //  print_shorts("ch:",dl_ch128+1);
+        //  print_shorts("pack:",rxdataF_comp128+1);
+
+        if (pilots==0) {
+          // multiply by conjugated channel
+          mmtmpD0 = _mm256_madd_epi16(dl_ch256[2],rxdataF256[2]);
+          // mmtmpD0 contains real part of 4 consecutive outputs (32-bit)
+          mmtmpD1 = _mm256_shufflelo_epi16(dl_ch256[2],_MM_SHUFFLE(2,3,0,1));
+          mmtmpD1 = _mm256_shufflehi_epi16(mmtmpD1,_MM_SHUFFLE(2,3,0,1));
+          mmtmpD1 = _mm256_sign_epi16(mmtmpD1,*(__m256i*)conjugate);
+          mmtmpD1 = _mm256_madd_epi16(mmtmpD1,rxdataF256[2]);
+          // mmtmpD1 contains imag part of 4 consecutive outputs (32-bit)
+          mmtmpD0 = _mm256_srai_epi32(mmtmpD0,output_shift);
+          mmtmpD1 = _mm256_srai_epi32(mmtmpD1,output_shift);
+          mmtmpD2 = _mm256_unpacklo_epi32(mmtmpD0,mmtmpD1);
+          mmtmpD3 = _mm256_unpackhi_epi32(mmtmpD0,mmtmpD1);
+
+          rxdataF_comp256[2] = _mm256_packs_epi32(mmtmpD2,mmtmpD3);
+          //  print_shorts("rx:",rxdataF128+2);
+          //  print_shorts("ch:",dl_ch128+2);
+          //        print_shorts("pack:",rxdataF_comp128+2);
+
+          dl_ch256+=3;
+          dl_ch_mag256+=3;
+          dl_ch_mag256b+=3;
+          rxdataF256+=3;
+          rxdataF_comp256+=3;
+        } else { // we have a smaller PDSCH in symbols with pilots so skip last group of 4 REs and increment less
+          dl_ch256+=2;
+          dl_ch_mag256+=2;
+          dl_ch_mag256b+=2;
+          rxdataF256+=2;
+          rxdataF_comp256+=2;
+        }
+
+      }
+    }
+  }
+
+  if (rho) {
+
+
+    for (aarx=0; aarx<frame_parms->nb_antennas_rx; aarx++) {
+      rho256        = (__m256i *)&rho[aarx][symbol*frame_parms->N_RB_DL*12];
+      dl_ch256      = (__m256i *)&dl_ch_estimates_ext[aarx][symbol*frame_parms->N_RB_DL*12];
+      dl_ch256_2    = (__m256i *)&dl_ch_estimates_ext[2+aarx][symbol*frame_parms->N_RB_DL*12];
+
+      for (rb=0; rb<(nb_rb<<1); rb++) {
+        // multiply by conjugated channel
+        mmtmpD0 = _mm256_madd_epi16(dl_ch256[0],dl_ch256_2[0]);
+        //  print_ints("re",&mmtmpD0);
+
+        // mmtmpD0 contains real part of 4 consecutive outputs (32-bit)
+        mmtmpD1 = _mm256_shufflelo_epi16(dl_ch256[0],_MM_SHUFFLE(2,3,0,1));
+        mmtmpD1 = _mm256_shufflehi_epi16(mmtmpD1,_MM_SHUFFLE(2,3,0,1));
+        mmtmpD1 = _mm256_sign_epi16(mmtmpD1,*(__m256i*)&conjugate[0]);
+        //  print_ints("im",&mmtmpD1);
+        mmtmpD1 = _mm256_madd_epi16(mmtmpD1,dl_ch256_2[0]);
+        // mmtmpD1 contains imag part of 4 consecutive outputs (32-bit)
+        mmtmpD0 = _mm256_srai_epi32(mmtmpD0,output_shift);
+        //  print_ints("re(shift)",&mmtmpD0);
+        mmtmpD1 = _mm256_srai_epi32(mmtmpD1,output_shift);
+        //  print_ints("im(shift)",&mmtmpD1);
+        mmtmpD2 = _mm256_unpacklo_epi32(mmtmpD0,mmtmpD1);
+        mmtmpD3 = _mm256_unpackhi_epi32(mmtmpD0,mmtmpD1);
+        //        print_ints("c0",&mmtmpD2);
+        //  print_ints("c1",&mmtmpD3);
+        rho256[0] = _mm256_packs_epi32(mmtmpD2,mmtmpD3);
+
+        //print_shorts("rx:",dl_ch128_2);
+        //print_shorts("ch:",dl_ch128);
+        //print_shorts("pack:",rho128);
+
+        // multiply by conjugated channel
+        mmtmpD0 = _mm256_madd_epi16(dl_ch256[1],dl_ch256_2[1]);
+        // mmtmpD0 contains real part of 4 consecutive outputs (32-bit)
+        mmtmpD1 = _mm256_shufflelo_epi16(dl_ch256[1],_MM_SHUFFLE(2,3,0,1));
+        mmtmpD1 = _mm256_shufflehi_epi16(mmtmpD1,_MM_SHUFFLE(2,3,0,1));
+        mmtmpD1 = _mm256_sign_epi16(mmtmpD1,*(__m256i*)conjugate);
+        mmtmpD1 = _mm256_madd_epi16(mmtmpD1,dl_ch256_2[1]);
+        // mmtmpD1 contains imag part of 4 consecutive outputs (32-bit)
+        mmtmpD0 = _mm256_srai_epi32(mmtmpD0,output_shift);
+        mmtmpD1 = _mm256_srai_epi32(mmtmpD1,output_shift);
+        mmtmpD2 = _mm256_unpacklo_epi32(mmtmpD0,mmtmpD1);
+        mmtmpD3 = _mm256_unpackhi_epi32(mmtmpD0,mmtmpD1);
+
+
+        rho256[1] =_mm256_packs_epi32(mmtmpD2,mmtmpD3);
+        //print_shorts("rx:",dl_ch128_2+1);
+        //print_shorts("ch:",dl_ch128+1);
+        //print_shorts("pack:",rho128+1);
+        // multiply by conjugated channel
+        mmtmpD0 = _mm256_madd_epi16(dl_ch256[2],dl_ch256_2[2]);
+        // mmtmpD0 contains real part of 4 consecutive outputs (32-bit)
+        mmtmpD1 = _mm256_shufflelo_epi16(dl_ch256[2],_MM_SHUFFLE(2,3,0,1));
+        mmtmpD1 = _mm256_shufflehi_epi16(mmtmpD1,_MM_SHUFFLE(2,3,0,1));
+        mmtmpD1 = _mm256_sign_epi16(mmtmpD1,*(__m256i*)conjugate);
+        mmtmpD1 = _mm256_madd_epi16(mmtmpD1,dl_ch256_2[2]);
+        // mmtmpD1 contains imag part of 4 consecutive outputs (32-bit)
+        mmtmpD0 = _mm256_srai_epi32(mmtmpD0,output_shift);
+        mmtmpD1 = _mm256_srai_epi32(mmtmpD1,output_shift);
+        mmtmpD2 = _mm256_unpacklo_epi32(mmtmpD0,mmtmpD1);
+        mmtmpD3 = _mm256_unpackhi_epi32(mmtmpD0,mmtmpD1);
+
+        rho256[2] = _mm256_packs_epi32(mmtmpD2,mmtmpD3);
+        //print_shorts("rx:",dl_ch128_2+2);
+        //print_shorts("ch:",dl_ch128+2);
+        //print_shorts("pack:",rho128+2);
+
+        dl_ch256+=3;
+        dl_ch256_2+=3;
+        rho256+=3;
+
+      }
+
+      if (first_symbol_flag==1) {
+        measurements->rx_correlation[0][aarx] = signal_energy(&rho[aarx][symbol*frame_parms->N_RB_DL*12],rb*12);
+      }
+    }
+  }
+
+  _mm_empty();
+  _m_empty();
+
+#elif defined(__arm__)
+
+#endif
+}
+
 #if defined(__x86_64__) || defined(__i386__)
 
 void prec2A_TM56_128(unsigned char pmi,__m128i *ch0,__m128i *ch1)
@@ -3311,10 +3587,11 @@ void dlsch_scale_channel_avx2(int **dl_ch_estimates_ext,
 #if defined(__x86_64__)||defined(__i386__)
 
   short rb, ch_amp;
-  unsigned char aatx,aarx,pilots=0,symbol_mod;
+  unsigned char aatx,aarx,pilots=0;//,symbol_mod;
   __m256i *dl_ch256, ch_amp256;
-  __m128i *dl_ch128, ch_amp128;
+  //__m128i *dl_ch128, ch_amp128;
 
+  /*
   symbol_mod = (symbol>=(7-frame_parms->Ncp)) ? symbol-(7-frame_parms->Ncp) : symbol;
 
   if ((symbol_mod == 0) || (symbol_mod == (4-frame_parms->Ncp))) {
@@ -3323,15 +3600,26 @@ void dlsch_scale_channel_avx2(int **dl_ch_estimates_ext,
     else
       pilots=1;
   }
+  */
+  nb_rb=1+(5*nb_rb/6);
 
   // Determine scaling amplitude based the symbol
+  ch_amp = dlsch_ue[0]->sqrt_rho_a;
+  //ch_amp = ((pilots) ? (dlsch_ue[0]->sqrt_rho_b) : (dlsch_ue[0]->sqrt_rho_a));
 
-  ch_amp = ((pilots) ? (dlsch_ue[0]->sqrt_rho_b) : (dlsch_ue[0]->sqrt_rho_a));
-
-  LOG_D(PHY,"Scaling PDSCH Chest in OFDM symbol %d by %d, pilots %d nb_rb %d NCP %d symbol %d\n",symbol_mod,ch_amp,pilots,nb_rb,frame_parms->Ncp,symbol);
+ //LOG_D(PHY,"Scaling PDSCH Chest in OFDM symbol %d by %d, pilots %d nb_rb %d NCP %d symbol %d\n",symbol_mod,ch_amp,pilots,nb_rb,frame_parms->Ncp,symbol);
   // printf("Scaling PDSCH Chest in OFDM symbol %d by %d\n",symbol_mod,ch_amp);
-  ch_amp256 = _mm256_broadcastw_epi16(_mm_set1_epi16(ch_amp)); // Q3.13
-  ch_amp128 = _mm_set1_epi16(ch_amp);
+
+  //time_stats_t dlsch_scale_channel_stat;
+  //start_meas(&dlsch_scale_channel_stat);
+  //ch_amp256 = _mm256_broadcastw_epi16(_mm_set1_epi16(ch_amp)); // Q3.13
+  ch_amp256 = _mm256_set1_epi16(ch_amp);
+  //ch_amp128 = _mm_set1_epi16(ch_amp);
+  //stop_meas(&dlsch_scale_channel_stat);
+  // printf(" flag %d dlsch_scale_channel_avx2 %5.3f\n",
+  //         frame_parms->mode1_flag,
+  //         (dlsch_scale_channel_stat.p_time)/(cpuf*1000.0));
+
 
   for (aatx=0; aatx<frame_parms->nb_antenna_ports_eNB; aatx++) {
     for (aarx=0; aarx<frame_parms->nb_antennas_rx; aarx++) {
@@ -3348,6 +3636,7 @@ void dlsch_scale_channel_avx2(int **dl_ch_estimates_ext,
       }
       else
       {
+
           // 2PRBs = 24REs ==> 3 word of 256bits
           for (rb=0; rb<(nb_rb>>1); rb++)
           {
@@ -3361,6 +3650,8 @@ void dlsch_scale_channel_avx2(int **dl_ch_estimates_ext,
               dl_ch256+=3;
           }
 
+/*
+
           if(nb_rb & 1)
           {
             dl_ch128=(__m128i *)dl_ch256;
@@ -3373,6 +3664,7 @@ void dlsch_scale_channel_avx2(int **dl_ch_estimates_ext,
             dl_ch128[2] = _mm_slli_epi16(dl_ch128[2],3);
 
           }
+*/
       }
     }
   }
@@ -3408,7 +3700,7 @@ void dlsch_scale_channel(int **dl_ch_estimates_ext,
 
 ch_amp = ((pilots) ? (dlsch_ue[0]->sqrt_rho_b) : (dlsch_ue[0]->sqrt_rho_a));
 
-    LOG_D(PHY,"Scaling PDSCH Chest in OFDM symbol %d by %d, pilots %d nb_rb %d NCP %d symbol %d\n",symbol_mod,ch_amp,pilots,nb_rb,frame_parms->Ncp,symbol);
+    //LOG_D(PHY,"Scaling PDSCH Chest in OFDM symbol %d by %d, pilots %d nb_rb %d NCP %d symbol %d\n",symbol_mod,ch_amp,pilots,nb_rb,frame_parms->Ncp,symbol);
    // printf("Scaling PDSCH Chest in OFDM symbol %d by %d\n",symbol_mod,ch_amp);
 
   ch_amp128 = _mm_set1_epi16(ch_amp); // Q3.13
@@ -3582,11 +3874,12 @@ void dlsch_channel_level_avx2(int **dl_ch_estimates_ext,
                          unsigned short nb_rb)
 {
 
+
+
 #if defined(__x86_64__)||defined(__i386__)
 
   short rb;
   unsigned char aatx,aarx,nre=12,symbol_mod;
-  __m128i *dl_ch128, avg128D, coeff128;
   __m256i *dl_ch256, avg256D, coeff256;
 
   symbol_mod = (symbol>=(7-frame_parms->Ncp)) ? symbol-(7-frame_parms->Ncp) : symbol;
@@ -3603,8 +3896,6 @@ void dlsch_channel_level_avx2(int **dl_ch_estimates_ext,
                               one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,
                               one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,
                               one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15);
-  coeff128 = _mm_set_epi16(one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,
-                           one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15,one_over_nb_re_q1_15);
 
   for (aatx=0; aatx<frame_parms->nb_antenna_ports_eNB; aatx++)
     for (aarx=0; aarx<frame_parms->nb_antennas_rx; aarx++) {
@@ -3626,7 +3917,6 @@ void dlsch_channel_level_avx2(int **dl_ch_estimates_ext,
       {
           for (rb=0;rb<(nb_rb>>1);rb++)
           {
-
               avg256D = _mm256_add_epi32(avg256D,_mm256_madd_epi16(dl_ch256[0],_mm256_srai_epi16(_mm256_mulhi_epi16(dl_ch256[0], coeff256),15)));
               avg256D = _mm256_add_epi32(avg256D,_mm256_madd_epi16(dl_ch256[1],_mm256_srai_epi16(_mm256_mulhi_epi16(dl_ch256[1], coeff256),15)));
               avg256D = _mm256_add_epi32(avg256D,_mm256_madd_epi16(dl_ch256[2],_mm256_srai_epi16(_mm256_mulhi_epi16(dl_ch256[2], coeff256),15)));
@@ -3642,24 +3932,22 @@ void dlsch_channel_level_avx2(int **dl_ch_estimates_ext,
               dl_ch256+=3;
           }
 
-          if(nb_rb & 1)
+          /*if(nb_rb & 1)
           {
             dl_ch128=(__m128i *)dl_ch256;
             avg128D = _mm_setzero_si128();
             avg128D = _mm_add_epi32(avg128D,_mm_madd_epi16(dl_ch128[0],_mm_srai_epi16(_mm_mulhi_epi16(dl_ch128[0], coeff128),15)));
             avg128D = _mm_add_epi32(avg128D,_mm_madd_epi16(dl_ch128[1],_mm_srai_epi16(_mm_mulhi_epi16(dl_ch128[1], coeff128),15)));
             avg128D = _mm_add_epi32(avg128D,_mm_madd_epi16(dl_ch128[2],_mm_srai_epi16(_mm_mulhi_epi16(dl_ch128[2], coeff128),15)));
-          }
+          }*/
       }
 
 
       avg[(aatx<<1)+aarx] =(((int32_t*)&avg256D)[0] + ((int32_t*)&avg256D)[1] +
                             ((int32_t*)&avg256D)[2] + ((int32_t*)&avg256D)[3] +
                             ((int32_t*)&avg256D)[4] + ((int32_t*)&avg256D)[5] +
-                            ((int32_t*)&avg256D)[6] + ((int32_t*)&avg256D)[7] +
-                            ((int32_t*)&avg128D)[0] + ((int32_t*)&avg128D)[1] +
-                            ((int32_t*)&avg128D)[2] + ((int32_t*)&avg128D)[3]);
-     printf("Channel level : %d\n",avg[(aatx<<1)+aarx]);
+                            ((int32_t*)&avg256D)[6] + ((int32_t*)&avg256D)[7]);
+     //printf("Channel level : %d\n",avg[(aatx<<1)+aarx]);
     }
 
   _mm_empty();

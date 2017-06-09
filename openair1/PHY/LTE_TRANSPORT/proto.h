@@ -1154,6 +1154,20 @@ void dlsch_channel_compensation(int32_t **rxdataF_ext,
                                 uint8_t output_shift,
                                 PHY_MEASUREMENTS *phy_measurements);
 
+void dlsch_channel_compensation_avx2(int **rxdataF_ext,
+                                int **dl_ch_estimates_ext,
+                                int **dl_ch_mag,
+                                int **dl_ch_magb,
+                                int **rxdataF_comp,
+                                int **rho,
+                                LTE_DL_FRAME_PARMS *frame_parms,
+                                unsigned char symbol,
+                                uint8_t first_symbol_flag,
+                                unsigned char mod_order,
+                                unsigned short nb_rb,
+                                unsigned char output_shift,
+                                PHY_MEASUREMENTS *measurements);
+
 void dlsch_dual_stream_correlation(LTE_DL_FRAME_PARMS *frame_parms,
                                    unsigned char symbol,
                                    unsigned short nb_rb,
