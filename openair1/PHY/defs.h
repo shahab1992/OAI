@@ -887,9 +887,12 @@ typedef struct {
   time_stats_t ulsch_interleaving_stats;
   time_stats_t ulsch_multiplexing_stats;
 
-  time_stats_t generic_stat;
-  time_stats_t pdsch_procedures_stat;
-  time_stats_t dlsch_procedures_stat;
+  time_stats_t generic_stat[2];
+  time_stats_t generic_stat_bis[2];
+  time_stats_t segmentation_stat;
+  time_stats_t higher_layer_stat;
+  time_stats_t pdsch_procedures_stat[2];
+  time_stats_t dlsch_procedures_stat[2];
 
   time_stats_t ofdm_demod_stats;
   time_stats_t dlsch_rx_pdcch_stats;

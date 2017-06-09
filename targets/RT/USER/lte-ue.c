@@ -559,7 +559,7 @@ static void *UE_thread_rxn_txnp4(void *arg) {
         }
 
 #if UE_TIMING_TRACE
-        start_meas(&UE->generic_stat);
+        start_meas(&UE->generic_stat[proc->subframe_rx&0x1]);
 #endif
         if (UE->mac_enabled==1) {
 
@@ -591,7 +591,7 @@ static void *UE_thread_rxn_txnp4(void *arg) {
             }
         }
 #if UE_TIMING_TRACE
-        stop_meas(&UE->generic_stat);
+        stop_meas(&UE->generic_stat[proc->subframe_rx&0x1]);
 #endif
 
         // Prepare the future Tx data

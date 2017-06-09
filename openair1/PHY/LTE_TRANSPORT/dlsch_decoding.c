@@ -171,6 +171,7 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
   time_stats_t *dlsch_rate_unmatching_stats=&phy_vars_ue->dlsch_rate_unmatching_stats;
   time_stats_t *dlsch_turbo_decoding_stats=&phy_vars_ue->dlsch_turbo_decoding_stats;
   time_stats_t *dlsch_deinterleaving_stats=&phy_vars_ue->dlsch_deinterleaving_stats;
+  time_stats_t *segmentation_stat=&phy_vars_ue->segmentation_stat;
 #endif
   uint32_t A,E;
   uint32_t G;
@@ -291,8 +292,10 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
 
   //  printf("DLSCH Decoding, harq_pid %d Ndi %d\n",harq_pid,harq_process->Ndi);
 
+
   if (harq_process->round == 0) {
     // This is a new packet, so compute quantities regarding segmentation
+    start_meas(segmentation_stat);
     harq_process->B = A+24;
     lte_segmentation(NULL,
                      NULL,
@@ -304,7 +307,10 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
                      &harq_process->Kminus,
                      &harq_process->F);
     //  CLEAR LLR's HERE for first packet in process
+    stop_meas(segmentation_stat);
+    printf("[SFN %d] dlsch_decoding %5.2f\n",subframe,segmentation_stat->p_time/(cpuf*1000.0));
   }
+
 
   /*
   else {
@@ -411,6 +417,7 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
                                    &E)==-1) {
 #if UE_TIMING_TRACE
       stop_meas(dlsch_rate_unmatching_stats);
+
 #endif
       LOG_E(PHY,"dlsch_decoding.c: Problem in rate_matching\n");
       return(dlsch->max_turbo_iterations);
@@ -418,6 +425,8 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
     {
 #if UE_TIMING_TRACE
       stop_meas(dlsch_rate_unmatching_stats);
+      printf("[SFN %d] Segment %d lte_rate_matching_turbo_rx %5.2f\n",subframe,r,dlsch_rate_unmatching_stats->p_time/(cpuf*1000.0));
+
 #endif
     }
     r_offset += E;
@@ -436,6 +445,8 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
                                    harq_process->w[r]);
 #if UE_TIMING_TRACE
     stop_meas(dlsch_deinterleaving_stats);
+    printf("[SFN %d] Segment : %d dlsch_deinterleaving_stats %5.2f\n",subframe,r,dlsch_deinterleaving_stats->p_time/(cpuf*1000.0));
+
 #endif
 #ifdef DEBUG_DLSCH_DECODING
     /*
@@ -642,19 +653,29 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
 
 	  stop_meas(dlsch_turbo_decoding_stats);
 
-	  /*printf("Segmentation: C %d r %d, dlsch_rate_unmatching_stats %5.3f dlsch_deinterleaving_stats %5.3f  dlsch_turbo_decoding_stats %5.3f \n",
+	  printf("Segmentation: C %d r %d, dlsch_rate_unmatching_stats %5.3f dlsch_deinterleaving_stats %5.3f  dlsch_turbo_decoding_stats %5.3f \n",
               harq_process->C,
               r,
               dlsch_rate_unmatching_stats->p_time/(cpuf*1000.0),
               dlsch_deinterleaving_stats->p_time/(cpuf*1000.0),
-              dlsch_turbo_decoding_stats->p_time/(cpuf*1000.0));*/
+              dlsch_turbo_decoding_stats->p_time/(cpuf*1000.0));
 #endif
 	}
       }
     }
 #endif
 
+#if UE_TIMING_TRACE
 
+      stop_meas(dlsch_turbo_decoding_stats);
+
+      printf("Segmentation: C %d r %d, dlsch_rate_unmatching_stats %5.3f dlsch_deinterleaving_stats %5.3f  dlsch_turbo_decoding_stats %5.3f \n",
+              harq_process->C,
+              r,
+              dlsch_rate_unmatching_stats->p_time/(cpuf*1000.0),
+              dlsch_deinterleaving_stats->p_time/(cpuf*1000.0),
+              dlsch_turbo_decoding_stats->p_time/(cpuf*1000.0));
+#endif
     if ((err_flag == 0) && (ret>=(1+dlsch->max_turbo_iterations))) {// a Code segment is in error so break;
       LOG_D(PHY,"AbsSubframe %d.%d CRC failed, segment %d/%d \n",frame%1024,subframe,r,harq_process->C-1);
       err_flag = 1;
