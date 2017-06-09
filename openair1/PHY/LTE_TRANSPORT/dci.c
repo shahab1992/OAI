@@ -1693,7 +1693,7 @@ int32_t rx_pdcch(PHY_VARS_UE *ue,
 
   LTE_UE_COMMON *common_vars      = &ue->common_vars;
   LTE_DL_FRAME_PARMS *frame_parms = &ue->frame_parms;
-  LTE_UE_PDCCH **pdcch_vars       = ue->pdcch_vars[subframe & 0x1];
+  LTE_UE_PDCCH **pdcch_vars       = ue->pdcch_vars[subframe%RX_NB_TH];
 
   uint8_t log2_maxh,aatx,aarx;
 #ifdef MU_RECEIVER
@@ -2945,7 +2945,7 @@ uint16_t dci_decoding_procedure(PHY_VARS_UE *ue,
 
   uint8_t  dci_cnt=0,old_dci_cnt=0;
   uint32_t CCEmap0=0,CCEmap1=0,CCEmap2=0;
-  LTE_UE_PDCCH **pdcch_vars = ue->pdcch_vars[subframe & 0x1];
+  LTE_UE_PDCCH **pdcch_vars = ue->pdcch_vars[subframe%RX_NB_TH];
   LTE_DL_FRAME_PARMS *frame_parms  = &ue->frame_parms;
   uint8_t mi = get_mi(&ue->frame_parms,subframe);
   uint16_t ra_rnti=99;

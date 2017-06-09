@@ -969,8 +969,8 @@ int rx_pmch(PHY_VARS_UE *ue,
 
   //printf("*********************mch: symbol %d\n",symbol);
 
-  mch_extract_rbs(common_vars->common_vars_rx_data_per_thread[subframe&0x1].rxdataF,
-                  common_vars->common_vars_rx_data_per_thread[subframe&0x1].dl_ch_estimates[eNB_id],
+  mch_extract_rbs(common_vars->common_vars_rx_data_per_thread[subframe%RX_NB_TH].rxdataF,
+                  common_vars->common_vars_rx_data_per_thread[subframe%RX_NB_TH].dl_ch_estimates[eNB_id],
                   pdsch_vars[eNB_id]->rxdataF_ext,
                   pdsch_vars[eNB_id]->dl_ch_estimates_ext,
                   symbol,
