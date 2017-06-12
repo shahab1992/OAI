@@ -916,6 +916,7 @@ if (FLEXRAN_AGENT_SB_IF)
     ${OPENAIR2_DIR}/ENB_APP/flexran_agent_net_comm.c
     ${OPENAIR2_DIR}/ENB_APP/flexran_agent_async.c
     ${OPENAIR2_DIR}/ENB_APP/CONTROL_MODULES/MAC/flexran_agent_mac_internal.c
+    ${OPENAIR2_DIR}/ENB_APP/CONTROL_MODULES/RRC/flexran_agent_rrc_internal.c
     )
   set(FLEXRAN_AGENT_LIB FLEXRAN_AGENT)
   #include_directories(${OPENAIR2_DIR}/ENB_APP)

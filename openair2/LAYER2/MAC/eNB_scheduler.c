@@ -346,6 +346,13 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
             0, // eNB index, unused in eNB
             CC_id);
 
+#if defined(FLEXRAN_AGENT_SB_IF)
+      if (rrc_agent_registered[module_idP]) {
+  agent_rrc_xface[module_idP]->flexran_rrc_x2_handover(module_idP, 0, 0);
+      }
+#endif  
+
+
 #if defined(Rel10) || defined(Rel14)
 
   for (CC_id=0; CC_id<MAX_NUM_CCs; CC_id++) {

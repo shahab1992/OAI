@@ -193,6 +193,17 @@ message flex_rrc_measurements {
         optional int32 pcell_rsrq = 3;
        // Neighboring cells measurements performed by UE.
         optional flex_neigh_cells_measurements neigh_meas = 4;
+        
+       // Handover parameters
+       optional int32 ttt_ms = 5;
+       optional int32 hys = 6;
+       optional int32 ofn = 7;
+       optional int32 ocn = 8;
+       optional int32 ofs = 9;
+       optional int32 ocs = 10;
+       optional int32 off = 11;
+       optional float filter_coeff_rsrp = 12;
+       optional float filter_coeff_rsrq = 13; 
 }
 
 message flex_neigh_cells_measurements {

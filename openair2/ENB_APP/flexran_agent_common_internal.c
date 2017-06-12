@@ -87,10 +87,10 @@ int apply_reconfiguration_policy(mid_t mod_id, const char *policy, size_t policy
       } else if (strcmp((char *) event.data.scalar.value, "rrc") == 0) {
 	// Call the RRC handler
 	LOG_D(ENB_APP, "This is intended for the rrc system\n");
-	// TODO : Just skip it for now
-	if (skip_system_section(&parser) == -1) {
-	  goto error;
-	}
+	// Call the rrc handler
+  if (parse_rrc_config(mod_id, &parser) == -1) {
+    goto error;
+  }
       } else {
 	goto error;
       }

@@ -47,6 +47,16 @@ struct lfds700_ringbuffer_element *rrc_dl_config_array[NUM_MAX_ENB];
 struct lfds700_ringbuffer_state rrc_ringbuffer_state[NUM_MAX_ENB];
 
 
+/*Handover related parameters*/
+int ttt_ms = 0;
+int hys = 0;
+int ofn = 0;
+int ocn = 0;
+int ofs = 0;
+int ocs = 0;
+int off = 0;
+float filter_coeff_rsrp = 0.5;
+float filter_coeff_rsrq = 0.5;
 
 void flexran_agent_init_rrc_agent(mid_t mod_id) {
   lfds700_misc_library_init_valid_on_current_logical_core();
@@ -57,6 +67,140 @@ void flexran_agent_init_rrc_agent(mid_t mod_id) {
   lfds700_ringbuffer_init_valid_on_current_logical_core( &rrc_ringbuffer_state[mod_id], rrc_dl_config_array[mod_id], num_elements, &rrc_ps[mod_id], NULL );
 }
 
+void flexran_rrc_x2_handover(mid_t mod_id, uint32_t rnti, uint8_t state_change){
+
+  int                   priority = 0; // Warning Preventing
+  void                  *data;
+  int                   size;
+  err_code_t             err_code;
+
+  Protocol__FlexHeader *header;
+  Protocol__FlexranMessage *msg;
+  Protocol__FlexCellStatsReport **cell_report;
+  Protocol__FlexStatsReply *stats_reply_msg;   
+  Protocol__FlexUeStatsReport **ue_report;
+
+  int xid = 0;
+  int i;
+
+  if (flexran_create_header(xid, PROTOCOL__FLEX_TYPE__FLPT_STATS_REPLY, &header) != 0)
+    goto error;
+
+
+  stats_reply_msg = malloc(sizeof(Protocol__FlexStatsReply));
+
+  if (stats_reply_msg == NULL)
+    goto error;
+
+  protocol__flex_stats_reply__init(stats_reply_msg);
+  stats_reply_msg->header = header;
+  stats_reply_msg->n_ue_report = 1;
+  stats_reply_msg->n_cell_report = 1;
+
+   ue_report = malloc(sizeof(Protocol__FlexUeStatsReport *) * 1);
+          if (ue_report == NULL)
+            goto error;
+
+    for (i = 0; i < 1; i++) {
+
+      ue_report[i] = malloc(sizeof(Protocol__FlexUeStatsReport));
+       if(ue_report[i] == NULL)
+          goto error;
+      protocol__flex_ue_stats_report__init(ue_report[i]);
+      ue_report[i]->rnti = 1;//flexran_get_ue_crnti(mod_id, 0);
+      ue_report[i]->has_rnti = 1;
+       ue_report[i]->flags = 65536;
+       ue_report[i]->has_flags = 1;
+  
+    }
+
+    cell_report = malloc(sizeof(Protocol__FlexCellStatsReport *) * 1);
+    if (cell_report == NULL)
+       goto error;
+  
+     for (i = 0; i < 1; i++) {
+
+      cell_report[i] = malloc(sizeof(Protocol__FlexCellStatsReport));
+      if(cell_report[i] == NULL)
+          goto error;
+
+      protocol__flex_cell_stats_report__init(cell_report[i]);
+      cell_report[i]->carrier_index = 0; //report_config->cc_report_type[i].cc_id;
+      cell_report[i]->has_carrier_index = 1;
+      cell_report[i]->flags = 0; // report_config->cc_report_type[i].cc_report_flags;
+      cell_report[i]->has_flags = 1;
+     }
+ 
+
+    Protocol__FlexRrcMeasurements *rrc_measurements;
+    rrc_measurements = malloc(sizeof(Protocol__FlexRrcMeasurements));
+    if (rrc_measurements == NULL)
+        goto error;
+    protocol__flex_rrc_measurements__init(rrc_measurements);
+                            
+    rrc_measurements->ttt_ms = ttt_ms;
+    rrc_measurements->has_ttt_ms = 1;
+
+    rrc_measurements->hys = hys;
+    rrc_measurements->has_hys = 1;
+
+    rrc_measurements->ofn = ofn;
+    rrc_measurements->has_ofn = 1;
+
+    rrc_measurements->ocn = ocn;
+    rrc_measurements->has_ocn = 1;
+
+    rrc_measurements->ofs = ofs;
+    rrc_measurements->has_ofs = 1;
+
+    rrc_measurements->ocs = ocs;
+    rrc_measurements->has_ocs = 1;
+
+    rrc_measurements->off = off;
+    rrc_measurements->has_off = 1;
+
+    rrc_measurements->filter_coeff_rsrp = filter_coeff_rsrp;
+    rrc_measurements->has_filter_coeff_rsrp = 1;
+
+
+    rrc_measurements->filter_coeff_rsrq = filter_coeff_rsrq;
+    rrc_measurements->has_filter_coeff_rsrq = 1;
+
+
+    ue_report[0]->rrc_measurements = rrc_measurements;
+
+  
+  stats_reply_msg->cell_report = cell_report;
+    
+  stats_reply_msg->ue_report = ue_report;
+  
+  msg = malloc(sizeof(Protocol__FlexranMessage));
+  if(msg == NULL)
+    goto error;
+  protocol__flexran_message__init(msg);
+  msg->msg_case = PROTOCOL__FLEXRAN_MESSAGE__MSG_STATS_REPLY_MSG;
+  msg->msg_dir = PROTOCOL__FLEXRAN_DIRECTION__SUCCESSFUL_OUTCOME;
+  msg->stats_reply_msg = stats_reply_msg;
+  
+  data = flexran_agent_pack_message(msg, &size);
+  
+  
+  if (flexran_agent_msg_send(mod_id, FLEXRAN_AGENT_DEFAULT, data, size, priority)) {
+  
+    err_code = PROTOCOL__FLEXRAN_ERR__MSG_ENQUEUING;
+    goto error;
+  }
+  
+   
+
+  return;
+
+  error:
+
+    LOG_E(FLEXRAN_AGENT, "Could not send Handover message becasue of %d \n",err_code);
+ 
+
+}
 
 
 
@@ -641,6 +785,7 @@ int flexran_agent_register_rrc_xface(mid_t mod_id, AGENT_RRC_xface *xface) {
   
   xface->flexran_agent_notify_ue_state_change = flexran_agent_ue_state_change;
   xface->flexran_trigger_rrc_measurements = flexran_trigger_rrc_measurements;
+  xface->flexran_rrc_x2_handover = flexran_rrc_x2_handover;
 
   rrc_agent_registered[mod_id] = 1;
   agent_rrc_xface[mod_id] = xface;

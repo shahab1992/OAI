@@ -58,6 +58,8 @@ typedef struct {
                  uint8_t state_change);
 
   void (*flexran_trigger_rrc_measurements)(mid_t mod_id, MeasResults_t*  measResults);
+
+  void (*flexran_rrc_x2_handover)(mid_t mod_id, uint32_t rnti, uint8_t state_change);
   
 } AGENT_RRC_xface;
 

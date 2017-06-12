@@ -54,6 +54,8 @@ void flexran_agent_init_rrc_agent(mid_t mod_id);
 void flexran_agent_ue_state_change(mid_t mod_id, uint32_t rnti, uint8_t state_change);
 int flexran_agent_destroy_ue_state_change(Protocol__FlexranMessage *msg);
 
+/*Handover subsystem*/
+void flexran_rrc_x2_handover(mid_t mod_id, uint32_t rnti, uint8_t state_change);
 
 /**********************************
  * FlexRAN agent - technology RRC API
