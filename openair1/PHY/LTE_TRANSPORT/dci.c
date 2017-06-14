@@ -2514,7 +2514,7 @@ void dci_decoding(uint8_t DCI_LENGTH,
 }
 
 
-static uint8_t dci_decoded_output[2][(MAX_DCI_SIZE_BITS+64)/8];
+static uint8_t dci_decoded_output[RX_NB_TH][(MAX_DCI_SIZE_BITS+64)/8];
 
 uint16_t get_nCCE(uint8_t num_pdcch_symbols,LTE_DL_FRAME_PARMS *frame_parms,uint8_t mi)
 {

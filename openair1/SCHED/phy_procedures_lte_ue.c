@@ -2182,7 +2182,7 @@ void ue_pucch_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
   // if nothing to report ==> exit function
   if( (nb_cw==0) && (SR_payload==0) && (cqi_status==0) && (ri_status==0) )
   {
-      LOG_D(PHY,"PUCCH No feedback AbsSubframe %d.%d SR_payload %d nb_cw %d pucch_ack_payload[0] %d pucch_ack_payload[1] %d cqi_status %d Return \n",
+      LOG_I(PHY,"PUCCH No feedback AbsSubframe %d.%d SR_payload %d nb_cw %d pucch_ack_payload[0] %d pucch_ack_payload[1] %d cqi_status %d Return \n",
             frame_tx%1024, subframe_tx, SR_payload, nb_cw, pucch_ack_payload[0], pucch_ack_payload[1], cqi_status);
       return;
   }
@@ -2208,7 +2208,7 @@ void ue_pucch_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
                   (uint8_t *)&pucch_payload,
                   &len);
 
-  LOG_D(PHY,"PUCCH feedback AbsSubframe %d.%d SR %d NbCW %d (%d %d) AckNack %d.%d CQI %d RI %d format %d pucch_resource %d pucch_payload %d %d \n",
+  LOG_I(PHY,"PUCCH feedback AbsSubframe %d.%d SR %d NbCW %d (%d %d) AckNack %d.%d CQI %d RI %d format %d pucch_resource %d pucch_payload %d %d \n",
           frame_tx%1024, subframe_tx, SR_payload, nb_cw, ack_status_cw0, ack_status_cw1, pucch_ack_payload[0], pucch_ack_payload[1], cqi_status, ri_status, format, pucch_resource,pucch_payload[0],pucch_payload[1]);
 
 
@@ -2406,6 +2406,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,ui
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_UE_TX,VCD_FUNCTION_IN);
 
+  LOG_I(PHY,"****** start TX-Chain for AbsSubframe %d.d ******\n", frame_tx, subframe_tx);
 #if T_TRACER
   T(T_UE_PHY_UL_TICK, T_INT(ue->Mod_id), T_INT(frame_tx%1024), T_INT(subframe_tx));
 #endif
@@ -2543,6 +2544,13 @@ void phy_procedures_UE_TX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,ui
                ue->ulsch[eNB_id]->o_ACK,
                &N_bundled,
                0);
+    reset_ack(&ue->frame_parms,
+               ue->dlsch[(proc->subframe_rx+2)%RX_NB_TH][eNB_id][0]->harq_ack,
+               subframe_tx,
+               proc->subframe_rx,
+               ue->ulsch[eNB_id]->o_ACK,
+               &N_bundled,
+               0);
   }
 
   if (ue->dlsch_SI[eNB_id] != NULL)
@@ -2554,7 +2562,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,ui
              &N_bundled,
              0);
 
-      
+  LOG_I(PHY,"****** end TX-Chain for AbsSubframe %d.d ******\n", frame_tx, subframe_tx);
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_UE_TX, VCD_FUNCTION_OUT);
 #if UE_TIMING_TRACE
   stop_meas(&ue->phy_proc_tx);
@@ -2930,9 +2938,12 @@ void ue_pbch_procedures(uint8_t eNB_id,PHY_VARS_UE *ue,UE_rxtx_proc_t *proc, uin
 
       proc->frame_rx = (proc->frame_rx & 0xFFFFFC00) | (frame_tx & 0x000003FF);
       proc->frame_tx = proc->frame_rx;
-      ue->proc.proc_rxtx[1].frame_rx = proc->frame_rx;
-      ue->proc.proc_rxtx[1].frame_tx = proc->frame_tx;
-      LOG_I(PHY,"[UE %d] frame %d, subframe %d: Adjusting frame counter (PBCH ant_tx=%d, frame_tx=%d, phase %d, rx_offset %d) => new frame %d\n",
+      for(int th_id=0; th_id<RX_NB_TH; th_id++)
+      {
+        ue->proc.proc_rxtx[th_id].frame_rx = proc->frame_rx;
+        ue->proc.proc_rxtx[th_id].frame_tx = proc->frame_tx;
+      }
+       LOG_I(PHY,"[UE %d] frame %d, subframe %d: Adjusting frame counter (PBCH ant_tx=%d, frame_tx=%d, phase %d, rx_offset %d) => new frame %d\n",
 	    ue->Mod_id,
 	    frame_rx,
 	    subframe_rx,
@@ -2955,10 +2966,14 @@ void ue_pbch_procedures(uint8_t eNB_id,PHY_VARS_UE *ue,UE_rxtx_proc_t *proc, uin
 	    pbch_phase);
 
       proc->frame_rx = (proc->frame_rx & 0xFFFFFC00) | (frame_tx & 0x000003FF);
-      ue->proc.proc_rxtx[1].frame_rx = (proc->frame_rx & 0xFFFFFC00) | (frame_tx & 0x000003FF);
       proc->frame_tx = proc->frame_rx;
-      ue->proc.proc_rxtx[1].frame_tx = proc->frame_rx;
       frame_rx = proc->frame_rx;
+      
+      for(int th_id=0; th_id<RX_NB_TH; th_id++)
+      {
+        ue->proc.proc_rxtx[th_id].frame_rx = (proc->frame_rx & 0xFFFFFC00) | (frame_tx & 0x000003FF);
+        ue->proc.proc_rxtx[th_id].frame_tx = proc->frame_rx;
+      }
 
     }
 
@@ -3123,11 +3138,13 @@ int ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint
 
 #endif
 
-  uint8_t *nCCE_current = &ue->pdcch_vars[subframe_rx & 0x1][eNB_id]->nCCE[subframe_rx];
-  uint8_t *nCCE_dest = &ue->pdcch_vars[(subframe_rx+1) & 0x1][eNB_id]->nCCE[subframe_rx];
+  uint8_t *nCCE_current = &ue->pdcch_vars[subframe_rx%RX_NB_TH][eNB_id]->nCCE[subframe_rx];
+  uint8_t *nCCE_dest = &ue->pdcch_vars[(subframe_rx+1)%RX_NB_TH][eNB_id]->nCCE[subframe_rx];
+  uint8_t *nCCE_dest1 = &ue->pdcch_vars[(subframe_rx+2)%RX_NB_TH][eNB_id]->nCCE[subframe_rx];
   memcpy(nCCE_dest, nCCE_current, sizeof(uint8_t));
+  memcpy(nCCE_dest1, nCCE_current, sizeof(uint8_t));
 
-  LOG_D(PHY,"[UE  %d] AbsSubFrame %d.%d, Mode %s: DCI found %i --> rnti %x / crnti %x : format %d\n",
+  LOG_I(PHY,"[UE  %d] AbsSubFrame %d.%d, Mode %s: DCI found %i --> rnti %x / crnti %x : format %d\n",
        ue->Mod_id,frame_rx%1024,subframe_rx,mode_string[ue->UE_mode[eNB_id]],
        dci_cnt,
        dci_alloc_rx[0].rnti,
@@ -3149,7 +3166,7 @@ int ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint
 	(dci_alloc_rx[i].format != format0)) {
       
 
-      LOG_D(PHY,"[UE  %d][DCI][PDSCH %x] AbsSubframe %d.%d: format %d, num_pdcch_symbols %d, nCCE %d, total CCEs %d\n",
+      LOG_I(PHY,"[UE  %d][DCI][PDSCH %x] AbsSubframe %d.%d: format %d, num_pdcch_symbols %d, nCCE %d, total CCEs %d\n",
 	    ue->Mod_id,dci_alloc_rx[i].rnti,
 	    frame_rx%1024,subframe_rx,
 	    dci_alloc_rx[i].format,
@@ -3185,7 +3202,17 @@ int ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint
               (dci_alloc_rx[i].format == format2A) ||
               (dci_alloc_rx[i].format == format2B))
           {
-            ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->g_pucch += ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->harq_processes[ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->current_harq_pid]->delta_PUCCH;
+            //ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->g_pucch += ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->harq_processes[ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->current_harq_pid]->delta_PUCCH;
+            int32_t delta_pucch = ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->harq_processes[ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->current_harq_pid]->delta_PUCCH;
+            for(int th_id=0; th_id<RX_NB_TH; th_id++)
+            {
+                ue->dlsch[th_id][eNB_id][0]->g_pucch += delta_pucch;
+            }
+            LOG_I(PHY,"update TPC for PUCCH %d.%d / pid %d delta_PUCCH %d g_pucch %d %d %d\n",frame_rx, subframe_rx,ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->current_harq_pid,
+                    delta_pucch,
+                    ue->dlsch[0][eNB_id][0]->g_pucch,
+                    ue->dlsch[1][eNB_id][0]->g_pucch,
+                    ue->dlsch[2][eNB_id][0]->g_pucch);
           }
 
 	ue->dlsch_received[eNB_id]++;
@@ -3699,6 +3726,7 @@ void process_rar(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc, int eNB_id, runmode_t mo
 						 dlsch0->harq_processes[0]->b); // alter the 'b' buffer so it contains only the selected RAR header and RAR payload
 
       ue->pdcch_vars[(subframe_rx+1)%RX_NB_TH][eNB_id]->crnti = ue->pdcch_vars[subframe_rx%RX_NB_TH][eNB_id]->crnti;
+      ue->pdcch_vars[(subframe_rx+2)%RX_NB_TH][eNB_id]->crnti = ue->pdcch_vars[subframe_rx%RX_NB_TH][eNB_id]->crnti;
       
 	    
       if (timing_advance!=0xffff) {
@@ -4162,9 +4190,9 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
 #endif
 
   // start timers
-#ifdef UE_DEBUG_TRACE
-  LOG_D(PHY," ****** start RX-Chain for AbsSubframe %d.%d ******  \n", frame_rx%1024, subframe_rx);
-#endif
+//#ifdef UE_DEBUG_TRACE
+  LOG_I(PHY," ****** start RX-Chain for AbsSubframe %d.%d ******  \n", frame_rx%1024, subframe_rx);
+//#endif
 
 #if UE_TIMING_TRACE
   start_meas(&ue->phy_proc_rx[subframe_rx%RX_NB_TH]);
@@ -4548,12 +4576,17 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
   uint8_t          current_harq_pid        = ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->current_harq_pid;
   LTE_DL_UE_HARQ_t *current_harq_processes = ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->harq_processes[current_harq_pid];
   LTE_DL_UE_HARQ_t *harq_processes_dest    = ue->dlsch[(subframe_rx+1)%RX_NB_TH][eNB_id][0]->harq_processes[current_harq_pid];
+  LTE_DL_UE_HARQ_t *harq_processes_dest1    = ue->dlsch[(subframe_rx+2)%RX_NB_TH][eNB_id][0]->harq_processes[current_harq_pid];
 
   harq_status_t *current_harq_ack = &ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->harq_ack[subframe_rx];
   harq_status_t *harq_ack_dest    = &ue->dlsch[(subframe_rx+1)%RX_NB_TH][eNB_id][0]->harq_ack[subframe_rx];
+  harq_status_t *harq_ack_dest1    = &ue->dlsch[(subframe_rx+2)%RX_NB_TH][eNB_id][0]->harq_ack[subframe_rx];
 
   copy_harq_proc_struct(harq_processes_dest, current_harq_processes);
   copy_ack_struct(harq_ack_dest, current_harq_ack);
+
+  copy_harq_proc_struct(harq_processes_dest1, current_harq_processes);
+  copy_ack_struct(harq_ack_dest1, current_harq_ack);
 
   if (subframe_rx==9) {
     if (frame_rx % 10 == 0) {
@@ -4596,11 +4629,11 @@ int phy_procedures_UE_RX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uin
 #if DISABLE_LOG_X
   printf("------FULL RX PROC [SFN %d]: %5.2f ------\n",subframe_rx,ue->phy_proc_rx[subframe_rx%RX_NB_TH].p_time/(cpuf*1000.0));
 #else
-  LOG_D(PHY, "------FULL RX PROC [SFN %d]: %5.2f ------\n",subframe_rx,ue->phy_proc_rx[subframe_rx%RX_NB_TH].p_time/(cpuf*1000.0));
+  LOG_I(PHY, "------FULL RX PROC [SFN %d]: %5.2f ------\n",subframe_rx,ue->phy_proc_rx[subframe_rx%RX_NB_TH].p_time/(cpuf*1000.0));
 #endif
 #endif
 
-  LOG_D(PHY," ****** end RX-Chain  for AbsSubframe %d.%d ******  \n", frame_rx%1024, subframe_rx);
+  LOG_I(PHY," ****** end RX-Chain  for AbsSubframe %d.%d ******  \n", frame_rx%1024, subframe_rx);
   return (0);
 }
    

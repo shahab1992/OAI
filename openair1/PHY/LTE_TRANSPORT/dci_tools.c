@@ -4781,17 +4781,17 @@ int check_dci_format1_1a_coherency(DCI_format_t dci_format,
     uint8_t  NPRB    = 0;
     long long int RIV_max = 0;
 
-#ifdef DEBUG_DCI
+//#ifdef DEBUG_DCI
     LOG_I(PHY,"[DCI-FORMAT-1-1A] AbsSubframe %d.%d dci_format %d\n", frame, subframe, dci_format);
     LOG_I(PHY,"[DCI-FORMAT-1-1A] rnti       %x\n",  rnti);
     LOG_I(PHY,"[DCI-FORMAT-1-1A] harq_pid   %d\n", harq_pid);
     LOG_I(PHY,"[DCI-FORMAT-1-1A] rah        %d\n", rah);
     LOG_I(PHY,"[DCI-FORMAT-1-1A] rballoc    %x\n", rballoc);
     LOG_I(PHY,"[DCI-FORMAT-1-1A] mcs1       %d\n", mcs1);
-    LOG_I(PHY,"[DCI-FORMAT-1-1A] rv1        %d\n", rv1);
-    LOG_I(PHY,"[DCI-FORMAT-1-1A] ndi1       %d\n", ndi1);
+    //LOG_I(PHY,"[DCI-FORMAT-1-1A] rv1        %d\n", rv1);
+    //LOG_I(PHY,"[DCI-FORMAT-1-1A] ndi1       %d\n", ndi1);
     LOG_I(PHY,"[DCI-FORMAT-1-1A] TPC        %d\n", TPC);
-#endif
+//#endif
 
     // I- check dci content minimum coherency
     if( ((rnti==si_rnti) || (rnti==p_rnti) || (rnti==ra_rnti)) && harq_pid > 0)
@@ -6386,15 +6386,15 @@ int generate_ue_dlsch_params_from_dci(int frame,
     }
 
 
-#ifdef UE_DEBUG_TRACE
+//#ifdef UE_DEBUG_TRACE
 
     if (dlsch[0] && (dlsch[0]->rnti != 0xffff)) {
         LOG_I(PHY,"dci_format:%d Abssubframe: %d.%d \n",dci_format,frame%1024,subframe);
-        LOG_D(PHY,"PDSCH dlsch0 UE: rnti     %x\n",dlsch[0]->rnti);
+        LOG_I(PHY,"PDSCH dlsch0 UE: rnti     %x\n",dlsch[0]->rnti);
         LOG_D(PHY,"PDSCH dlsch0 UE: NBRB     %d\n",dlsch0_harq->nb_rb);
         LOG_D(PHY,"PDSCH dlsch0 UE: rballoc  %x\n",dlsch0_harq->rb_alloc_even[0]);
-        LOG_D(PHY,"PDSCH dlsch0 UE: harq_pid %d\n",harq_pid);
-        LOG_D(PHY,"PDSCH dlsch0 UE: g        %d\n",dlsch[0]->g_pucch);
+        LOG_I(PHY,"PDSCH dlsch0 UE: harq_pid %d\n",dci_info_extarcted.harq_pid);
+        LOG_I(PHY,"PDSCH dlsch0 UE: g        %d\n",dlsch[0]->g_pucch);
         LOG_D(PHY,"PDSCH dlsch0 UE: round    %d\n",dlsch0_harq->round);
         LOG_D(PHY,"PDSCH dlsch0 UE: DCINdi   %d\n",dlsch0_harq->DCINdi);
         LOG_D(PHY,"PDSCH dlsch0 UE: rvidx    %d\n",dlsch0_harq->rvidx);
@@ -6402,7 +6402,7 @@ int generate_ue_dlsch_params_from_dci(int frame,
         LOG_D(PHY,"PDSCH dlsch0 UE: mcs      %d\n",dlsch0_harq->mcs);
         LOG_D(PHY,"PDSCH dlsch0 UE: pwr_off  %d\n",dlsch0_harq->dl_power_off);
     }
-#endif
+//#endif
 
   #if T_TRACER
     if( (dlsch[0]->rnti != si_rnti) && (dlsch[0]->rnti != ra_rnti) && (dlsch[0]->rnti != p_rnti))

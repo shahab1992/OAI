@@ -73,8 +73,8 @@
 #define openair_free(y,x) free((y))
 #define PAGE_SIZE 4096
 
-#define RX_NB_TH_MAX 2
-#define RX_NB_TH 2
+#define RX_NB_TH_MAX 3
+#define RX_NB_TH 3
 
 //#ifdef SHRLIBDEV
 //extern int rxrescale;
@@ -426,7 +426,7 @@ typedef struct {
   /// mutex for UE synch thread
   pthread_mutex_t mutex_synch;
   /// set of scheduling variables RXn-TXnp4 threads
-  UE_rxtx_proc_t proc_rxtx[2];
+  UE_rxtx_proc_t proc_rxtx[RX_NB_TH];
 } UE_proc_t;
 
 /// Top-level PHY Data Structure for eNB
