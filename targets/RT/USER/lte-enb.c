@@ -945,7 +945,6 @@ void rx_rf(PHY_VARS_eNB *eNB,int *frame,int *subframe) {
   openair0_timestamp ts,old_ts;
 
 
-
   for (i=0; i<fp->nb_antennas_rx; i++)
     rxp[i] = (void*)&eNB->common_vars.rxdata[0][i][*subframe*fp->samples_per_tti];
   
