@@ -2031,7 +2031,7 @@ uint8_t get_num_pdcch_symbols(uint8_t num_dci,
   }
 
 
-  LOG_I(PHY," dci.c: get_num_pdcch_symbols subframe %d FATAL, illegal numCCE %d (num_dci %d)\n",subframe,numCCE,num_dci);
+  LOG_D(PHY," dci.c: get_num_pdcch_symbols subframe %d FATAL, illegal numCCE %d (num_dci %d)\n",subframe,numCCE,num_dci);
   //for (i=0;i<num_dci;i++) {
   //  printf("dci_alloc[%d].L = %d\n",i,dci_alloc[i].L);
   //}
