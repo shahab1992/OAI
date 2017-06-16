@@ -2406,7 +2406,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,ui
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_UE_TX,VCD_FUNCTION_IN);
 
-  LOG_D(PHY,"****** start TX-Chain for AbsSubframe %d.d ******\n", frame_tx, subframe_tx);
+  LOG_D(PHY,"****** start TX-Chain for AbsSubframe %d.%d ******\n", frame_tx, subframe_tx);
 #if T_TRACER
   T(T_UE_PHY_UL_TICK, T_INT(ue->Mod_id), T_INT(frame_tx%1024), T_INT(subframe_tx));
 #endif
@@ -2562,7 +2562,7 @@ void phy_procedures_UE_TX(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,ui
              &N_bundled,
              0);
 
-  LOG_D(PHY,"****** end TX-Chain for AbsSubframe %d.d ******\n", frame_tx, subframe_tx);
+  LOG_D(PHY,"****** end TX-Chain for AbsSubframe %d.%d ******\n", frame_tx, subframe_tx);
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_PROCEDURES_UE_TX, VCD_FUNCTION_OUT);
 #if UE_TIMING_TRACE
   stop_meas(&ue->phy_proc_tx);
@@ -3208,11 +3208,12 @@ int ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint
             {
                 ue->dlsch[th_id][eNB_id][0]->g_pucch += delta_pucch;
             }
-            LOG_D(PHY,"update TPC for PUCCH %d.%d / pid %d delta_PUCCH %d g_pucch %d %d %d\n",frame_rx, subframe_rx,ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->current_harq_pid,
+            LOG_D(PHY,"update TPC for PUCCH %d.%d / pid %d delta_PUCCH %d g_pucch %d %d \n",frame_rx, subframe_rx,ue->dlsch[subframe_rx%RX_NB_TH][eNB_id][0]->current_harq_pid,
                     delta_pucch,
                     ue->dlsch[0][eNB_id][0]->g_pucch,
-                    ue->dlsch[1][eNB_id][0]->g_pucch,
-                    ue->dlsch[2][eNB_id][0]->g_pucch);
+                    ue->dlsch[1][eNB_id][0]->g_pucch
+                    //ue->dlsch[2][eNB_id][0]->g_pucch
+                    );
           }
 
 	ue->dlsch_received[eNB_id]++;
