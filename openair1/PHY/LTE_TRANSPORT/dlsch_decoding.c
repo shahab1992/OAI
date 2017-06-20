@@ -38,6 +38,15 @@
 #include "SIMULATION/TOOLS/defs.h"
 //#define DEBUG_DLSCH_DECODING
 
+#ifdef TRUBO_OFFLOAD_ENABLE
+#include "fjt_turbo_api_ext.h"
+#include "fjt_turbo_api.h"
+
+static uint16_t  seqno_of_stream[FJT_MAX_STREAM] = {0, 0};
+#define WAIT_US_MAX        (210)
+#define WAIT_US_THRE       (140)
+#endif /* TRUBO_OFFLOAD_ENABLE */
+
 extern double cpuf;
 
 void free_ue_dlsch(LTE_UE_DLSCH_t *dlsch)
@@ -81,6 +90,17 @@ LTE_UE_DLSCH_t *new_ue_dlsch(uint8_t Kmimo,uint8_t Mdlharq,uint32_t Nsoft,uint8_
   uint8_t exit_flag = 0,i,r;
 
   unsigned char bw_scaling =1;
+
+#ifdef TRUBO_OFFLOAD_ENABLE
+  static uint8_t turbo_init_flag = FJT_FLAG_OFF;
+  if( turbo_init_flag != FJT_FLAG_ON ){
+     if( fjt_api_turbodec_init() != FJT_API_OK ){
+        printf("new_ue_dlsch fjt_api_turbodec_init err.\n");
+        return(NULL);
+     }
+     turbo_init_flag = FJT_FLAG_ON;
+  }
+#endif /* TRUBO_OFFLOAD_ENABLE */
 
   switch (N_RB_DL) {
   case 6:
@@ -220,8 +240,15 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
                 time_stats_t *,
                 time_stats_t *);
 
-
-
+#ifdef TRUBO_OFFLOAD_ENABLE
+  uint8_t                   ret_code;
+  fjt_turbodec_inparam_t    turbo_inparam;
+  fjt_turbodec_outparam_t   turbo_outparam;
+  uint8_t                   loop_cnt;
+  uint32_t                  status;
+  uint16_t                  sequence_number;
+  uint8_t                   stream_num;
+#endif /* TRUBO_OFFLOAD_ENABLE */
 
   if (!dlsch_llr) {
     printf("dlsch_decoding.c: NULL dlsch_llr pointer\n");
@@ -439,7 +466,7 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
       printf("\n");*/
 #endif
 
-
+#ifndef TRUBO_OFFLOAD_ENABLE
     //    printf("Clearing c, %p\n",harq_process->c[r]);
     memset(harq_process->c[r],0,Kr_bytes);
 
@@ -448,7 +475,7 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
       crc_type = CRC24_A;
     else
       crc_type = CRC24_B;
-
+#endif /* TRUBO_OFFLOAD_ENABLE */
     /*
     printf("decoder input(segment %d)\n",r);
     for (i=0;i<(3*8*Kr_bytes)+12;i++)
@@ -457,6 +484,113 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
     printf("%d : %d\n",i,harq_process->d[r][96+i]);
     printf("\n");
     */
+
+#ifdef TRUBO_OFFLOAD_ENABLE
+    stream_num                      = FJT_STREAM0;                     /* Current situation is fixed to 0 */
+    if (r==0) {
+      sequence_number               = seqno_of_stream[stream_num]++;
+    }
+    turbo_inparam.stream_number     = stream_num;                      /* stream number */
+    turbo_inparam.tb_size           = harq_process->TBS;               /* Transport Block Size */
+    turbo_inparam.cb_seg_num        = (uint8_t)harq_process->C;        /* Code Block segments */
+    turbo_inparam.cb_number         = (uint8_t)r;                      /* Code Block number */
+    turbo_inparam.cb_size           = (uint16_t)Kr;                    /* Code Block size(bits) */
+    turbo_inparam.filler_bit_num    = (uint8_t)harq_process->F;        /* Filler bit size */
+    turbo_inparam.max_iteration_num = dlsch->max_turbo_iterations;     /* Iteration counts */
+    turbo_inparam.seq_num           = sequence_number;                 /* Sequence number */
+    turbo_inparam.inbuf_p           = (void *)&harq_process->d[r][96]; /* Data pointer */
+
+    if (r==0) {
+        start_meas(dlsch_turbo_decoding_stats);
+    }
+    ret_code = fjt_api_turbodec_req(&turbo_inparam);
+    if (ret_code != FJT_API_OK) {
+      return(dlsch->max_turbo_iterations);
+    }
+  }
+
+  for (loop_cnt = 0; loop_cnt < WAIT_US_MAX; loop_cnt++) {
+    ret_code = fjt_api_turbodec_end_wait(FJT_API_WATCH_NONSYNC, stream_num, &status);
+    if (ret_code == FJT_API_EMPTY) {
+        usleep(1);
+    }
+    else if (ret_code == FJT_API_OK) {
+      if (loop_cnt >= WAIT_US_THRE) {
+        printf("[UE %d] DLSCH: fjt_api_turbodec_end_wait limit over. subframe %d (pid %d, round %d, count %d)\n",
+               phy_vars_ue->Mod_id, subframe, harq_pid, harq_process->round, loop_cnt);
+      }
+      break;
+    }
+    else if (ret_code == FJT_API_NG) {
+      dlsch->harq_ack[subframe].ack = 0;
+      dlsch->harq_ack[subframe].harq_id = harq_pid;
+      dlsch->harq_ack[subframe].send_harq_status = 1;
+      harq_process->errors[harq_process->round]++;
+      harq_process->round++;
+      if (harq_process->round >= dlsch->Mdlharq) {
+        harq_process->status = SCH_IDLE;
+      }
+      //LOG5G_E(0, "Q", PHY, "[UE %d] DLSCH: fjt_api_turbodec_end_wait status error. subframe %d (pid %d, round %d, status %#x)\n",
+      //    phy_vars_ue->Mod_id, subframe, harq_pid, harq_process->round, status);
+      stop_meas(dlsch_turbo_decoding_stats);
+      return((1+dlsch->max_turbo_iterations));
+    }
+    else {
+      /* parameter error */
+      printf("[UE %d] DLSCH: fjt_api_turbodec_end_wait parameter error. subframe %d (pid %d, round %d, status %#x)\n",
+             phy_vars_ue->Mod_id, subframe, harq_pid, harq_process->round, status);
+      stop_meas(dlsch_turbo_decoding_stats);
+      return(dlsch->max_turbo_iterations);
+    }
+  }
+  stop_meas(dlsch_turbo_decoding_stats);
+
+  if (loop_cnt >= WAIT_US_MAX) {
+      dlsch->harq_ack[subframe].ack = 0;
+      dlsch->harq_ack[subframe].harq_id = harq_pid;
+      dlsch->harq_ack[subframe].send_harq_status = 1;
+      harq_process->errors[harq_process->round]++;
+      harq_process->round++;
+      if (harq_process->round >= dlsch->Mdlharq) {
+        harq_process->status = SCH_IDLE;
+      }
+      printf("[UE %d] DLSCH: fjt_api_turbodec_end_wait timeout error. subframe %d (pid %d, round %d, status %#x)\n",
+             phy_vars_ue->Mod_id, subframe, harq_pid, harq_process->round, status);
+      return((1+dlsch->max_turbo_iterations));
+  }
+
+  ret_code = fjt_api_turbodec_get_result(stream_num, &turbo_outparam);
+  if ( (ret_code != FJT_API_OK)
+  ||   (turbo_outparam.cb_crc_result != FJT_API_CRC_OK)
+  ||   (turbo_outparam.tb_crc_result != FJT_API_CRC_OK)
+  ||   (sequence_number != turbo_outparam.seq_num) ) {
+    /* decoding failure */
+    dlsch->harq_ack[subframe].ack = 0;
+    dlsch->harq_ack[subframe].harq_id = harq_pid;
+    dlsch->harq_ack[subframe].send_harq_status = 1;
+    harq_process->errors[harq_process->round]++;
+    harq_process->round++;
+    if (harq_process->round >= dlsch->Mdlharq) {
+      harq_process->status = SCH_IDLE;
+    }
+    printf("[UE %d] DLSCH: fjt_api_turbodec_get_result error. subframe %d (pid %d, round %d, cb_crc_result, %d, tb_crc_result %d, send_seq %d rcv_seq %d)\n",
+           phy_vars_ue->Mod_id, subframe, harq_pid, harq_process->round, turbo_outparam.cb_crc_result, turbo_outparam.tb_crc_result, sequence_number, turbo_outparam.seq_num);
+    return((1+dlsch->max_turbo_iterations));
+  }
+  else {
+    /* decoding success */
+    memcpy(harq_process->b, turbo_outparam.outbuf_p, (harq_process->TBS>>3));
+    harq_process->status = SCH_IDLE;
+    harq_process->round  = 0;
+    dlsch->harq_ack[subframe].ack = 1;
+    dlsch->harq_ack[subframe].harq_id = harq_pid;
+    dlsch->harq_ack[subframe].send_harq_status = 1;
+
+    printf("[UE %d] DLSCH: fjt_api_turbodec_get_result success. subframe %d (pid %d, round %d)\n", phy_vars_ue->Mod_id, subframe, harq_pid, harq_process->round);
+    return(turbo_outparam.iteration_num);
+  }
+
+#else  /* TRUBO_OFFLOAD_ENABLE */
 
     //#ifndef __AVX2__
 #if 1
@@ -723,6 +857,7 @@ uint32_t  dlsch_decoding(PHY_VARS_UE *phy_vars_ue,
   dlsch->last_iteration_cnt = ret;
 
   return(ret);
+#endif /* TRUBO_OFFLOAD_ENABLE */
 }
 
 #ifdef PHY_ABSTRACTION

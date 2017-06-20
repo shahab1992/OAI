@@ -776,6 +776,7 @@ include_directories("${OPENAIR2_DIR}/RRC/LITE/MESSAGES")
 include_directories("${OPENAIR3_DIR}/GTPV1-U/nw-gtpv1u/shared")
 include_directories("${OPENAIR3_DIR}/GTPV1-U/nw-gtpv1u/include")
 include_directories("${OPENAIR_DIR}")
+include_directories("${OPENAIR_DIR}/turbo/api/inc")
 
 # Utilities Library
 ################
@@ -1056,6 +1057,8 @@ set(PHY_SRC
   ${OPENAIR1_DIR}/PHY/TOOLS/sqrt.c
   ${OPENAIR1_DIR}/PHY/TOOLS/time_meas.c
   ${OPENAIR1_DIR}/PHY/TOOLS/lut.c
+  ${OPENAIR_DIR}/turbo/api/src/fjt_turbo_api.c
+  ${OPENAIR_DIR}/turbo/api/src/fjt_turbo_module.c
   )
 if (${SMBV})
   set(PHY_SRC "${PHY_SRC} ${OPENAIR1_DIR}/PHY/TOOLS/smbv.c")

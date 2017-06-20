@@ -29,6 +29,8 @@
 
 #include <stdint.h>
 
+#define TRUBO_OFFLOAD_ENABLE
+
 #ifndef NO_OPENAIR1
 #include "PHY/defs.h"
 #else
@@ -41,7 +43,12 @@
 #define CRC8 3
 
 #define MAX_TURBO_ITERATIONS_MBSFN 8
+
+#ifdef TRUBO_OFFLOAD_ENABLE
+#define MAX_TURBO_ITERATIONS 8
+#else /* TRUBO_OFFLOAD_ENABLE */
 #define MAX_TURBO_ITERATIONS 4
+#endif /* TRUBO_OFFLOAD_ENABLE */
 
 #define LTE_NULL 2
 
