@@ -503,6 +503,9 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
       switch (mac_xface->frame_parms->tdd_config) {
       case 2:
         schedule_ulsch(module_idP,frameP,cooperation_flag,subframeP,7);
+        
+        LOG_I(MAC," [TDDconfigTest][%s:%d:%s] frameP = %d, subframeP = %d, sched_subframe = 7\n"
+        	,__FILE__, __LINE__, __FUNCTION__,frameP,subframeP);
 
         // no break here!
       case 5:
@@ -526,6 +529,9 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
 	  flexran_agent_mac_destroy_dl_config(msg);
 	}
 #endif
+
+
+
         break;
 
       default:
@@ -913,6 +919,12 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
 	  flexran_agent_mac_destroy_dl_config(msg);
 	}
 #endif
+
+
+
+        LOG_I(MAC," [TDDconfigTest][%s:%d:%s] frameP = %d, subframeP = %d, sched_subframe = 2\n"
+        	,__FILE__, __LINE__, __FUNCTION__,frameP,subframeP);
+
         break;
 
       default:

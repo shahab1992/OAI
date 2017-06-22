@@ -6550,11 +6550,13 @@ uint8_t subframe2harq_pid(LTE_DL_FRAME_PARMS *frame_parms,uint32_t frame,uint8_t
     LOG_E(PHY, "invalid harq_pid(%d) at SFN/SF = %d/%d\n", ret, frame, subframe);
     mac_xface->macphy_exit("invalid harq_pid");
   }
+  
+  //LOG_I(PHY," [TDDconfigTest][%s:%d:%s] subframe = %d, ret = %d\n" ,__FILE__, __LINE__, __FUNCTION__,subframe,ret);
   return ret;
 }
 
 uint8_t pdcch_alloc2ul_subframe(LTE_DL_FRAME_PARMS *frame_parms,uint8_t n)
-{
+{//
   uint8_t ul_subframe = 255;
 
   if ((frame_parms->frame_type == TDD) &&
@@ -6572,12 +6574,14 @@ uint8_t pdcch_alloc2ul_subframe(LTE_DL_FRAME_PARMS *frame_parms,uint8_t n)
   else
     ul_subframe = ((n+4)%10);
 
-  LOG_D(PHY, "subframe %d: PUSCH subframe = %d\n", n, ul_subframe);
+  //LOG_D(PHY, "subframe %d: PUSCH subframe = %d\n", n, ul_subframe);
+  LOG_D(PHY, "[TDDconfigTest]subframe %d: PUSCH subframe = %d\n", n, ul_subframe);
   return ul_subframe;
 }
 
 uint8_t ul_subframe2pdcch_alloc_subframe(LTE_DL_FRAME_PARMS *frame_parms,uint8_t n)
 {
+
   if ((frame_parms->frame_type == TDD) &&
       (frame_parms->tdd_config == 1) &&
       ((n==7)||(n==2))) // tdd_config 0,1 SF 1,5
@@ -6614,7 +6618,8 @@ uint32_t pdcch_alloc2ul_frame(LTE_DL_FRAME_PARMS *frame_parms,uint32_t frame, ui
   else
     ul_frame = (frame+(n>=6 ? 1 : 0));
 
-  LOG_D(PHY, "frame %d subframe %d: PUSCH frame = %d\n", frame, n, ul_frame);
+  //LOG_D(PHY, "frame %d subframe %d: PUSCH frame = %d\n", frame, n, ul_frame);
+  LOG_D(PHY, "[TDDconfigTest]frame %d subframe %d: PUSCH frame = %d\n", frame, n, ul_frame);
   return ul_frame;
 
 }
@@ -8065,7 +8070,8 @@ int generate_ue_ulsch_params_from_dci(void *dci_pdu,
     dlsch[0]->harq_ack[subframe].vDAI_UL = dai+1;
 
 
-    /*LOG_I(PHY, "[PUSCH %d] Format0 DCI %s, CQI_req=%d, cshift=%d, TPC=%d, DAI=%d, vDAI_UL[sf#%d]=%d, NDI=%d, MCS=%d, RBalloc=%d, first_rb=%d, harq_pid=%d, nb_rb=%d, subframe_scheduling_flag=%d"
+    //LOG_I(PHY, "[PUSCH %d] Format0 DCI %s, CQI_req=%d, cshift=%d, TPC=%d, DAI=%d, vDAI_UL[sf#%d]=%d, NDI=%d, MCS=%d, RBalloc=%d, first_rb=%d, harq_pid=%d, nb_rb=%d, subframe_scheduling_flag=%d"
+    LOG_I(PHY, "[TDDconfigTest][PUSCH %d] Format0 DCI %s, CQI_req=%d, cshift=%d, TPC=%d, DAI=%d, vDAI_UL[sf#%d]=%d, NDI=%d, MCS=%d, RBalloc=%d, first_rb=%d, harq_pid=%d, nb_rb=%d, subframe_scheduling_flag=%d"
             "   ulsch->bundling %d, O_ACK %d \n",
         harq_pid,
         (frame_parms->frame_type == TDD? "TDD" : "FDD"),
@@ -8073,7 +8079,7 @@ int generate_ue_ulsch_params_from_dci(void *dci_pdu,
         ulsch->harq_processes[harq_pid]->first_rb, harq_pid, ulsch->harq_processes[harq_pid]->nb_rb,
         ulsch->harq_processes[harq_pid]->subframe_scheduling_flag,
         ulsch->bundling,
-        ulsch->harq_processes[harq_pid]->O_ACK);*/
+        ulsch->harq_processes[harq_pid]->O_ACK);
 
     ulsch->beta_offset_cqi_times8                = beta_cqi[ue->pusch_config_dedicated[eNB_id].betaOffset_CQI_Index];//18;
     ulsch->beta_offset_ri_times8                 = beta_ri[ue->pusch_config_dedicated[eNB_id].betaOffset_RI_Index];//10;

@@ -79,6 +79,7 @@ uint8_t get_mi(LTE_DL_FRAME_PARMS *frame_parms,uint8_t subframe)
     break;
 
   case 2:
+    //LOG_I(PHY," [TDDconfigTest][%s:%d:%s] subframe = %d\n" ,__FILE__, __LINE__, __FUNCTION__,subframe);
     if ((subframe==3) || (subframe==8))
       return(1);
     else return(0);
@@ -280,6 +281,7 @@ uint8_t phich_subframe2_pusch_subframe(LTE_DL_FRAME_PARMS *frame_parms,uint8_t s
   }
 
   LOG_D(PHY, "subframe  %d: PUSCH subframe = %d\n", subframe, pusch_subframe);
+  LOG_I(PHY," [TDDconfigTest][%s:%d:%s] subframe  %d: PUSCH subframe = %d\n\n" ,__FILE__, __LINE__, __FUNCTION__,subframe, pusch_subframe);
   return pusch_subframe;
 }
 
@@ -1485,6 +1487,8 @@ void rx_phich(PHY_VARS_UE *ue,
 #endif
 
   }
+  
+  LOG_I(PHY," [TDDconfigTest][%s:%d:%s] subframe = %d\n" ,__FILE__, __LINE__, __FUNCTION__,subframe);
 
 }
 
@@ -1572,6 +1576,7 @@ void generate_phich_top(PHY_VARS_eNB *eNB,
                          ulsch[UE_id]->harq_processes[harq_pid]->phich_ACK,
                          subframe,
                          txdataF);
+          LOG_I(PHY," [TDDconfigTest][%s:%d:%s] subframe = %d\n" ,__FILE__, __LINE__, __FUNCTION__,subframe);
         } else {
           /*
           generate_phich_emul(frame_parms,

@@ -2101,6 +2101,8 @@ uint8_t generate_dci_top(uint8_t num_ue_spec_dci,
   }
 
   num_pdcch_symbols = get_num_pdcch_symbols(num_ue_spec_dci+num_common_dci,dci_alloc,frame_parms,subframe);
+  //LOG_I(PHY," [TDDconfigTest][%s:%d:%s] num_pdcch_symbols = %d, subframe = %d\n" 
+  //      ,__FILE__, __LINE__, __FUNCTION__,num_pdcch_symbols,subframe);
   //  printf("subframe %d in generate_dci_top num_pdcch_symbols = %d, num_dci %d\n",
   //     subframe,num_pdcch_symbols,num_ue_spec_dci+num_common_dci);
   generate_pcfich(num_pdcch_symbols,

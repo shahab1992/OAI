@@ -1575,70 +1575,74 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
 	if (frame_parms->frame_type == FDD) {
 	// for FDD
 
-	// current subframe to dl subframe
-	int dl_subframe = (subframe_tx < 4) ? (subframe_tx + 6) : (subframe_tx - 4);
+		// current subframe to dl subframe
+		int dl_subframe = (subframe_tx < 4) ? (subframe_tx + 6) : (subframe_tx - 4);
 
-	// check DLSCH recieve
-	if (ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[dl_subframe].send_harq_status > 0) {
-	  ue->ulsch[eNB_id]->harq_processes[harq_pid]->O_ACK = 1;
+		// check DLSCH recieve
+		if (ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[dl_subframe].send_harq_status > 0) {
+		  ue->ulsch[eNB_id]->harq_processes[harq_pid]->O_ACK = 1;
+		} else {
+		  ue->ulsch[eNB_id]->harq_processes[harq_pid]->O_ACK = 0;
+		}
 	} else {
-	  ue->ulsch[eNB_id]->harq_processes[harq_pid]->O_ACK = 0;
-	}
-	} else {
-	// for TDD
-	if (ue->ulsch[eNB_id]->harq_processes[harq_pid]->rcv_ulgrant != 1) {
-	  // for onPUSCH not based on PDCCH
-	  // note: for onPUSCH based on PDCCH, set O_ACK in generate_ue_ulsch_params_from_dci().
+		// for TDD
+		if (ue->ulsch[eNB_id]->harq_processes[harq_pid]->rcv_ulgrant != 1) {
+		  // for onPUSCH not based on PDCCH
+		  // note: for onPUSCH based on PDCCH, set O_ACK in generate_ue_ulsch_params_from_dci().
 
-	  uint8_t O_ACK = 0;
+		  uint8_t O_ACK = 0;
 
-	  // get M value
-	  uint8_t M = ul_ACK_subframe2_M(&ue->frame_parms, subframe_tx);
+		  // get M value
+		  uint8_t M = ul_ACK_subframe2_M(&ue->frame_parms, subframe_tx);
 
-	  // check DLSCH recieve
-	  uint8_t rx_flag = 0;
-	  for (uint8_t m = 0; m < M; m++) {
-	    // current subframe to dl subframe
-	    int dl_subframe = ul_ACK_subframe2_dl_subframe(&ue->frame_parms, subframe_tx, m);
+		  // check DLSCH recieve
+		  uint8_t rx_flag = 0;
+	 	 for (uint8_t m = 0; m < M; m++) {
+		    // current subframe to dl subframe
+		    int dl_subframe = ul_ACK_subframe2_dl_subframe(&ue->frame_parms, subframe_tx, m);
+		    LOG_I(PHY," [TDDconfigTest][%s:%d:%s] dl_subframe = %d, subframe_tx = %d\n" 
+	    	    ,__FILE__, __LINE__, __FUNCTION__,dl_subframe,subframe_tx);
 
-	    if ((ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[dl_subframe].send_harq_status > 0) ||
-	        (ue->dlsch[proc->subframe_rx&0x1][eNB_id][1]->harq_ack[dl_subframe].send_harq_status > 0)) {
-	      rx_flag = 1;
-		  break;
-	    }
-	  }
+		    if ((ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[dl_subframe].send_harq_status > 0) ||
+		        (ue->dlsch[proc->subframe_rx&0x1][eNB_id][1]->harq_ack[dl_subframe].send_harq_status > 0)) {
+		      rx_flag = 1;
+			  break;
+	    	}
+	 	 }
 
-	  if (rx_flag == 1) {
-	    // recieve DLSCH at least 1 time.
-	    if (ue->ulsch[eNB_id]->bundling) {
-	      // for HARQ-ACK bundling
-	//            if (ue->transmission_mode[eNB_id] == TM_5G) {
-	//              // Transmission mode 10(TM_5G) supports up to two transport blocks
-	//              O_ACK = 2;
-	//            } else {
-	        O_ACK = 1;
-	//            }
-	    } else {
-	      // for HARQ-ACK multiplexing
+		  if (rx_flag == 1) {
+		    // recieve DLSCH at least 1 time.
+		    if (ue->ulsch[eNB_id]->bundling) {
+		      // for HARQ-ACK bundling
+		//            if (ue->transmission_mode[eNB_id] == TM_5G) {
+		//              // Transmission mode 10(TM_5G) supports up to two transport blocks
+		//              O_ACK = 2;
+		//            } else {
+		        O_ACK = 1;
+		//            }
+		    } else {
+		      // for HARQ-ACK multiplexing
 
-	      // if special subframe configuration=0,5(Normal CP) or 0,4(Extended CP),
-	      // DLSCH transmission at special subframe is disable.
-	      if ( ((frame_parms->tdd_config_S==0) && (frame_parms->Ncp==0)) ||
-	           ((frame_parms->tdd_config_S==5) && (frame_parms->Ncp==0)) ||
-	           ((frame_parms->tdd_config_S==0) && (frame_parms->Ncp==1)) ||
-	           ((frame_parms->tdd_config_S==4) && (frame_parms->Ncp==1)) ) {
-	        M--;
-	      }
+		      // if special subframe configuration=0,5(Normal CP) or 0,4(Extended CP),
+		      // DLSCH transmission at special subframe is disable.
+		      if ( ((frame_parms->tdd_config_S==0) && (frame_parms->Ncp==0)) ||
+		           ((frame_parms->tdd_config_S==5) && (frame_parms->Ncp==0)) ||
+		           ((frame_parms->tdd_config_S==0) && (frame_parms->Ncp==1)) ||
+		           ((frame_parms->tdd_config_S==4) && (frame_parms->Ncp==1)) ) {
+		        M--;
+		      }
 
-	      O_ACK = M;
-	//            if (ue->transmission_mode[eNB_id] == TM_5G) {
-	//              // Transmission mode 10(TM_5G) supports up to two transport blocks
-	//              O_ACK *= 2;
-	//            }
-	    }
-	  }
-	  // set O_ACK
-	  ue->ulsch[eNB_id]->harq_processes[harq_pid]->O_ACK = O_ACK;
+	          O_ACK = M;
+		//            if (ue->transmission_mode[eNB_id] == TM_5G) {
+		//              // Transmission mode 10(TM_5G) supports up to two transport blocks
+		//              O_ACK *= 2;
+		//            }
+		      }
+	  		}
+		// set O_ACK
+		ue->ulsch[eNB_id]->harq_processes[harq_pid]->O_ACK = O_ACK;
+		LOG_I(PHY," [TDDconfigTest][%s:%d:%s] harq_pid = %d, subframe_tx = %d, O_ACK = %d\n" 
+	    	    ,__FILE__, __LINE__, __FUNCTION__,harq_pid,subframe_tx,O_ACK);
 	}
 	}
 
@@ -2084,6 +2088,7 @@ void get_pucch_param(PHY_VARS_UE    *ue,
                                          eNB_id,
                                          ack_payload,
                                          SR);
+        LOG_I(PHY," [TDDconfigTest][%s:%d:%s] pucch_resource[0] = %d\n" ,__FILE__, __LINE__, __FUNCTION__,pucch_resource[0]);
         pucch_payload[0]  = ack_payload[0];
         pucch_payload[1]  = ack_payload[1];
         //pucch_payload[1]  = 1;
