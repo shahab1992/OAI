@@ -364,7 +364,7 @@ set_ul_DAI(
       case 6:
       case 8:
         UE_list->UE_template[CC_idP][UE_idP].DAI_ul[2] = DAI;
-        LOG_I(PHY," [TDDconfigTest][%s:%d:%s] DAI_ul[2] = = %d\n" ,__FILE__, __LINE__, __FUNCTION__,UE_list->UE_template[CC_idP][UE_idP].DAI_ul[2]);
+        //LOG_I(PHY," [TDDconfigTest][%s:%d:%s] DAI_ul[2] = = %d\n" ,__FILE__, __LINE__, __FUNCTION__,UE_list->UE_template[CC_idP][UE_idP].DAI_ul[2]);
         break;
 
       case 9:

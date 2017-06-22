@@ -168,7 +168,7 @@ void get_Msg3_alloc(LTE_DL_FRAME_PARMS *frame_parms,
         }
   }
   
-  LOG_I(PHY," [TDDconfigTest][%s:%d:%s] current_subframe = %d, *subframe = %d, *frame = %d\n",__FILE__, __LINE__, __FUNCTION__,current_subframe,*subframe,*frame);
+  //LOG_I(PHY," [TDDconfigTest][%s:%d:%s] current_subframe = %d, *subframe = %d, *frame = %d\n",__FILE__, __LINE__, __FUNCTION__,current_subframe,*subframe,*frame);
 }
 
 void get_Msg3_alloc_ret(LTE_DL_FRAME_PARMS *frame_parms,
@@ -214,7 +214,7 @@ void get_Msg3_alloc_ret(LTE_DL_FRAME_PARMS *frame_parms,
     }
   }
 
-  LOG_I(PHY," [TDDconfigTest][%s:%d:%s] *subframe = %d, *frame = %d\n",__FILE__, __LINE__, __FUNCTION__,*subframe,*frame);
+  //LOG_I(PHY," [TDDconfigTest][%s:%d:%s] *subframe = %d, *frame = %d\n",__FILE__, __LINE__, __FUNCTION__,*subframe,*frame);
 
 }
 

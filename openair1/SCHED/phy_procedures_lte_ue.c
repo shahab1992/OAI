@@ -1666,8 +1666,8 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
 	 	 for (uint8_t m = 0; m < M; m++) {
 		    // current subframe to dl subframe
 		    int dl_subframe = ul_ACK_subframe2_dl_subframe(&ue->frame_parms, subframe_tx, m);
-		    LOG_I(PHY," [TDDconfigTest][%s:%d:%s] dl_subframe = %d, subframe_tx = %d\n" 
-	    	    ,__FILE__, __LINE__, __FUNCTION__,dl_subframe,subframe_tx);
+		    //LOG_I(PHY," [TDDconfigTest][%s:%d:%s] dl_subframe = %d, subframe_tx = %d\n" 
+	    	//    ,__FILE__, __LINE__, __FUNCTION__,dl_subframe,subframe_tx);
 
 		    if ((ue->dlsch[proc->subframe_rx&0x1][eNB_id][0]->harq_ack[dl_subframe].send_harq_status > 0) ||
 		        (ue->dlsch[proc->subframe_rx&0x1][eNB_id][1]->harq_ack[dl_subframe].send_harq_status > 0)) {
@@ -1707,8 +1707,8 @@ void ue_ulsch_uespec_procedures(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB
 	  		}
 		// set O_ACK
 		ue->ulsch[eNB_id]->harq_processes[harq_pid]->O_ACK = O_ACK;
-		LOG_I(PHY," [TDDconfigTest][%s:%d:%s] harq_pid = %d, subframe_tx = %d, O_ACK = %d\n" 
-	    	    ,__FILE__, __LINE__, __FUNCTION__,harq_pid,subframe_tx,O_ACK);
+		//LOG_I(PHY," [TDDconfigTest][%s:%d:%s] harq_pid = %d, subframe_tx = %d, O_ACK = %d\n" 
+	    //	    ,__FILE__, __LINE__, __FUNCTION__,harq_pid,subframe_tx,O_ACK);
 	}
 	}
 
@@ -2168,7 +2168,7 @@ void get_pucch_param(PHY_VARS_UE    *ue,
                                          eNB_id,
                                          ack_payload,
                                          SR);
-        LOG_I(PHY," [TDDconfigTest][%s:%d:%s] pucch_resource[0] = %d\n" ,__FILE__, __LINE__, __FUNCTION__,pucch_resource[0]);
+        //LOG_I(PHY," [TDDconfigTest][%s:%d:%s] pucch_resource[0] = %d\n" ,__FILE__, __LINE__, __FUNCTION__,pucch_resource[0]);
         pucch_payload[0]  = ack_payload[0];
         pucch_payload[1]  = ack_payload[1];
         //pucch_payload[1]  = 1;

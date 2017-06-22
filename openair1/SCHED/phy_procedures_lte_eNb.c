@@ -1617,8 +1617,8 @@ void process_HARQ_feedback(uint8_t UE_id,
     M=ul_ACK_subframe2_M(fp,
                          subframe);
                          
-    LOG_I(PHY," [TDDconfigTest][%s:%d:%s] subframe_rx = %d, subframe_tx = %d, M = %d, pusch_flag = %d, UL_status = %d\n"
-    		,__FILE__, __LINE__, __FUNCTION__,subframe,subframe_tx,M,pusch_flag,UL_status);
+    //LOG_I(PHY," [TDDconfigTest][%s:%d:%s] subframe_rx = %d, subframe_tx = %d, M = %d, pusch_flag = %d, UL_status = %d\n"
+    //		,__FILE__, __LINE__, __FUNCTION__,subframe,subframe_tx,M,pusch_flag,UL_status);
 
     // Now derive ACK information for TDD
     if (pusch_flag == 1) { // Do PUSCH ACK/NAK first
@@ -1661,8 +1661,8 @@ void process_HARQ_feedback(uint8_t UE_id,
 			        }
 		        }
 
-				LOG_I(PHY," [TDDconfigTest][%s:%d:%s] (PUSCH)(Tx UL Grant) subframe_rx = %d, subframe_tx = %d, mp = %d, dlsch_ACK[0] = %d, dlsch_ACK[2] = %d, dlsch_ACK[4] = %d\n"
-    					,__FILE__, __LINE__, __FUNCTION__,subframe,subframe_tx,mp,dlsch_ACK[0],dlsch_ACK[2],dlsch_ACK[4]);
+				//LOG_I(PHY," [TDDconfigTest][%s:%d:%s] (PUSCH)(Tx UL Grant) subframe_rx = %d, subframe_tx = %d, mp = %d, dlsch_ACK[0] = %d, dlsch_ACK[2] = %d, dlsch_ACK[4] = %d\n"
+    			//		,__FILE__, __LINE__, __FUNCTION__,subframe,subframe_tx,mp,dlsch_ACK[0],dlsch_ACK[2],dlsch_ACK[4]);
 
 			} else {  //no UL Grant
 
@@ -1686,8 +1686,8 @@ void process_HARQ_feedback(uint8_t UE_id,
 		                mp++;
 		            }
 				}
-				LOG_I(PHY," [TDDconfigTest][%s:%d:%s] (PUSCH)(no UL Grant) subframe_rx = %d, subframe_tx = %d, mp = %d, dlsch_ACK[0] = %d, dlsch_ACK[2] = %d, dlsch_ACK[4] = %d\n"
-    					,__FILE__, __LINE__, __FUNCTION__,subframe,subframe_tx,mp,dlsch_ACK[0],dlsch_ACK[2],dlsch_ACK[4]);
+				//LOG_I(PHY," [TDDconfigTest][%s:%d:%s] (PUSCH)(no UL Grant) subframe_rx = %d, subframe_tx = %d, mp = %d, dlsch_ACK[0] = %d, dlsch_ACK[2] = %d, dlsch_ACK[4] = %d\n"
+    			//		,__FILE__, __LINE__, __FUNCTION__,subframe,subframe_tx,mp,dlsch_ACK[0],dlsch_ACK[2],dlsch_ACK[4]);
 			}
 		}
 	} else {  // PUCCH ACK/NAK
@@ -1754,8 +1754,8 @@ void process_HARQ_feedback(uint8_t UE_id,
 			mp++;
           }
         }
-        LOG_I(PHY," [TDDconfigTest][%s:%d:%s] (PUCCH) subframe_rx = %d, subframe_tx = %d, pucch_sel = 0x%x, mp = %d, dlsch_ACK[0] = %d, dlsch_ACK[2] = %d, dlsch_ACK[4] = %d\n"
-    					,__FILE__, __LINE__, __FUNCTION__,subframe,subframe_tx,pucch_sel,mp,dlsch_ACK[0],dlsch_ACK[2],dlsch_ACK[4]);
+        //LOG_I(PHY," [TDDconfigTest][%s:%d:%s] (PUCCH) subframe_rx = %d, subframe_tx = %d, pucch_sel = 0x%x, mp = %d, dlsch_ACK[0] = %d, dlsch_ACK[2] = %d, dlsch_ACK[4] = %d\n"
+    	//				,__FILE__, __LINE__, __FUNCTION__,subframe,subframe_tx,pucch_sel,mp,dlsch_ACK[0],dlsch_ACK[2],dlsch_ACK[4]);
 	}
   }
 
@@ -1935,8 +1935,8 @@ void process_HARQ_feedback(uint8_t UE_id,
       else
         subframe_tx = dlsch->subframe_tx[dl_subframe];
 
-		LOG_I(PHY," [TDDconfigTest][%s:%d:%s] subframe = %d, dl_subframe = %d, subframe_tx = %d\n"
-  			,__FILE__, __LINE__, __FUNCTION__,subframe,dl_subframe,subframe_tx);
+		//LOG_I(PHY," [TDDconfigTest][%s:%d:%s] subframe = %d, dl_subframe = %d, subframe_tx = %d\n"
+  		//	,__FILE__, __LINE__, __FUNCTION__,subframe,dl_subframe,subframe_tx);
 
       if (subframe_tx==1) {
 
@@ -1949,12 +1949,12 @@ void process_HARQ_feedback(uint8_t UE_id,
         else
           dl_harq_pid[m] = dlsch->harq_ids[dl_subframe];
 
-		LOG_I(PHY," [TDDconfigTest][process_harq_feedback] dl_harq_pid[m] = %d\n",dl_harq_pid[m]);
+		//LOG_I(PHY," [TDDconfigTest][process_harq_feedback] dl_harq_pid[m] = %d\n",dl_harq_pid[m]);
 
         if (dl_harq_pid[m]<dlsch->Mdlharq) {
           dlsch_harq_proc = dlsch->harq_processes[dl_harq_pid[m]];
           
-			LOG_I(PHY," [TDDconfigTest][process_harq_feedback] dlsch_harq_proc = %d\n",dlsch_harq_proc);
+			//LOG_I(PHY," [TDDconfigTest][process_harq_feedback] dlsch_harq_proc = %d\n",dlsch_harq_proc);
 
 
 
@@ -1965,7 +1965,7 @@ void process_HARQ_feedback(uint8_t UE_id,
             if ( dlsch_ACK[mp*2]==0) {
               // Received NAK
               
-              LOG_I(PHY," [TDDconfigTest][process_harq_feedback] receive NACK. m=%d, mp = %d\n",m,mp);
+              //LOG_I(PHY," [TDDconfigTest][process_harq_feedback] receive NACK. m=%d, mp = %d\n",m,mp);
 
               if (dlsch_harq_proc->round == 0)
                 ue_stats->dlsch_NAK_round0++;
@@ -2001,7 +2001,7 @@ void process_HARQ_feedback(uint8_t UE_id,
               }
             } else {
 				
-              LOG_I(PHY," [TDDconfigTest][process_harq_feedback] receive ACK. m = %d\n",m);
+              //LOG_I(PHY," [TDDconfigTest][process_harq_feedback] receive ACK. m = %d\n",m);
 
               ue_stats->dlsch_ACK[dl_harq_pid[m]][dlsch_harq_proc->round]++;
 
@@ -2056,7 +2056,7 @@ void process_HARQ_feedback(uint8_t UE_id,
       }
     }
   }
-  LOG_I(PHY," [TDDconfigTest][process_harq_feedback] done.\n");
+  //LOG_I(PHY," [TDDconfigTest][process_harq_feedback] done.\n");
 }
 
 void get_n1_pucch_eNB(PHY_VARS_eNB *eNB,
@@ -3386,7 +3386,7 @@ void phy_procedures_eNB_uespec_RX(PHY_VARS_eNB *eNB,eNB_rxtx_proc_t *proc,const 
       }
       
       
-	  LOG_I(PHY," [TDDconfigTest][%s:%d:%s] harq_pid = %d, frame = %d, subframe = %d\n" ,__FILE__, __LINE__, __FUNCTION__,harq_pid,frame,subframe);
+	  //LOG_I(PHY," [TDDconfigTest][%s:%d:%s] harq_pid = %d, frame = %d, subframe = %d\n" ,__FILE__, __LINE__, __FUNCTION__,harq_pid,frame,subframe);
       LOG_D(PHY,
             "[eNB %d][PUSCH %d] Frame %d Subframe %d Demodulating PUSCH: dci_alloc %d, rar_alloc %d, round %d, first_rb %d, nb_rb %d, mcs %d, TBS %d, rv %d, cyclic_shift %d (n_DMRS2 %d, cyclicShift_common %d, nprs %d), O_ACK %d \n",
             eNB->Mod_id,harq_pid,frame,subframe,

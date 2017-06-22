@@ -1694,15 +1694,15 @@ do_RRCConnectionSetup(
     case 2:
       physicalConfigDedicated2->schedulingRequestConfig->choice.setup.sr_ConfigIndex = 7+
           (ue_context_pP->local_uid&1)*5;  // Isr = 5 (every 10 subframes, offset=2 for UE0, 7 for UE1, 2 for UE2, 7 for UE3 , etc..)
-      LOG_I(RRC," [TDDconfigTest][%s:%d:%s] ue_context_pP->local_uid&1 = %d, sr_ConfigIndex = %ld\n"
-            ,__FILE__, __LINE__, __FUNCTION__,ue_context_pP->local_uid&1,physicalConfigDedicated2->schedulingRequestConfig->choice.setup.sr_ConfigIndex);
+      //LOG_I(RRC," [TDDconfigTest][%s:%d:%s] ue_context_pP->local_uid&1 = %d, sr_ConfigIndex = %ld\n"
+      //      ,__FILE__, __LINE__, __FUNCTION__,ue_context_pP->local_uid&1,physicalConfigDedicated2->schedulingRequestConfig->choice.setup.sr_ConfigIndex);
       break;
 
     case 3:
       physicalConfigDedicated2->schedulingRequestConfig->choice.setup.sr_ConfigIndex = 7+
           (ue_context_pP->local_uid%3);  // Isr = 5 (every 10 subframes, offset=2 for UE0, 3 for UE1, 3 for UE2, 2 for UE3 , etc..)
-      LOG_I(RRC," [TDDconfigTest][%s:%d:%s] ue_context_pP->local_uid&1 = %d, sr_ConfigIndex = %ld\n"
-            ,__FILE__, __LINE__, __FUNCTION__,ue_context_pP->local_uid&1,physicalConfigDedicated2->schedulingRequestConfig->choice.setup.sr_ConfigIndex);
+      //LOG_I(RRC," [TDDconfigTest][%s:%d:%s] ue_context_pP->local_uid&1 = %d, sr_ConfigIndex = %ld\n"
+      //      ,__FILE__, __LINE__, __FUNCTION__,ue_context_pP->local_uid&1,physicalConfigDedicated2->schedulingRequestConfig->choice.setup.sr_ConfigIndex);
       break;
 
     case 4:
