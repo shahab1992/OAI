@@ -127,134 +127,7 @@ char pucch_format_string[6][20] = {"format 1\0","format 1a\0","format 1b\0","for
 #define D_NPUCCH_SF5    5
 #define D_NPUCCH_SF4    4
 
-uint8_t chcod_tbl[128][48] = { {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-  {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-  {1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1},
-  {0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0},
-  {0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0},
-  {1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1},
-  {1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1},
-  {0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0},
-  {0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0},
-  {1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1},
-  {1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1},
-  {0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0},
-  {0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0},
-  {1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1},
-  {1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1},
-  {0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0},
-  {0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1},
-  {1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0},
-  {1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0},
-  {0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1},
-  {0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1},
-  {1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0},
-  {1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0},
-  {0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1},
-  {0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1},
-  {1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0},
-  {1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0},
-  {0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1},
-  {0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1},
-  {1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-  {1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
-  {0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1},
-  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1},
-  {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
-  {1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0},
-  {0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1},
-  {0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1},
-  {1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0},
-  {1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0},
-  {0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1},
-  {0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1},
-  {1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0},
-  {1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0},
-  {0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1},
-  {0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1},
-  {1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0},
-  {1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0},
-  {0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1},
-  {0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-  {1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1},
-  {1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1},
-  {0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0},
-  {0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0},
-  {1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1},
-  {1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1},
-  {0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0},
-  {0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0},
-  {1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1},
-  {1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1},
-  {0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0},
-  {0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-  {1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1},
-  {1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1},
-  {0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0},
-  {0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1},
-  {1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0},
-  {1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0},
-  {0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1},
-  {0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-  {1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
-  {1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0},
-  {0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1},
-  {0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1},
-  {1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0},
-  {1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0},
-  {0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1},
-  {0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1},
-  {1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0},
-  {1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0},
-  {0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
-  {0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0},
-  {1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1},
-  {1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1},
-  {0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0},
-  {0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0},
-  {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1},
-  {1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1},
-  {0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0},
-  {0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0},
-  {1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1},
-  {1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1},
-  {0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0},
-  {0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0},
-  {1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1},
-  {1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 1},
-  {0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0},
-  {0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0},
-  {1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1},
-  {1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1},
-  {0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0},
-  {0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0},
-  {1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1},
-  {1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1},
-  {0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0},
-  {0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0},
-  {1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1},
-  {1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1},
-  {0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0},
-  {0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0},
-  {1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1},
-  {1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1},
-  {0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0},
-  {0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1},
-  {1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0},
-  {1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0},
-  {0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1},
-  {0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1},
-  {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-  {1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0},
-  {0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1},
-  {0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1},
-  {1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0},
-  {1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0},
-  {0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1},
-  {0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1},
-  {1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0},
-  {1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0},
-  {0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1} };
+uint8_t chcod_tbl[4096][48] = {};
 
 // W5_TBL
 int16_t W5_fmt3_re[5][5] = { {32767, 32767, 32767, 32767, 32767},
@@ -288,6 +161,43 @@ uint8_t Np4_TBL[4] = {0, 3, 6, 9};
 // alpha_TBL
 int16_t alphaTBL_re[12] = {32767, 28377, 16383, 0, -16383, -28377, -32767, -28377, -16383, 0, 16383, 28377};
 int16_t alphaTBL_im[12] = {0, 16383, 28377, 32767, 28377, 16383, 0, -16383, -28377, -32767, -28377, -16383};
+
+
+// M_i_n TBL 
+uint8_t M_i_n[32][11]={
+{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+{1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1 },
+{1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1 },
+{1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1 },
+{1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1 },
+{1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1 },
+{1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1 },
+{1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1 },
+{1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1 },
+{1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1 },
+{1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1 },
+{1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1 },
+{1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1 },
+{1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1 },
+{1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1 },
+{1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1 },
+{1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0 },
+{1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0 },
+{1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0 },
+{1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0 },
+{1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1 },
+{1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1 },
+{1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1 },
+{1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1 },
+{1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0 },
+{1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1 },
+{1, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0 },
+{1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0 },
+{1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0 },
+{1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0 },
+{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+};
 
 /* PUCCH format3 << */
 
@@ -861,6 +771,28 @@ void pucchfmt3_Dft( int16_t *x, int16_t *y )
   }
 }
 
+int init_chcod_tbl_flag=0;
+void init_chcod_tbl(void){
+  uint32_t i,n,tbl_idx;
+  uint8_t payload[21];
+  uint8_t b_tilda[32] = {0};
+  for(tbl_idx=0;tbl_idx<4096;tbl_idx++){ // 2^12 pattern...
+    for (n=0; n<11; n++) {
+		payload[n] = ((tbl_idx>>n)&1);
+    }
+    // Channel Coding
+    for (i=0; i<32; i++) {
+      b_tilda[i]=0;
+	    for (n=0; n<11; n++) {
+			  b_tilda[i] += (payload[n] * M_i_n[i][n]);
+	    }
+    }
+    for (i=0; i<48; i++) {
+    	chcod_tbl[tbl_idx][i]=(b_tilda[i%32]&1);
+    }
+  }
+}
+
 void generate_pucch3x(int32_t **txdataF,
                     LTE_DL_FRAME_PARMS *frame_parms,
                     uint8_t ncs_cell[20][7],
@@ -868,6 +800,7 @@ void generate_pucch3x(int32_t **txdataF,
                     PUCCH_CONFIG_DEDICATED *pucch_config_dedicated,
                     uint16_t n3_pucch,
                     uint8_t shortened_format,
+                    uint8_t payload_size,
                     uint8_t *payload,
                     int16_t amp,
                     uint8_t subframe,
@@ -880,7 +813,7 @@ void generate_pucch3x(int32_t **txdataF,
   uint32_t y_tilda[12*14]={}, *y_tilda_ptr;
   uint8_t ns, nsymb, n_oc, n_oc0, n_oc1;
   uint8_t N_UL_symb = (frame_parms->Ncp==0) ? 7 : 6;
-  uint8_t m, l;
+  uint8_t n, m, l;
   uint8_t n_cs;
   int16_t tmp_re, tmp_im, W_re=0, W_im=0;
   int32_t *txptr;
@@ -892,8 +825,11 @@ void generate_pucch3x(int32_t **txdataF,
   uint32_t v1=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.seqhop[1+(subframe<<1)];
 
   // variables for channel coding
-  uint8_t chcod_tbl_idx = 0;
-  //uint8_t chcod_dt[48] = {};
+  uint32_t chcod_tbl_idx = 0;
+  uint8_t bit_seq_a[22];
+  uint8_t b_tilda[32] = {0};
+  uint8_t b_tilda_tilda[32] = {0};
+  uint8_t chcod_dt[48];
 
   // variables for Scrambling
   uint32_t cinit = 0;
@@ -927,10 +863,45 @@ void generate_pucch3x(int32_t **txdataF,
   // This restriction will be lifted in the future.
   // "CQI/PMI/RI+ACK/NACK" will be supported in the future.
 
+  if(init_chcod_tbl_flag==0){
+    init_chcod_tbl();
+    init_chcod_tbl_flag=1;
+  }
+	if( (payload_size<1)||(payload_size>21) ){
+		LOG_E(PHY,"Illegal payload size of pucch format 3!! : %d\n",payload_size);
+	}
     // Channel Coding
-    for (uint8_t i=0; i<7; i++) {
-      chcod_tbl_idx += (payload[i]<<i); 
+	if(payload_size <= 11){
+	    for (n=0; n<payload_size; n++) {
+			chcod_tbl_idx += (payload[n]<<n);
+	    }
+	    for (i=0; i<48; i++) {
+	    	chcod_dt[i]=chcod_tbl[chcod_tbl_idx][i];
+	    }
+	}else{
+    for (i=0; i<(payload_size>>1); i++) {
+      bit_seq_a[i]=payload[i<<1];
+      bit_seq_a[(payload_size>>1)+(payload_size&1)+i]=payload[(i<<1)+1];
     }
+	  if((payload_size&1)==1) bit_seq_a[(payload_size>>1)]=payload[payload_size-1];
+	
+    for (i=0; i<24; i++) {
+	    for (n=0; n<((payload_size>>1)+(payload_size&1)); n++) {
+			b_tilda[i] += (bit_seq_a[n] * M_i_n[i][n]);
+	    }
+    }
+    for (i=0; i<24; i++) {
+	    for (n=((payload_size>>1)+(payload_size&1)); n<payload_size; n++) {
+			b_tilda_tilda[i] += (bit_seq_a[n] * M_i_n[i][n]);
+	    }
+    }
+    for (i=0; i<48; i+=4) {
+    	chcod_dt[i]=b_tilda[(i>>1)]&1;
+    	chcod_dt[i+1]=b_tilda[(i>>1)+1]&1;
+    	chcod_dt[i+2]=b_tilda_tilda[(i>>1)]&1;
+    	chcod_dt[i+3]=b_tilda_tilda[(i>>1)+1]&1;
+    }
+	}
 
     // Scrambling
     cinit = (subframe + 1) * ((2 * frame_parms->Nid_cell + 1)<<16) + rnti;
@@ -944,7 +915,7 @@ void generate_pucch3x(int32_t **txdataF,
     }
 
     for (i=0; i<48; i++) {
-      scr_dt[i] = chcod_tbl[chcod_tbl_idx][i] ^ C[i];
+      scr_dt[i] = chcod_dt[i] ^ C[i];
     }
 
     // Modulation
@@ -1718,42 +1689,89 @@ uint16_t pucchfmt3_Descramble( int16_t IFFTOutData_Fmt3[2][12][2],
     return 0;
 }
 
-int16_t pucchfmt3_Decode( int16_t b[48],
+uint32_t pucchfmt3_Decode( int16_t b[48],
                           uint8_t subframe,
                           int16_t DTXthreshold,
                           int16_t Interpw,
-                          uint8_t do_sr)
+                          uint8_t payload_size)
 {
-    int16_t c, i;
+    int16_t i, n;
     int32_t Rho_tmp;
-    int16_t c_max;
+    uint32_t c_max;
     int32_t Rho_max;
-    int16_t bit_pattern;
-    
-    /* Is payload 6bit or 7bit? */
-    if( do_sr == 1 ) {
-        bit_pattern = 128;
-    } else {
-        bit_pattern = 64;
-    }
-    
-    c=0;
-    Rho_tmp = 0;
-    for (i=0;i<48;i++) {
-        Rho_tmp += b[i] * (1-2*chcod_tbl[c][i]);
-    }
-    c_max = c;
-    Rho_max = Rho_tmp;
-    
-    for(c=1; c<bit_pattern; c++) {
+    uint32_t bit_pattern,c;
+    uint8_t bit_seq_a[22];
+    uint8_t b_tilda[32] = {0};
+    uint8_t b_tilda_tilda[32] = {0};
+    uint8_t chcod_dt[48];
+    uint8_t payload[21];
+    bit_pattern = (1<<payload_size);
+    if(payload_size <= 11){
+      c=0;
+      Rho_tmp = 0;
+      for (i=0;i<48;i++) {
+          Rho_tmp += b[i] * (1-2*chcod_tbl[c][i]);
+      }
+      c_max = c;
+      Rho_max = Rho_tmp;
+      
+      for(c=1; c<bit_pattern; c++) {
+          Rho_tmp = 0;
+          for (i=0;i<48;i++) {
+              Rho_tmp += b[i] * (1-2*chcod_tbl[c][i]);
+          }
+          if (Rho_tmp > Rho_max) {
+              c_max = c;
+              Rho_max = Rho_tmp;
+          }
+      }
+    }else{ //if payload_size is 21 ~ 12
+      c=0;
+      Rho_tmp = 0;
+      for (i=0;i<48;i++) {
+          Rho_tmp += b[i] * (1-2*0);//coded data is all 0, if payload is all zero
+      }
+      c_max = c;
+      Rho_max = Rho_tmp;
+      
+      for(c=1; c<bit_pattern; c++) {
+  	    for (i=0; i<payload_size; i++) {
+  	      payload[i]=((c>>i)&1);
+  	    }
+  	    for (i=0; i<(payload_size>>1); i++) {
+  	      bit_seq_a[i]=payload[i<<1];
+  	      bit_seq_a[(payload_size>>1)+(payload_size&1)+i]=payload[(i<<1)+1];
+  	    }
+  		  if((payload_size&1)==1) bit_seq_a[(payload_size>>1)]=payload[payload_size-1];
+  		
+  	    for (i=0; i<24; i++) {
+  	      b_tilda[i]=0;
+  		    for (n=0; n<((payload_size>>1)+(payload_size&1)); n++) {
+    				b_tilda[i] += (bit_seq_a[n] * M_i_n[i][n]);
+  		    }
+  	    }
+  	    for (i=0; i<24; i++) {
+  	      b_tilda_tilda[i]=0;
+  		    for (n=((payload_size>>1)+(payload_size&1)); n<payload_size; n++) {
+  				b_tilda_tilda[i] += (bit_seq_a[n] * M_i_n[i][n]);
+  		    }
+  	    }
+  	    for (i=0; i<48; i+=4) {
+  	    	chcod_dt[i]=b_tilda[(i>>1)]&1;
+  	    	chcod_dt[i+1]=b_tilda[(i>>1)+1]&1;
+  	    	chcod_dt[i+2]=b_tilda_tilda[(i>>1)]&1;
+  	    	chcod_dt[i+3]=b_tilda_tilda[(i>>1)+1]&1;
+  	    }
+        
         Rho_tmp = 0;
         for (i=0;i<48;i++) {
-            Rho_tmp += b[i] * (1-2*chcod_tbl[c][i]);
+            Rho_tmp += b[i] * (1-2*chcod_dt[i]);
         }
         if (Rho_tmp > Rho_max) {
             c_max = c;
             Rho_max = Rho_tmp;
         }
+      }
     }
     if(Interpw<1){
       Interpw=1;
@@ -1820,34 +1838,6 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
   uint32_t v1=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.seqhop[1+(subframe<<1)];
   int chL;
 
-  /* PUCCH format3 >> */
-  uint16_t Ret = 0;
-  int16_t SubCarrierDeMapData[NB_ANTENNAS_RX][14][12][2];       //[Antenna][Symbol][Subcarrier][Complex]
-  int16_t CshData_fmt3[NB_ANTENNAS_RX][14][12][2];              //[Antenna][Symbol][Subcarrier][Complex]
-  double delta_theta[NB_ANTENNAS_RX][12];                      //[Antenna][Subcarrier][Complex]
-  int16_t ChestValue[NB_ANTENNAS_RX][2][12][2];                 //[Antenna][Slot][Subcarrier][Complex]
-  int16_t ChdetAfterValue_fmt3[NB_ANTENNAS_RX][14][12][2];      //[Antenna][Symbol][Subcarrier][Complex]
-  int16_t RemoveFrqDev_fmt3[NB_ANTENNAS_RX][2][5][12][2];       //[Antenna][Slot][PUCCH_Symbol][Subcarrier][Complex]
-  int16_t Fmt3xDataRmvOrth[NB_ANTENNAS_RX][2][5][12][2];        //[Antenna][Slot][PUCCH_Symbol][Subcarrier][Complex]
-  int16_t Fmt3xDataAvgAnt[2][5][12][2];                         //[Slot][PUCCH_Symbol][Subcarrier][Complex]
-  int16_t Fmt3xDataAvgSym[2][12][2];                            //[Slot][Subcarrier][Complex]
-  int16_t IFFTOutData_Fmt3[2][12][2];                           //[Slot][Subcarrier][Complex]
-  int16_t b[48];                                                //[bit]
-  //int16_t IP_CsData_allavg[NB_ANTENNAS_RX][12][4][2];           //[Antenna][Symbol][Nouse Cyclic Shift][Complex]
-  int16_t payload_entity = -1;
-  int16_t Interpw;
-  int16_t payload_max;
-  
-  // TODO
-  // When using PUCCH format3, it must be an argument of rx_pucch function
-  uint16_t n3_pucch = 20;
-  uint16_t n3_pucch_array[NUMBER_OF_UE_MAX]={1};
-  n3_pucch_array[0]=n3_pucch;
-  uint8_t do_sr = 1;
-  uint16_t crnti=0x1234;
-  int16_t DTXthreshold = 10;
-  /* PUCCH format3 << */
-
   if (first_call == 1) {
     for (i=0;i<10;i++) {
       for (j=0;j<NUMBER_OF_UE_MAX;j++) {
@@ -1876,8 +1866,6 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
     sigma2_dB -= 14;
   }
   */  
-
-  if(fmt!=pucch_format3) {  /* PUCCH format3 */
   
   // TODO
   // "SR+ACK/NACK" length is only 7 bits.
@@ -2432,87 +2420,122 @@ uint32_t rx_pucch(PHY_VARS_eNB *eNB,
     LOG_E(PHY,"[eNB] PUCCH fmt2/2a/2b not supported\n");
   }
   
-  /* PUCCH format3 >> */
-  } else {
-    /* SubCarrier Demap */
-    Ret = pucchfmt3_subCarrierDeMapping( eNB, SubCarrierDeMapData, n3_pucch );
-    if(Ret != 0) {
-        //***log pucchfmt3_subCarrierDeMapping Error!
-        return(-1);
-    }
-    
-    /* cyclic shift hopping remove */
-    Ret = pucchfmt3_Baseseq_csh_remove( SubCarrierDeMapData, CshData_fmt3, frame_parms, subframe, eNB->ncs_cell );
-    if(Ret != 0) {
-        //***log pucchfmt3_Baseseq_csh_remove Error!
-        return(-1);
-    }
-    
-    /* Channel Estimation */
-    Ret = pucchfmt3_ChannelEstimation( SubCarrierDeMapData, delta_theta, ChestValue, &Interpw, subframe, shortened_format, frame_parms, n3_pucch, n3_pucch_array, eNB->ncs_cell );
-    if(Ret != 0) {
-        //***log pucchfmt3_ChannelEstimation Error!
-        return(-1);
-    }
-    
-    /* Channel Equalization */
-    Ret = pucchfmt3_Equalization( CshData_fmt3, ChdetAfterValue_fmt3, ChestValue, frame_parms );
-    if(Ret != 0) {
-        //***log pucchfmt3_Equalization Error!
-        return(-1);
-    }
-    
-    /* Frequency deviation remove AFC */
-    Ret = pucchfmt3_FrqDevRemove( ChdetAfterValue_fmt3, delta_theta, RemoveFrqDev_fmt3, frame_parms );
-    if(Ret != 0) {
-        //***log pucchfmt3_FrqDevRemove Error!
-        return(-1);
-    }
-    
-    /* orthogonal sequence remove */
-    Ret = pucchfmt3_OrthSeqRemove( RemoveFrqDev_fmt3, Fmt3xDataRmvOrth, shortened_format, n3_pucch, frame_parms );
-    if(Ret != 0) {
-        //***log pucchfmt3_OrthSeqRemove Error!
-        return(-1);
-    }
-    
-    /* averaging antenna */
-    pucchfmt3_AvgAnt( Fmt3xDataRmvOrth, Fmt3xDataAvgAnt, shortened_format, frame_parms );
-    
-    /* averaging symbol */
-    pucchfmt3_AvgSym( Fmt3xDataAvgAnt, Fmt3xDataAvgSym, shortened_format );
-    
-    /* IDFT */
-    pucchfmt3_IDft2( (int16_t*)Fmt3xDataAvgSym[0], (int16_t*)IFFTOutData_Fmt3[0] );
-    pucchfmt3_IDft2( (int16_t*)Fmt3xDataAvgSym[1], (int16_t*)IFFTOutData_Fmt3[1] );
-    
-    /* descramble */
-    pucchfmt3_Descramble(IFFTOutData_Fmt3, b, subframe, frame_parms->Nid_cell, crnti);
-
-    /* Is payload 6bit or 7bit? */
-    if( do_sr == 1 ) {
-        payload_max = 7;
-    } else {
-        payload_max = 6;
-    }
-    
-    /* decode */
-    payload_entity = pucchfmt3_Decode( b, subframe, DTXthreshold, Interpw, do_sr );
-    if (payload_entity == -1) {
-        //***log pucchfmt3_Decode Error!
-        return(-1);
-    }
-    
-    for(i=0; i<payload_max; i++) {
-      *(payload+i) = (uint8_t)((payload_entity>>i) & 0x01);
-    }
-  }
-  /* PUCCH format3 << */
-
   return((int32_t)stat_max);
 
 }
 
+uint32_t rx_pucch3x(PHY_VARS_eNB *eNB,
+		  PUCCH_FMT_t fmt,
+		  uint8_t UE_id,
+		  uint16_t n3_pucch,
+		  uint16_t *n3_pucch_array,
+		  uint8_t shortened_format,
+      uint8_t payload_size,
+		  uint8_t *payload,
+		  int     frame,
+		  uint8_t subframe,
+      uint16_t crnti,
+		  int16_t DTXthreshold)
+{
+  if(fmt != pucch_format3){
+    LOG_E(PHY,"pucch format mismatch!! %d\n",fmt);
+  }
+  LTE_DL_FRAME_PARMS *frame_parms                    = &eNB->frame_parms;
+  uint16_t i;
+
+  /* PUCCH format3 >> */
+  uint16_t Ret = 0;
+  int16_t SubCarrierDeMapData[NB_ANTENNAS_RX][14][12][2];       //[Antenna][Symbol][Subcarrier][Complex]
+  int16_t CshData_fmt3[NB_ANTENNAS_RX][14][12][2];              //[Antenna][Symbol][Subcarrier][Complex]
+  double delta_theta[NB_ANTENNAS_RX][12];                      //[Antenna][Subcarrier][Complex]
+  int16_t ChestValue[NB_ANTENNAS_RX][2][12][2];                 //[Antenna][Slot][Subcarrier][Complex]
+  int16_t ChdetAfterValue_fmt3[NB_ANTENNAS_RX][14][12][2];      //[Antenna][Symbol][Subcarrier][Complex]
+  int16_t RemoveFrqDev_fmt3[NB_ANTENNAS_RX][2][5][12][2];       //[Antenna][Slot][PUCCH_Symbol][Subcarrier][Complex]
+  int16_t Fmt3xDataRmvOrth[NB_ANTENNAS_RX][2][5][12][2];        //[Antenna][Slot][PUCCH_Symbol][Subcarrier][Complex]
+  int16_t Fmt3xDataAvgAnt[2][5][12][2];                         //[Slot][PUCCH_Symbol][Subcarrier][Complex]
+  int16_t Fmt3xDataAvgSym[2][12][2];                            //[Slot][Subcarrier][Complex]
+  int16_t IFFTOutData_Fmt3[2][12][2];                           //[Slot][Subcarrier][Complex]
+  int16_t b[48];                                                //[bit]
+  //int16_t IP_CsData_allavg[NB_ANTENNAS_RX][12][4][2];           //[Antenna][Symbol][Nouse Cyclic Shift][Complex]
+  uint32_t payload_entity = -1;
+  int16_t Interpw;
+  if(init_chcod_tbl_flag==0){
+    init_chcod_tbl();
+    init_chcod_tbl_flag=1;
+  }
+	if( (payload_size<1)||(payload_size>21) ){
+		LOG_E(PHY,"Illegal payload size of pucch format 3!! : %d\n",payload_size);
+	}
+  /* SubCarrier Demap */
+  Ret = pucchfmt3_subCarrierDeMapping( eNB, SubCarrierDeMapData, n3_pucch );
+  if(Ret != 0) {
+      //***log pucchfmt3_subCarrierDeMapping Error!
+      return(-1);
+  }
+  
+  /* cyclic shift hopping remove */
+  Ret = pucchfmt3_Baseseq_csh_remove( SubCarrierDeMapData, CshData_fmt3, frame_parms, subframe, eNB->ncs_cell );
+  if(Ret != 0) {
+      //***log pucchfmt3_Baseseq_csh_remove Error!
+      return(-1);
+  }
+  
+  /* Channel Estimation */
+  Ret = pucchfmt3_ChannelEstimation( SubCarrierDeMapData, delta_theta, ChestValue, &Interpw, subframe, shortened_format, frame_parms, n3_pucch, n3_pucch_array, eNB->ncs_cell );
+  if(Ret != 0) {
+      //***log pucchfmt3_ChannelEstimation Error!
+      return(-1);
+  }
+  
+  /* Channel Equalization */
+  Ret = pucchfmt3_Equalization( CshData_fmt3, ChdetAfterValue_fmt3, ChestValue, frame_parms );
+  if(Ret != 0) {
+      //***log pucchfmt3_Equalization Error!
+      return(-1);
+  }
+  
+  /* Frequency deviation remove AFC */
+  Ret = pucchfmt3_FrqDevRemove( ChdetAfterValue_fmt3, delta_theta, RemoveFrqDev_fmt3, frame_parms );
+  if(Ret != 0) {
+      //***log pucchfmt3_FrqDevRemove Error!
+      return(-1);
+  }
+  
+  /* orthogonal sequence remove */
+  Ret = pucchfmt3_OrthSeqRemove( RemoveFrqDev_fmt3, Fmt3xDataRmvOrth, shortened_format, n3_pucch, frame_parms );
+  if(Ret != 0) {
+      //***log pucchfmt3_OrthSeqRemove Error!
+      return(-1);
+  }
+  
+  /* averaging antenna */
+  pucchfmt3_AvgAnt( Fmt3xDataRmvOrth, Fmt3xDataAvgAnt, shortened_format, frame_parms );
+  
+  /* averaging symbol */
+  pucchfmt3_AvgSym( Fmt3xDataAvgAnt, Fmt3xDataAvgSym, shortened_format );
+  
+  /* IDFT */
+  pucchfmt3_IDft2( (int16_t*)Fmt3xDataAvgSym[0], (int16_t*)IFFTOutData_Fmt3[0] );
+  pucchfmt3_IDft2( (int16_t*)Fmt3xDataAvgSym[1], (int16_t*)IFFTOutData_Fmt3[1] );
+  
+  /* descramble */
+  pucchfmt3_Descramble(IFFTOutData_Fmt3, b, subframe, frame_parms->Nid_cell, crnti);
+
+  
+  /* decode */
+  payload_entity = pucchfmt3_Decode( b, subframe, DTXthreshold, Interpw, payload_size );
+  if (payload_entity == -1) {
+      //***log pucchfmt3_Decode Error!
+      return(-1);
+  }
+  
+  for(i=0; i<payload_size; i++) {
+    *(payload+i) = (uint8_t)((payload_entity>>i) & 0x01);
+  }
+  /* PUCCH format3 << */
+
+  return((int32_t)payload_entity);
+}
 
 int32_t rx_pucch_emul(PHY_VARS_eNB *eNB,
 		      eNB_rxtx_proc_t *proc,

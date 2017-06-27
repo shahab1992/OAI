@@ -2007,6 +2007,7 @@ void generate_pucch3x(int32_t **txdataF,
                     PUCCH_CONFIG_DEDICATED *pucch_config_dedicated,
                     uint16_t n3_pucch,
                     uint8_t shortened_format,
+                    uint8_t payload_size,
                     uint8_t *payload,
                     int16_t amp,
                     uint8_t subframe,
@@ -2031,6 +2032,19 @@ uint32_t rx_pucch(PHY_VARS_eNB *phy_vars_eNB,
                   int     frame,
                   uint8_t subframe,
                   uint8_t pucch1_thres);
+
+uint32_t rx_pucch3x(PHY_VARS_eNB *eNB,
+		  PUCCH_FMT_t fmt,
+		  uint8_t UE_id,
+		  uint16_t n3_pucch,
+		  uint16_t *n3_pucch_array,
+		  uint8_t shortened_format,
+      uint8_t payload_size,
+		  uint8_t *payload,
+		  int     frame,
+		  uint8_t subframe,
+      uint16_t crnti,
+		  int16_t DTXthreshold);
 
 int32_t rx_pucch_emul(PHY_VARS_eNB *phy_vars_eNB,
 		      eNB_rxtx_proc_t *proc,
@@ -2108,7 +2122,7 @@ void init_prach_tables(int N_ZC);
 
 void init_unscrambling_lut(void);
 void init_scrambling_lut(void);
-
+void init_chcod_tbl(void);
 /*!
   \brief Return the status of MBSFN in this frame/subframe
   @param frame Frame index
