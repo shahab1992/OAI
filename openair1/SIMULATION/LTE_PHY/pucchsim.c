@@ -93,14 +93,18 @@ int main(int argc, char **argv)
   uint8_t pucch3_payload_size=7;
   uint8_t pucch3_payload[21],pucch3_payload_rx[21];
   double tx_gain=1.0;
-  int32_t stat;
+  int32_t stat=0;
   double stat_no_sig,stat_sig;
   uint8_t N0=40;
   uint8_t pucch1_thres=10;
+  int16_t pucch3_thres=10;
 
   uint16_t n1_pucch = 0;
   uint16_t n2_pucch = 0;
   uint16_t n3_pucch = 20;
+  
+  uint16_t n3_pucch_array[NUMBER_OF_UE_MAX]={0};
+  n3_pucch_array[0]=n3_pucch;
   
   uint16_t n_rnti=0x1234;
 
@@ -108,12 +112,21 @@ int main(int argc, char **argv)
 
   cpuf = get_cpu_freq_GHz();
 
-  while ((c = getopt (argc, argv, "har:pf:g:n:s:S:x:y:z:N:F:T:R:")) != -1) {
+  while ((c = getopt (argc, argv, "hab:r:pf:g:n:s:S:x:y:z:N:F:T:R:")) != -1) {
     switch (c) {
     case 'a':
       printf("Running AWGN simulation\n");
       channel_model = AWGN;
       ntrials=1;
+      break;
+
+    case 'b':
+      printf("format3 payload bit size\n");
+      pucch3_payload_size=atoi(optarg);
+      if( (pucch3_payload_size<1)||(pucch3_payload_size>21) ) {
+        printf("PUCCH format3 payload size must be between 1 and 21\n");
+        exit(-1);
+      }
       break;
 
     case 'f':
@@ -274,6 +287,7 @@ int main(int argc, char **argv)
              argv[0]);
       printf("-h This message\n");
       printf("-a Use AWGN channel and not multipath\n");
+      printf("-b Payload bit size of pucch format3\n");
       printf("-p Use extended prefix mode\n");
       printf("-n Number of frames to simulate\n");
       printf("-r Ricean factor (dB, 0 means Rayleigh, 100 is almost AWGN\n");
@@ -369,7 +383,6 @@ int main(int argc, char **argv)
   UE->frame_parms.pucch_config_common.nRB_CQI          = 4;
   UE->frame_parms.pucch_config_common.nCS_AN           = 6;
 
-
   if( (pucch_format == pucch_format1) || (pucch_format == pucch_format1a) || (pucch_format == pucch_format1b) ){
     pucch_payload = 0;
     generate_pucch1x(UE->common_vars.txdataF,
@@ -383,8 +396,9 @@ int main(int argc, char **argv)
   		   AMP, //amp,
   		   subframe); //subframe
   }else if( pucch_format == pucch_format3){
-    for(i=0;i<pucch3_payload_size;i++)
+    for(i=0;i<pucch3_payload_size;i++){
       pucch3_payload[i]=(uint8_t)(taus()&0x1);
+    }
     generate_pucch3x(UE->common_vars.txdataF,
   		   frame_parms,
   		   UE->ncs_cell,
@@ -392,6 +406,7 @@ int main(int argc, char **argv)
   		   &pucch_config_dedicated,
   		   n3_pucch,
   		   0, //shortened_format,
+         pucch3_payload_size,
   		   pucch3_payload,
   		   AMP, //amp,
   		   subframe, //subframe
@@ -558,16 +573,31 @@ int main(int argc, char **argv)
 				0,
                                 1);
         eNB->measurements[0].n0_power_tot_dB = N0;//(int8_t)(sigma2_dB-10*log10(eNB->frame_parms.ofdm_symbol_size/(12*NB_RB)));
+        if( (pucch_format == pucch_format1) || (pucch_format == pucch_format1a) || (pucch_format == pucch_format1b) ){
         stat = rx_pucch(eNB,
                         pucch_format,
                         0,
                         n1_pucch,
                         n2_pucch,
                         0, //shortened_format,
-                        (pucch_format==pucch_format3) ? pucch3_payload_rx : &pucch_payload_rx, //payload,
+                        &pucch_payload_rx, //payload,
                         0 /* frame not defined, let's pass 0 */,
                         subframe,
                         pucch1_thres);
+        }else if( pucch_format == pucch_format3 ){
+           stat = rx_pucch3x(eNB,
+                        pucch_format,
+                        0,
+                        n3_pucch,
+                        n3_pucch_array,
+                        0, //shortened_format,
+                        pucch3_payload_size, //payload size
+                        pucch3_payload_rx, //payload,
+                        0 /* frame not defined, let's pass 0 */,
+                        subframe,
+                        n_rnti,
+                        pucch3_thres);
+        }
 
         if (trial < (n_frames>>1)) {
           stat_no_sig += (2*(double)stat/n_frames);
