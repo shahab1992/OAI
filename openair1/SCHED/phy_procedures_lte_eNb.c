@@ -1183,7 +1183,7 @@ void phy_procedures_eNB_TX(PHY_VARS_eNB *eNB,
 
 /* 
     for splitting serial procedures to multi-threading implementaion.
-    isIP LAB. NCTU, Hsinchu, Taiwan
+    isIP LAB., CS, NCTU, Hsinchu, Taiwan
 */
 
   eNB->complete_m2p = 0;
