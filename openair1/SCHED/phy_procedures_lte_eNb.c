@@ -1181,63 +1181,22 @@ void phy_procedures_eNB_TX(PHY_VARS_eNB *eNB,
 
   T(T_ENB_PHY_DL_TICK, T_INT(eNB->Mod_id), T_INT(frame), T_INT(subframe));
 
-  for (i=0; i<NUMBER_OF_UE_MAX; i++) {
-    // If we've dropped the UE, go back to PRACH mode for this UE
-    if ((frame==0)&&(subframe==0)) {
-      if (eNB->UE_stats[i].crnti > 0) {
-	LOG_I(PHY,"UE %d : rnti %x\n",i,eNB->UE_stats[i].crnti);
-      }
-    }
-    if (eNB->UE_stats[i].ulsch_consecutive_errors == ULSCH_max_consecutive_errors) {
-      LOG_W(PHY,"[eNB %d, CC %d] frame %d, subframe %d, UE %d: ULSCH consecutive error count reached %u, triggering UL Failure\n",
-            eNB->Mod_id,eNB->CC_id,frame,subframe, i, eNB->UE_stats[i].ulsch_consecutive_errors);
-      eNB->UE_stats[i].ulsch_consecutive_errors=0;
-      mac_xface->UL_failure_indication(eNB->Mod_id,
-				       eNB->CC_id,
-				       frame,
-				       eNB->UE_stats[i].crnti,
-				       subframe);
-				       
-    }
-	
+/* 
+    for splitting serial procedures to multi-threading implementaion.
+    isIP LAB. NCTU, Hsinchu, Taiwan
+*/
 
-  }
+  eNB->complete_m2p = 0;
+  eNB->complete_dci = 0;
+  eNB->complete_sch_SR = 0;
+  eNB->flag_m2p=1;
 
-
-  // Get scheduling info for next subframe
-  // This is called only for the CC_id = 0 and triggers scheduling for all CC_id's
-  if (eNB->mac_enabled==1) {
-    if (eNB->CC_id == 0) {
-      mac_xface->eNB_dlsch_ulsch_scheduler(eNB->Mod_id,0,frame,subframe);//,1);
-    }
-  }
-
-  // clear the transmit data array for the current subframe
-  if (eNB->abstraction_flag==0) {
-    for (aa=0; aa<fp->nb_antenna_ports_eNB; aa++) {      
-      memset(&eNB->common_vars.txdataF[0][aa][subframe*fp->ofdm_symbol_size*(fp->symbols_per_tti)],
-             0,fp->ofdm_symbol_size*(fp->symbols_per_tti)*sizeof(int32_t));
-    }
-  }
-
-  if (is_pmch_subframe(frame,subframe,fp)) {
-    pmch_procedures(eNB,proc,rn,r_type);
-  }
-  else {
-    // this is not a pmch subframe, so generate PSS/SSS/PBCH
-    common_signal_procedures(eNB,proc);
-  }
-
-#if defined(SMBV) 
-
-  // PBCH takes one allocation
-  if (smbv_is_config_frame(frame) && (smbv_frame_cnt < 4)) {
-    if (subframe==0)
-      smbv_alloc_cnt++;
-  }
-
-#endif
-
+  while(eNB->complete_m2p!=1);
+  eNB->thread_cch.r_type = r_type;
+  eNB->complete_cch = 0;
+  eNB->flag_cch=1;
+  while(eNB->complete_dci!=1);
+  
   if (eNB->mac_enabled==1) {
     // Parse DCI received from MAC
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_ENB_PDCCH_TX,1);
