@@ -429,6 +429,25 @@ typedef struct {
   UE_rxtx_proc_t proc_rxtx[RX_NB_TH];
 } UE_proc_t;
 
+/* 
+    for splitting serial procedures to multi-threading implementaion.
+    isIP LAB. NCTU, Hsinchu, Taiwan
+*/
+typedef struct{
+	pthread_t pthread_m2p;
+	pthread_cond_t cond_tx;
+	pthread_mutex_t mutex_tx;
+	//=====//
+}mac2phy;
+typedef struct{
+	pthread_t pthread_cch;
+	pthread_cond_t cond_tx;
+	pthread_mutex_t mutex_tx;
+	//=====//
+	relaying_type_t r_type;
+}control_channel;
+
+
 /// Top-level PHY Data Structure for eNB
 typedef struct PHY_VARS_eNB_s {
   /// Module ID indicator for this instance
@@ -654,6 +673,24 @@ typedef struct PHY_VARS_eNB_s {
   openair0_device ifdevice;
   /// Pointer for ifdevice buffer struct
   if_buffer_t ifbuffer;
+
+/* 
+    for splitting serial procedures to multi-threading implementaion.
+    isIP LAB. NCTU, Hsinchu, Taiwan
+*/  
+  mac2phy thread_m2p;
+  control_channel thread_cch;
+  //FLAG
+  volatile int flag_m2p;
+  volatile int flag_cch;
+
+  //DONE
+  volatile int complete_m2p;
+  volatile int complete_dci; 
+  volatile int complete_cch;
+  volatile int complete_sch_SR;
+  
+  pthread_t main_thread_master;
 
 } PHY_VARS_eNB;
 
