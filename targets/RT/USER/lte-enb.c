@@ -45,7 +45,16 @@
 #include <sys/sysinfo.h>
 #include "rt_wrapper.h"
 
-#include "time_utils.h"
+/* 
+    for splitting serial procedures to multi-threading implementaion.
+    isIP LAB. NCTU, Hsinchu, Taiwan
+*/
+//DLSH thread
+#include <semaphore.h>
+#include <assert.h>
+#include <sched.h>
+#include <pthread.h>
+//=====
 
 #undef MALLOC //there are two conflicting definitions, so we better make sure we don't use it at all
 
@@ -104,6 +113,17 @@ unsigned short config_frames[4] = {2,9,11,13};
 #endif
 
 #include "T.h"
+
+/* 
+    for splitting serial procedures to multi-threading implementaion.
+    isIP LAB. NCTU, Hsinchu, Taiwan
+*/
+#define NUM_THREAD 4
+
+FILE *testtime = NULL;
+pthread_attr_t attr_test_proc_tx[NUM_THREAD];
+struct sched_param sched_param_test_proc_tx[NUM_THREAD];
+//TEST//
 
 //#define DEBUG_THREADS 1
 
@@ -1698,6 +1718,322 @@ static void* eNB_thread_single( void* param ) {
 extern void init_fep_thread(PHY_VARS_eNB *, pthread_attr_t *);
 extern void init_td_thread(PHY_VARS_eNB *, pthread_attr_t *);
 extern void init_te_thread(PHY_VARS_eNB *, pthread_attr_t *);
+/* 
+    for splitting serial procedures to multi-threading implementaion.
+    isIP LAB. NCTU, Hsinchu, Taiwan
+*/
+extern void pmch_procedures(PHY_VARS_eNB *,eNB_rxtx_proc_t *,PHY_VARS_RN *,relaying_type_t );
+extern void common_signal_procedures (PHY_VARS_eNB *,eNB_rxtx_proc_t *);
+extern void generate_eNB_dlsch_params(PHY_VARS_eNB *,eNB_rxtx_proc_t *,DCI_ALLOC_t *,const int );
+extern void generate_eNB_ulsch_params(PHY_VARS_eNB *,eNB_rxtx_proc_t *,DCI_ALLOC_t *,const int );
+extern void pdsch_procedures(PHY_VARS_eNB *,eNB_rxtx_proc_t *,LTE_eNB_DLSCH_t *, LTE_eNB_DLSCH_t *,LTE_eNB_UE_stats *,int ,int );
+
+
+static void *mac2phy_proc(void *ptr){
+	
+	static int mac2phy_proc_status;
+	mac2phy_proc_status=0;
+	PHY_VARS_eNB *eNB = PHY_vars_eNB_g[0][0];
+	eNB_rxtx_proc_t *proc;
+    uint32_t i,aa;
+    uint8_t harq_pid;
+    DCI_PDU *DCI_pdu;
+    DCI_PDU DCI_pdu_tmp;
+    int8_t UE_id=0;
+    uint8_t num_pdcch_symbols=0;
+    uint8_t ul_subframe;
+    uint32_t ul_frame;
+    LTE_DL_FRAME_PARMS *fp;
+    DCI_ALLOC_t *dci_alloc=(DCI_ALLOC_t *)NULL;
+	
+	while(!oai_exit){
+		///////////////////
+		while(pthread_cond_wait(&eNB->thread_m2p.cond_tx, &eNB->thread_m2p.mutex_tx)!=0);
+		proc = &eNB->proc.proc_rxtx[0];
+		fp=&eNB->frame_parms;
+		int frame = proc->frame_tx;
+		int subframe = proc->subframe_tx;
+		//////////////////
+		for (i=0; i<NUMBER_OF_UE_MAX; i++) {
+			// If we've dropped the UE, go back to PRACH mode for this UE
+			if ((frame==0)&&(subframe==0)) {
+			  if (eNB->UE_stats[i].crnti > 0) {
+				LOG_I(PHY,"UE %d : rnti %x\n",i,eNB->UE_stats[i].crnti);
+			  }
+			}
+			if (eNB->UE_stats[i].ulsch_consecutive_errors == ULSCH_max_consecutive_errors) {
+			  LOG_W(PHY,"[eNB %d, CC %d] frame %d, subframe %d, UE %d: ULSCH consecutive error count reached %u, triggering UL Failure\n",
+					eNB->Mod_id,eNB->CC_id,frame,subframe, i, eNB->UE_stats[i].ulsch_consecutive_errors);
+			  eNB->UE_stats[i].ulsch_consecutive_errors=0;
+			  mac_xface->UL_failure_indication(eNB->Mod_id,
+											   eNB->CC_id,
+											   frame,
+											   eNB->UE_stats[i].crnti,
+											   subframe);			       
+			}
+		}
+		if (eNB->mac_enabled==1) {
+			if (eNB->CC_id == 0) {
+			  mac_xface->eNB_dlsch_ulsch_scheduler(eNB->Mod_id,0,frame,subframe);//,1);
+			}
+		}
+		if (eNB->abstraction_flag==0) {
+			for (aa=0; aa<fp->nb_antennas_tx_eNB; aa++) {      
+			  memset(&eNB->common_vars.txdataF[0][aa][subframe*fp->ofdm_symbol_size*(fp->symbols_per_tti)],
+					 0,fp->ofdm_symbol_size*(fp->symbols_per_tti)*sizeof(int32_t));
+			}
+		}
+		//////////Trigger control channel thread//////////
+		eNB->complete_m2p = 1;
+		//////////Keep generating DCI//////////
+		if (eNB->mac_enabled==1) {
+			// Parse DCI received from MAC
+			//VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_ENB_PDCCH_TX,1);
+			DCI_pdu = mac_xface->get_dci_sdu(eNB->Mod_id,
+							 eNB->CC_id,
+							 frame,
+							 subframe);
+	    }
+		else {
+			DCI_pdu = &DCI_pdu_tmp;
+		#ifdef EMOS_CHANNEL
+			fill_dci_emos(DCI_pdu,eNB);
+		#else
+			fill_dci(DCI_pdu,eNB,proc);
+		#endif
+		}
+		// clear existing ulsch dci allocations before applying info from MAC  (this is table
+		ul_subframe = pdcch_alloc2ul_subframe(fp,subframe);
+		ul_frame = pdcch_alloc2ul_frame(fp,frame,subframe);
+		if ((subframe_select(fp,ul_subframe)==SF_UL) ||
+			(fp->frame_type == FDD)) {
+				harq_pid = subframe2harq_pid(fp,ul_frame,ul_subframe);
+
+				// clear DCI allocation maps for new subframe
+				for (i=0; i<NUMBER_OF_UE_MAX; i++)
+				  if (eNB->ulsch[i]) {
+					eNB->ulsch[i]->harq_processes[harq_pid]->dci_alloc=0;
+					eNB->ulsch[i]->harq_processes[harq_pid]->rar_alloc=0;
+				  }
+		}
+
+		// clear previous allocation information for all UEs
+		for (i=0; i<NUMBER_OF_UE_MAX; i++) {
+			if (eNB->dlsch[i][0])
+			  eNB->dlsch[i][0]->subframe_tx[subframe] = 0;
+		}
+
+		num_pdcch_symbols = DCI_pdu->num_pdcch_symbols;
+		LOG_D(PHY,"num_pdcch_symbols %"PRIu8",(dci common %"PRIu8", dci uespec %"PRIu8"\n",num_pdcch_symbols,
+			  DCI_pdu->Num_common_dci,DCI_pdu->Num_ue_spec_dci);
+			  
+		#if defined(SMBV) 
+		  // Sets up PDCCH and DCI table
+		  if (smbv_is_config_frame(frame) && (smbv_frame_cnt < 4) && ((DCI_pdu->Num_common_dci+DCI_pdu->Num_ue_spec_dci)>0)) {
+			LOG_D(PHY,"[SMBV] Frame %3d, SF %d PDCCH, number of DCIs %d\n",frame,subframe,DCI_pdu->Num_common_dci+DCI_pdu->Num_ue_spec_dci);
+			dump_dci(fp,&DCI_pdu->dci_alloc[0]);
+			smbv_configure_pdcch(smbv_fname,(smbv_frame_cnt*10) + (subframe),num_pdcch_symbols,DCI_pdu->Num_common_dci+DCI_pdu->Num_ue_spec_dci);
+		  }
+		#endif
+
+		VCD_SIGNAL_DUMPER_DUMP_VARIABLE_BY_NAME(VCD_SIGNAL_DUMPER_VARIABLES_DCI_INFO,DCI_pdu->num_pdcch_symbols);
+
+		// loop over all DCIs for this subframe to generate DLSCH allocations
+		for (i=0; i<DCI_pdu->Num_common_dci + DCI_pdu->Num_ue_spec_dci ; i++) {
+			LOG_D(PHY,"[eNB] Subframe %d: DCI %d/%d : rnti %x, CCEind %d\n",subframe,i,DCI_pdu->Num_common_dci+DCI_pdu->Num_ue_spec_dci,DCI_pdu->dci_alloc[i].rnti,DCI_pdu->dci_alloc[i].firstCCE);
+			VCD_SIGNAL_DUMPER_DUMP_VARIABLE_BY_NAME(VCD_SIGNAL_DUMPER_VARIABLES_DCI_INFO,DCI_pdu->dci_alloc[i].rnti);
+			VCD_SIGNAL_DUMPER_DUMP_VARIABLE_BY_NAME(VCD_SIGNAL_DUMPER_VARIABLES_DCI_INFO,DCI_pdu->dci_alloc[i].format);
+			VCD_SIGNAL_DUMPER_DUMP_VARIABLE_BY_NAME(VCD_SIGNAL_DUMPER_VARIABLES_DCI_INFO,DCI_pdu->dci_alloc[i].firstCCE);
+			dci_alloc = &DCI_pdu->dci_alloc[i];
+
+			if ((dci_alloc->rnti<= P_RNTI) && 
+			(dci_alloc->ra_flag!=1)) {
+			  if (eNB->mac_enabled==1)
+			UE_id = find_ue((int16_t)dci_alloc->rnti,eNB);
+			  else
+			UE_id = i;
+			}
+			else UE_id=0;
+			
+			generate_eNB_dlsch_params(eNB,proc,dci_alloc,UE_id);
+
+		  }
+
+		  VCD_SIGNAL_DUMPER_DUMP_VARIABLE_BY_NAME(VCD_SIGNAL_DUMPER_VARIABLES_DCI_INFO,(frame*10)+subframe);
+
+		  // Apply physicalConfigDedicated if needed
+		  // This is for UEs that have received this IE, which changes these DL and UL configuration, we apply after a delay for the eNodeB UL parameters
+		  phy_config_dedicated_eNB_step2(eNB);
+		  
+		  // Now loop again over the DCIs for UL configuration
+		  for (i=0; i<DCI_pdu->Num_common_dci + DCI_pdu->Num_ue_spec_dci ; i++) {
+			dci_alloc = &DCI_pdu->dci_alloc[i];
+
+			if (dci_alloc->format == format0) {  // this is a ULSCH allocation
+			  if (eNB->mac_enabled==1)
+			UE_id = find_ue((int16_t)dci_alloc->rnti,eNB);
+			  else
+			UE_id = i;
+			  
+			  if (UE_id<0) { // should not happen, log an error and exit, this is a fatal error
+			LOG_E(PHY,"[eNB %"PRIu8"] Frame %d: Unknown UE_id for rnti %"PRIx16"\n",eNB->Mod_id,frame,dci_alloc->rnti);
+			mac_xface->macphy_exit("FATAL\n"); 
+			  }
+			  generate_eNB_ulsch_params(eNB,proc,dci_alloc,UE_id);
+			}
+		  }
+
+		  // if we have DCI to generate do it now
+		  if ((DCI_pdu->Num_common_dci + DCI_pdu->Num_ue_spec_dci)>0) {
+
+		  } else { // for emulation!!
+			eNB->num_ue_spec_dci[(subframe)&1]=0;
+			eNB->num_common_dci[(subframe)&1]=0;
+		  }
+		  //////////Over generating DCI//////////
+		  eNB->complete_dci = 1;
+		  ///////////////////////////////////////
+		  num_pdcch_symbols = get_num_pdcch_symbols(DCI_pdu->Num_ue_spec_dci+DCI_pdu->Num_common_dci,DCI_pdu->dci_alloc,fp,subframe);
+      
+		  // Check for SI activity
+		  if ((eNB->dlsch_SI) && (eNB->dlsch_SI->active == 1)) {
+			 pdsch_procedures(eNB,proc,eNB->dlsch_SI,(LTE_eNB_DLSCH_t*)NULL,(LTE_eNB_UE_stats*)NULL,0,num_pdcch_symbols);
+			 
+			 #if defined(SMBV) 
+				 // Configures the data source of allocation (allocation is configured by DCI)
+				 if (smbv_is_config_frame(frame) && (smbv_frame_cnt < 4)) {
+				   LOG_D(PHY,"[SMBV] Frame %3d, Configuring SI payload in SF %d alloc %"PRIu8"\n",frame,(smbv_frame_cnt*10) + (subframe),smbv_alloc_cnt);
+				   smbv_configure_datalist_for_alloc(smbv_fname, smbv_alloc_cnt++, (smbv_frame_cnt*10) + (subframe), DLSCH_pdu, input_buffer_length);
+				 }
+			 #endif
+		   }
+		   // Check for RA activity
+		   if ((eNB->dlsch_ra) && (eNB->dlsch_ra->active == 1)) {
+			 #if defined(SMBV) 
+				 // Configures the data source of allocation (allocation is configured by DCI)
+				 if (smbv_is_config_frame(frame) && (smbv_frame_cnt < 4)) {
+				   LOG_D(PHY,"[SMBV] Frame %3d, Configuring RA payload in SF %d alloc %"PRIu8"\n",frame,(smbv_frame_cnt*10) + (subframe),smbv_alloc_cnt);
+				   smbv_configure_datalist_for_alloc(smbv_fname, smbv_alloc_cnt++, (smbv_frame_cnt*10) + (subframe), dlsch_input_buffer, input_buffer_length);
+				 }
+			 #endif
+			  LOG_D(PHY,"[eNB %"PRIu8"][RAPROC] Frame %d, subframe %d: Calling generate_dlsch (RA),Msg3 frame %"PRIu32", Msg3 subframe %"PRIu8"\n",
+				    eNB->Mod_id,
+				    frame, subframe,
+				    eNB->ulsch[(uint32_t)UE_id]->Msg3_frame,
+				    eNB->ulsch[(uint32_t)UE_id]->Msg3_subframe);
+					
+			 pdsch_procedures(eNB,proc,eNB->dlsch_ra,(LTE_eNB_DLSCH_t*)NULL,(LTE_eNB_UE_stats*)NULL,1,num_pdcch_symbols);
+			 eNB->dlsch_ra->active = 0;
+		   }  
+		  eNB->complete_sch_SR = 1;
+	}
+	printf( "Exiting eNB thread mac2phy\n");
+	return &mac2phy_proc_status;
+	
+}
+static void *cch_proc(void *ptr){
+	static int control_channel_status;
+	control_channel_status=0;
+	control_channel *cch=(control_channel*)ptr;
+	PHY_VARS_eNB *eNB = PHY_vars_eNB_g[0][0];
+	LTE_DL_FRAME_PARMS *fp;
+	eNB_rxtx_proc_t *proc;
+	relaying_type_t r_type;
+	DCI_PDU *DCI_pdu; 
+    DCI_PDU DCI_pdu_tmp;
+	uint8_t num_pdcch_symbols=0;
+	while(!oai_exit)
+	{
+	   	while(pthread_cond_wait(&eNB->thread_cch.cond_tx, &eNB->thread_cch.mutex_tx)!=0);
+		proc = &eNB->proc.proc_rxtx[0];
+		fp=&eNB->frame_parms;
+		int frame = proc->frame_tx;
+		int subframe = proc->subframe_tx;
+		r_type = cch->r_type;
+		if (is_pmch_subframe(frame,subframe,fp)) {
+			pmch_procedures(eNB,proc,NULL,r_type);
+		}
+		else {
+			// this is not a pmch subframe, so generate PSS/SSS/PBCH
+			common_signal_procedures(eNB,proc);
+		}
+		#if defined(SMBV) 
+		// PBCH takes one allocation
+		if (smbv_is_config_frame(frame) && (smbv_frame_cnt < 4)) {
+			if (subframe==0)
+			  smbv_alloc_cnt++;
+		}
+		#endif
+		////////////////////Get DCI from MAC////////////////////
+		if (eNB->mac_enabled==1) {
+		  	// Parse DCI received from MAC
+			//VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_ENB_PDCCH_TX,1);
+			DCI_pdu = mac_xface->get_dci_sdu(eNB->Mod_id,
+											 eNB->CC_id,
+											 frame,
+											 subframe);
+		}
+		else {
+			DCI_pdu = &DCI_pdu_tmp;
+		#ifdef EMOS_CHANNEL
+			fill_dci_emos(DCI_pdu,eNB);
+		#else
+			fill_dci(DCI_pdu,eNB,proc);
+		#endif
+		}
+		if (eNB->abstraction_flag == 0) {
+			if (DCI_pdu->Num_ue_spec_dci+DCI_pdu->Num_common_dci > 0) {
+			  LOG_D(PHY,"[eNB %"PRIu8"] Frame %d, subframe %d: Calling generate_dci_top (pdcch) (common %"PRIu8",ue_spec %"PRIu8")\n",eNB->Mod_id,frame, subframe,
+					DCI_pdu->Num_common_dci,DCI_pdu->Num_ue_spec_dci);
+			}
+			num_pdcch_symbols = generate_dci_top(DCI_pdu->Num_ue_spec_dci,
+												 DCI_pdu->Num_common_dci,
+												 DCI_pdu->dci_alloc,
+												 0,
+												 AMP,
+												 fp,
+												 eNB->common_vars.txdataF[0],
+												 subframe);
+	    }
+		#ifdef PHY_ABSTRACTION // FIXME this ifdef seems suspicious
+			else {
+				LOG_D(PHY,"[eNB %"PRIu8"] Frame %d, subframe %d: Calling generate_dci_to_emul\n",eNB->Mod_id,frame, subframe);
+				num_pdcch_symbols = generate_dci_top_emul(eNB,DCI_pdu->Num_ue_spec_dci,DCI_pdu->Num_common_dci,DCI_pdu->dci_alloc,subframe);
+			}
+
+		#endif
+		// if we have PHICH to generate
+	    if (is_phich_subframe(fp,subframe))
+		{
+		    generate_phich_top(eNB,
+							   proc,
+							   AMP,
+							   0);
+		}
+		eNB->complete_cch = 1;
+	}
+	printf( "Exiting eNB thread control_channel\n");
+	return &control_channel_status;
+}
+
+void* thread_master( void* arg){
+	PHY_VARS_eNB *eNB = PHY_vars_eNB_g[0][0];
+	static int thread_master_status;
+	int i;
+	while(!oai_exit){
+		if(eNB->flag_m2p==1){
+			eNB->flag_m2p = 0;
+			pthread_cond_signal(&eNB->thread_m2p.cond_tx);
+		}
+		if(eNB->flag_cch==1){
+			eNB->flag_cch=0;
+			pthread_cond_signal(&eNB->thread_cch.cond_tx);
+		}
+	}
+	printf( "Exiting eNB thread master_thread\n");
+	thread_master_status=0;
+	return &thread_master_status;
+}
 
 void init_eNB_proc(int inst) {
   
@@ -1715,6 +2051,25 @@ void init_eNB_proc(int inst) {
 #endif
     proc = &eNB->proc;
 
+/* 
+    for splitting serial procedures to multi-threading implementaion.
+    isIP LAB. NCTU, Hsinchu, Taiwan
+*/
+	pthread_create( &eNB->main_thread_master, NULL, thread_master, &eNB);
+	printf("[CREATE] master thread \n");
+	
+	pthread_mutex_init( &eNB->thread_m2p.mutex_tx, NULL);
+	pthread_cond_init( &eNB->thread_m2p.cond_tx, NULL);
+	eNB->flag_m2p=0;
+	pthread_create(&(eNB->thread_m2p.pthread_m2p),NULL,mac2phy_proc,&eNB);
+    printf("[CREATE] mac2phy thread \n");
+	
+	pthread_mutex_init( &(eNB->thread_cch.mutex_tx), NULL);
+	pthread_cond_init( &(eNB->thread_cch.cond_tx), NULL);
+	eNB->flag_cch=0;
+	pthread_create(&(eNB->thread_cch.pthread_cch),NULL,cch_proc,&eNB->thread_cch);
+	printf("[CREATE] control_channel thread \n");
+	
     proc_rxtx = proc->proc_rxtx;
     proc_rxtx[0].instance_cnt_rxtx = -1;
     proc_rxtx[1].instance_cnt_rxtx = -1;
@@ -1855,6 +2210,25 @@ void kill_eNB_proc(int inst) {
     pthread_cond_signal( &proc->cond_prach );
     pthread_cond_signal( &proc->cond_FH );
     pthread_cond_broadcast(&sync_phy_proc.cond_phy_proc_tx);
+
+/* 
+    for splitting serial procedures to multi-threading implementaion.
+    isIP LAB. NCTU, Hsinchu, Taiwan
+*/	
+	pthread_join(eNB->main_thread_master,(void**)&status);
+	printf("[KILL] main thread\n");
+	
+	pthread_cond_signal(&eNB->thread_m2p.cond_tx);
+	pthread_join(eNB->thread_m2p.pthread_m2p,(void**)&status);
+	pthread_mutex_destroy(&eNB->thread_m2p.mutex_tx);
+	pthread_cond_destroy(&eNB->thread_m2p.cond_tx);
+	printf("[KILL] mac2phy thread\n");
+	
+	pthread_cond_signal(&eNB->thread_cch.cond_tx);
+	pthread_join(eNB->thread_cch.pthread_cch,(void**)&status);
+	pthread_mutex_destroy(&eNB->thread_cch.mutex_tx);
+	pthread_cond_destroy(&eNB->thread_cch.cond_tx);
+	printf("[KILL] control_channel thread\n");
 
     pthread_join( proc->pthread_FH, (void**)&status ); 
     pthread_mutex_destroy( &proc->mutex_FH );
