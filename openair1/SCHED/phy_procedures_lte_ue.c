@@ -269,7 +269,7 @@ void phy_reset_ue(uint8_t Mod_id,uint8_t CC_id,uint8_t eNB_index)
   PHY_VARS_UE *ue = PHY_vars_UE_g[Mod_id][CC_id];
 
   //[NUMBER_OF_RX_THREAD=2][NUMBER_OF_CONNECTED_eNB_MAX][2];
-  for(int l=0; l<2; l++) {
+  for(int l=0; l<RX_NB_TH; l++) {
       for(i=0; i<NUMBER_OF_CONNECTED_eNB_MAX; i++) {
           for(j=0; j<2; j++) {
               //DL HARQ
@@ -302,6 +302,7 @@ void phy_reset_ue(uint8_t Mod_id,uint8_t CC_id,uint8_t eNB_index)
 
       }
   }
+  //LOG_I(PHY,"Reset UE Set ulsch status to idle  \n");
 }
 
 void ra_failed(uint8_t Mod_id,uint8_t CC_id,uint8_t eNB_index)
@@ -334,9 +335,11 @@ void ra_succeeded(uint8_t Mod_id,uint8_t CC_id,uint8_t eNB_index)
       PHY_vars_UE_g[Mod_id][CC_id]->ulsch[eNB_index]->harq_processes[i]->status=IDLE;
       PHY_vars_UE_g[Mod_id][CC_id]->dlsch[0][eNB_index][0]->harq_processes[i]->round=0;
       PHY_vars_UE_g[Mod_id][CC_id]->dlsch[1][eNB_index][0]->harq_processes[i]->round=0;
+      PHY_vars_UE_g[Mod_id][CC_id]->ulsch[eNB_index]->harq_processes[i]->subframe_scheduling_flag=0;
     }
   }
 
+  //LOG_I(PHY,"RA SUCCESS UE Set ulsch status to idle  \n");
 
 }
 
@@ -1258,7 +1261,9 @@ void ulsch_common_procedures(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc, uint8_t empt
          ue->hw_timing_advance-
          ue->timing_advance-
          ue->N_TA_offset+5);
-  //LOG_E(PHY,"ul-signal [subframe: %d, ulsch_start %d]\n",subframe_tx, ulsch_start);
+ //LOG_E(PHY,"ul-signal [subframe: %d, rx_offset %d, ulsch_start %d samples_per_tti %d hw_timing_advance %d, timing_advance %d ue->N_TA_offset %d]\n",
+ //         subframe_tx, ue->rx_offset, ulsch_start,
+ //         frame_parms->samples_per_tti, ue->hw_timing_advance, ue->timing_advance, ue->N_TA_offset);
 
   if(ulsch_start < 0)
       ulsch_start = ulsch_start + (LTE_NUMBER_OF_SUBFRAMES_PER_FRAME*frame_parms->samples_per_tti);
@@ -2660,7 +2665,11 @@ void ue_measurement_procedures(
 
   }
 
-  if ((subframe_rx==0) && (slot == 0) && (l==(4-frame_parms->Ncp))) {
+  //if ((subframe_rx==6) && (slot == (subframe_rx<<1)) && (l==(4-frame_parms->Ncp))) {
+
+  //LOG_I(PHY,"compute Timing Offset AbsSfn %d.%d / %d slot %d \n",proc->frame_rx,subframe_rx,l,slot);
+
+  if (( (slot%2) == 0) && (l==(4-frame_parms->Ncp))) {
 
     // AGC
 
@@ -2674,6 +2683,7 @@ void ue_measurement_procedures(
 #endif
 #endif
 
+    //LOG_I(PHY,"compute Timing Offset AbsSfn %d.%d / %d\n",proc->frame_rx,subframe_rx,l);
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_UE_GAIN_CONTROL, VCD_FUNCTION_OUT);
 
     eNB_id = 0;
@@ -3139,6 +3149,7 @@ int ue_pdcch_procedures(uint8_t eNB_id,PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint
     ue->ulsch_Msg3_active[eNB_id] = 0;
     ue->ulsch[eNB_id]->harq_processes[harq_pid]->round = 0;
     LOG_D(PHY,"Msg3 inactive\n");
+    LOG_D(PHY,"Msg3 inactive Set ulsch status to idle place 0 pid %d \n", harq_pid);
 
   } // harq_pid is ACTIVE
       } // This is a PHICH subframe
@@ -4768,6 +4779,7 @@ void phy_procedures_UE_lte(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,u
 
     if (ue->mac_enabled==1) {
       if (slot==0) {
+          //LOG_I(PHY,"[UE %d] Frame %d, subframe %d, star ue_scheduler\n", ue->Mod_id,frame_rx,subframe_tx);
         ret = mac_xface->ue_scheduler(ue->Mod_id,
             frame_rx,
             subframe_rx,

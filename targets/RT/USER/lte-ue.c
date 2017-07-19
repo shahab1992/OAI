@@ -729,6 +729,7 @@ void *UE_thread(void *arg) {
                                                                UE->frame_parms.nb_antennas_rx),"");
                     }
                     UE->rx_offset=0;
+                    UE->time_sync_cell=0;
                     //UE->proc.proc_rxtx[0].frame_rx++;
                     //UE->proc.proc_rxtx[1].frame_rx++;
                     for (th_id=0; th_id < RX_NB_TH; th_id++) {
@@ -769,20 +770,37 @@ void *UE_thread(void *arg) {
                         UE->rx_offset_diff = 0;
                         // compute TO compensation that should be applied for this frame
                         if ( UE->rx_offset < 5*UE->frame_parms.samples_per_tti  &&
-                                UE->rx_offset > 0 )
-                            UE->rx_offset_diff = -1 ;
+                                UE->rx_offset > 0 ){
+                         
+                            //UE->rx_offset_diff = -(UE->rx_offset) ;
+                     
+                            UE->rx_offset_diff = -1;
+                        }
                         if ( UE->rx_offset > 5*UE->frame_parms.samples_per_tti &&
-                                UE->rx_offset < 10*UE->frame_parms.samples_per_tti )
+                                UE->rx_offset < 10*UE->frame_parms.samples_per_tti ){
+                            //UE->rx_offset_diff = ( (10*UE->frame_parms.samples_per_tti)-UE->rx_offset );
                             UE->rx_offset_diff = 1;
-
-                        LOG_D(PHY,"AbsSubframe %d.%d SET rx_off_diff to %d rx_offset %d \n",proc->frame_rx,sub_frame,UE->rx_offset_diff,UE->rx_offset);
+                     
+                        }
+                        //UE->rx_offset_diff = 0 ;
+                        LOG_D(PHY,"AbsSubframe %d.%d Nb Samples TTI %d SET rx_off_diff to %d rx_offset %d \n",proc->frame_rx,
+                                sub_frame,
+                                UE->frame_parms.samples_per_tti,
+                                UE->rx_offset_diff,
+                                UE->rx_offset);
                         readBlockSize=UE->frame_parms.samples_per_tti -
                                       UE->frame_parms.ofdm_symbol_size -
                                       UE->frame_parms.nb_prefix_samples0 -
                                       UE->rx_offset_diff;
                         writeBlockSize=UE->frame_parms.samples_per_tti -
                                        UE->rx_offset_diff;
+                        LOG_D(PHY,"AbsSubframe %d.%d readBlockSize %d writeBlockSize %d \n",proc->frame_rx,
+                                                                            sub_frame,
+                                                                            readBlockSize,
+                                                                            writeBlockSize);
                     }
+
+
 
                     AssertFatal(readBlockSize ==
                                 UE->rfdevice.trx_read_func(&UE->rfdevice,
@@ -790,6 +808,8 @@ void *UE_thread(void *arg) {
                                                            rxp,
                                                            readBlockSize,
                                                            UE->frame_parms.nb_antennas_rx),"");
+                    //write_output("txdataoff0.m","txdataoff0",&UE->common_vars.rxdata[0][0],UE->frame_parms.samples_per_tti,1,1);
+
                     AssertFatal( writeBlockSize ==
                                  UE->rfdevice.trx_write_func(&UE->rfdevice,
                                          timestamp+

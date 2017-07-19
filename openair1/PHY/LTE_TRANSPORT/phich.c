@@ -1381,11 +1381,13 @@ void rx_phich(PHY_VARS_UE *ue,
 
   if (HI16>0) {   //NACK
     if (ue->ulsch_Msg3_active[eNB_id] == 1) {
-      LOG_I(PHY,"[UE  %d][PUSCH %d][RAPROC] Frame %d subframe %d Msg3 PHICH, received NAK (%d) nseq %d, ngroup %d\n",
+      LOG_I(PHY,"[UE  %d][PUSCH %d][RAPROC] Frame %d subframe %d Msg3 PHICH, received NAK (%d) round %d / MaxReTx %d, nseq %d, ngroup %d\n",
             ue->Mod_id,harq_pid,
             proc->frame_rx,
             subframe,
             HI16,
+            ulsch->harq_processes[harq_pid]->round,
+            ue->frame_parms.maxHARQ_Msg3Tx,
             nseq_PHICH,
             ngroup_PHICH);
 
@@ -1405,6 +1407,7 @@ void rx_phich(PHY_VARS_UE *ue,
       if (ulsch->harq_processes[harq_pid]->round>=ue->frame_parms.maxHARQ_Msg3Tx) {
         ulsch->harq_processes[harq_pid]->subframe_scheduling_flag =0;
         ulsch->harq_processes[harq_pid]->status = IDLE;
+        //LOG_I(PHY,"Set ulsch status to idle place 0 pid %d \n", harq_pid);
         // inform MAC that Msg3 transmission has failed
         ue->ulsch_Msg3_active[eNB_id] = 0;
       }
@@ -1435,6 +1438,7 @@ void rx_phich(PHY_VARS_UE *ue,
           // disable phich decoding since it is the last retransmission
           ulsch->harq_processes[harq_pid]->status = IDLE;
 
+          //LOG_I(PHY,"Set ulsch status to idle place 1 pid %d \n", harq_pid);
           //ulsch->harq_processes[harq_pid]->subframe_scheduling_flag = 0;
           //ulsch->harq_processes[harq_pid]->round  = 0;
 
@@ -1485,6 +1489,7 @@ void rx_phich(PHY_VARS_UE *ue,
 
     ulsch->harq_processes[harq_pid]->subframe_scheduling_flag =0;
     ulsch->harq_processes[harq_pid]->status = IDLE;
+    //LOG_I(PHY,"Set ulsch status to idle place 2 pid %d \n", harq_pid);
     ulsch->harq_processes[harq_pid]->round  = 0;
     // inform MAC?
     ue->ulsch_Msg3_active[eNB_id] = 0;
