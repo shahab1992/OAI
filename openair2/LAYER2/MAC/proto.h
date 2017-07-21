@@ -652,7 +652,7 @@ int get_db_dl_PathlossChange(uint8_t dl_PathlossChange);
 \param[in] CC_id Component Carrier Index
 \return phr mapping
 */
-uint8_t get_phr_mapping (module_id_t module_idP, int CC_id, uint8_t eNB_index);
+uint8_t get_phr_mapping (module_id_t module_idP, int CC_id, uint8_t eNB_index, uint8_t subframe);
 
 /*! \fn  void update_phr (module_id_t module_idP)
    \brief update/reset the phr timers

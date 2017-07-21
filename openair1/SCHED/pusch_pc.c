@@ -100,21 +100,21 @@ int16_t get_hundred_times_delta_IF_mac(module_id_t module_idP, uint8_t CC_id, rn
   return get_hundred_times_delta_IF_eNB( PHY_vars_eNB_g[module_idP][CC_id], UE_id, harq_pid, 0 );
 }
 
-int16_t get_hundred_times_delta_IF(PHY_VARS_UE *ue,uint8_t eNB_id,uint8_t harq_pid)
+int16_t get_hundred_times_delta_IF(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc,uint8_t eNB_id,uint8_t harq_pid)
 {
 
-  uint32_t Nre = 2*ue->ulsch[eNB_id]->harq_processes[harq_pid]->Nsymb_initial *
-                 ue->ulsch[eNB_id]->harq_processes[harq_pid]->nb_rb*12;
+  uint32_t Nre = 2*ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->Nsymb_initial *
+                 ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->nb_rb*12;
 
   if (Nre==0)
     return(0);
 
-  uint32_t MPR_x100 = 100*ue->ulsch[eNB_id]->harq_processes[harq_pid]->TBS/Nre;
+  uint32_t MPR_x100 = 100*ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->TBS/Nre;
   // Note: MPR=is the effective spectral efficiency of the PUSCH
   // FK 20140908 sumKr is only set after the ulsch_encoding
 
-  uint16_t beta_offset_pusch = (ue->ulsch[eNB_id]->harq_processes[harq_pid]->control_only == 1) ?
-    ue->ulsch[eNB_id]->beta_offset_cqi_times8:8;
+  uint16_t beta_offset_pusch = (ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->control_only == 1) ?
+    ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->beta_offset_cqi_times8:8;
 
   if (ue->ul_power_control_dedicated[eNB_id].deltaMCS_Enabled == 1) {
     // This is the formula from Section 5.1.1.1 in 36.213 10*log10(deltaIF_PUSCH = (2^(MPR*Ks)-1)*beta_offset_pusch)
@@ -136,7 +136,7 @@ void pusch_power_cntl(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uint8_
                                        proc->frame_tx,
                                        proc->subframe_tx);
 
-  uint8_t nb_rb = ue->ulsch[eNB_id]->harq_processes[harq_pid]->nb_rb;
+  uint8_t nb_rb = ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->nb_rb;
   int16_t PL;
 
 
@@ -147,52 +147,52 @@ void pusch_power_cntl(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uint8_
   // P_opusch(0) = PO_NOMINAL_PUSCH(j) + P_O_UE_PUSCH(j)
   PL = get_PL(ue->Mod_id,ue->CC_id,eNB_id);
 
-  ue->ulsch[eNB_id]->Po_PUSCH = (hundred_times_log10_NPRB[nb_rb-1]+
-				 get_hundred_times_delta_IF(ue,eNB_id,harq_pid) +
-				 100*ue->ulsch[eNB_id]->f_pusch)/100;
+  ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->Po_PUSCH = (hundred_times_log10_NPRB[nb_rb-1]+
+				 get_hundred_times_delta_IF(ue,proc,eNB_id,harq_pid) +
+				 100*ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->f_pusch)/100;
 
   if(ue->ulsch_Msg3_active[eNB_id] == 1) {  // Msg3 PUSCH
 
-    ue->ulsch[eNB_id]->Po_PUSCH += (mac_xface->get_Po_NOMINAL_PUSCH(ue->Mod_id,0) + PL);
+    ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->Po_PUSCH += (mac_xface->get_Po_NOMINAL_PUSCH(ue->Mod_id,0) + PL);
 
     LOG_I(PHY,"[UE  %d][RAPROC] AbsSubframe %d.%d: Msg3 (%d PRBs) Po_PUSCH %d dBm (%d,%d,100*PL=%d,%d,%d)\n",
-          ue->Mod_id,proc->frame_tx,proc->subframe_tx,nb_rb,ue->ulsch[eNB_id]->Po_PUSCH,
+          ue->Mod_id,proc->frame_tx,proc->subframe_tx,nb_rb,ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->Po_PUSCH,
           100*mac_xface->get_Po_NOMINAL_PUSCH(ue->Mod_id,0),
           hundred_times_log10_NPRB[nb_rb-1],
           100*PL,
-          get_hundred_times_delta_IF(ue,eNB_id,harq_pid),
-          100*ue->ulsch[eNB_id]->f_pusch);
+          get_hundred_times_delta_IF(ue,proc,eNB_id,harq_pid),
+          100*ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->f_pusch);
   } else if (j==0) { // SPS PUSCH
   } else if (j==1) { // Normal PUSCH
 
-    ue->ulsch[eNB_id]->Po_PUSCH +=  ((alpha_lut[ue->frame_parms.ul_power_control_config_common.alpha]*PL)/100);
-    ue->ulsch[eNB_id]->Po_PUSCH +=  ue->frame_parms.ul_power_control_config_common.p0_NominalPUSCH;
-    ue->ulsch[eNB_id]->PHR       =  ue->tx_power_max_dBm-ue->ulsch[eNB_id]->Po_PUSCH;  
+    ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->Po_PUSCH +=  ((alpha_lut[ue->frame_parms.ul_power_control_config_common.alpha]*PL)/100);
+    ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->Po_PUSCH +=  ue->frame_parms.ul_power_control_config_common.p0_NominalPUSCH;
+    ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->PHR       =  ue->tx_power_max_dBm-ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->Po_PUSCH;
 
-    if (ue->ulsch[eNB_id]->PHR < -23)
-      ue->ulsch[eNB_id]->PHR = -23;
-    else if (ue->ulsch[eNB_id]->PHR > 40)
-      ue->ulsch[eNB_id]->PHR = 40;
+    if (ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->PHR < -23)
+      ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->PHR = -23;
+    else if (ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->PHR > 40)
+      ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->PHR = 40;
 
     LOG_D(PHY,"[UE  %d][PUSCH %d] AbsSubframe %d.%d: nb_rb: %d, Po_PUSCH %d dBm : tx power %d, Po_NOMINAL_PUSCH %d,log10(NPRB) %f,PHR %d, PL %d, alpha*PL %f,delta_IF %f,f_pusch %d\n",
           ue->Mod_id,harq_pid,proc->frame_tx,proc->subframe_tx,nb_rb,
-          ue->ulsch[eNB_id]->Po_PUSCH,
+          ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->Po_PUSCH,
           ue->tx_power_max_dBm,
           ue->frame_parms.ul_power_control_config_common.p0_NominalPUSCH,
           hundred_times_log10_NPRB[nb_rb-1]/100.0,
-          ue->ulsch[eNB_id]->PHR,
+          ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->PHR,
           PL,
           alpha_lut[ue->frame_parms.ul_power_control_config_common.alpha]*PL/100.0,
-          get_hundred_times_delta_IF(ue,eNB_id,harq_pid)/100.0,
-          ue->ulsch[eNB_id]->f_pusch);
+          get_hundred_times_delta_IF(ue,proc,eNB_id,harq_pid)/100.0,
+          ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->f_pusch);
   }
 
 }
 
-int8_t get_PHR(uint8_t Mod_id, uint8_t CC_id,uint8_t eNB_index)
+int8_t get_PHR(uint8_t Mod_id, uint8_t CC_id,uint8_t eNB_index, uint8_t subframe)
 {
 
-  return PHY_vars_UE_g[Mod_id][CC_id]->ulsch[eNB_index]->PHR;
+  return PHY_vars_UE_g[Mod_id][CC_id]->ulsch[subframe%RX_NB_TH][eNB_index]->PHR;
 }
 
 // uint8_t eNB_id,uint8_t harq_pid, uint8_t UE_id,
@@ -252,7 +252,7 @@ int16_t estimate_ue_tx_power(uint32_t tbs, uint32_t nb_rb, uint8_t control_only,
   if (control_only == 1 )
     beta_offset_pusch_x8=8; // fixme
 
-  //(beta_offset_pusch_x8=ue->ulsch[eNB_id]->harq_processes[harq_pid]->control_only == 1) ? ue->ulsch[eNB_id]->beta_offset_cqi_times8:8;
+  //(beta_offset_pusch_x8=ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->control_only == 1) ? ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->beta_offset_cqi_times8:8;
 
   // if deltamcs_enabledm
   delta_mcs = ((hundred_times_delta_TF[MPR_x100/6]+10*dB_fixed_times10((beta_offset_pusch_x8)>>3))/100.0);

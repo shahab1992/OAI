@@ -7354,7 +7354,7 @@ int generate_ue_ulsch_params_from_dci(void *dci_pdu,
   uint8_t harq_pid;
   uint8_t transmission_mode = ue->transmission_mode[eNB_id];
   ANFBmode_t AckNackFBMode;
-  LTE_UE_ULSCH_t *ulsch = ue->ulsch[eNB_id];
+  LTE_UE_ULSCH_t *ulsch = ue->ulsch[subframe%RX_NB_TH][eNB_id];
   LTE_UE_DLSCH_t **dlsch = ue->dlsch[subframe%RX_NB_TH][0];
   PHY_MEASUREMENTS *meas = &ue->measurements;
   LTE_DL_FRAME_PARMS *frame_parms = &ue->frame_parms;
@@ -7547,15 +7547,15 @@ int generate_ue_ulsch_params_from_dci(void *dci_pdu,
     if (ue->ul_power_control_dedicated[eNB_id].accumulationEnabled == 1) {
       LOG_D(PHY,"[UE %d][PUSCH %d] Frame %d subframe %d: f_pusch (ACC) %d, adjusting by %d (TPC %d)\n",
             ue->Mod_id,harq_pid,proc->frame_rx,subframe,ulsch->f_pusch,
-            delta_PUSCH_acc[ue->ulsch[eNB_id]->harq_processes[harq_pid]->TPC],
-            ue->ulsch[eNB_id]->harq_processes[harq_pid]->TPC);
-      ulsch->f_pusch += delta_PUSCH_acc[ue->ulsch[eNB_id]->harq_processes[harq_pid]->TPC];
+            delta_PUSCH_acc[ue->ulsch[subframe%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->TPC],
+            ue->ulsch[subframe%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->TPC);
+      ulsch->f_pusch += delta_PUSCH_acc[ue->ulsch[subframe%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->TPC];
     } else {
       LOG_D(PHY,"[UE %d][PUSCH %d] Frame %d subframe %d: f_pusch (ABS) %d, adjusting to %d (TPC %d)\n",
             ue->Mod_id,harq_pid,proc->frame_rx,subframe,ulsch->f_pusch,
-            delta_PUSCH_abs[ue->ulsch[eNB_id]->harq_processes[harq_pid]->TPC],
-            ue->ulsch[eNB_id]->harq_processes[harq_pid]->TPC);
-      ulsch->f_pusch = delta_PUSCH_abs[ue->ulsch[eNB_id]->harq_processes[harq_pid]->TPC];
+            delta_PUSCH_abs[ue->ulsch[subframe%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->TPC],
+            ue->ulsch[subframe%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->TPC);
+      ulsch->f_pusch = delta_PUSCH_abs[ue->ulsch[subframe%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->TPC];
     }
 
     if (ulsch->harq_processes[harq_pid]->first_tx==1) {

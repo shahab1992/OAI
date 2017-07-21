@@ -174,9 +174,10 @@ PHY_VARS_UE* init_lte_UE(LTE_DL_FRAME_PARMS *frame_parms,
           }
       }
 
+      for (int l=0; l<RX_NB_TH_MAX; l++){ // Threads
 
-
-      PHY_vars_UE->ulsch[i]  = new_ue_ulsch(frame_parms->N_RB_UL, abstraction_flag);
+      PHY_vars_UE->ulsch[l][i]  = new_ue_ulsch(frame_parms->N_RB_UL, abstraction_flag);
+      }
 
       if (!PHY_vars_UE->ulsch[i]) {
           LOG_E(PHY,"Can't get ue ulsch structures\n");

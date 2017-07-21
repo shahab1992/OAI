@@ -191,7 +191,7 @@ int generate_ue_ulsch_params_from_rar(PHY_VARS_UE *ue,
   uint8_t transmission_mode = ue->transmission_mode[eNB_id];
   unsigned char *rar_pdu = ue->dlsch_ra[eNB_id]->harq_processes[0]->b;
   unsigned char subframe = ue->ulsch_Msg3_subframe[eNB_id];
-  LTE_UE_ULSCH_t *ulsch  = ue->ulsch[eNB_id];
+  LTE_UE_ULSCH_t *ulsch  = ue->ulsch[subframe%RX_NB_TH][eNB_id];
   PHY_MEASUREMENTS *meas = &ue->measurements;
 
   LTE_DL_FRAME_PARMS *frame_parms =  &ue->frame_parms;

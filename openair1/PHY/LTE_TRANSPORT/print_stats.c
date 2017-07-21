@@ -100,10 +100,10 @@ int dump_ue_stats(PHY_VARS_UE *ue, UE_rxtx_proc_t *proc,char* buffer, int length
     len += sprintf(&buffer[len], "[UE PROC] timing_advance = %d\n",ue->timing_advance);
     if (ue->UE_mode[0]==PUSCH) {
       len += sprintf(&buffer[len], "[UE PROC] Po_PUSCH = %d dBm (PL %d dB, Po_NOMINAL_PUSCH %d dBm, PHR %d dB)\n", 
-		     ue->ulsch[0]->Po_PUSCH,
+		     ue->ulsch[proc->subframe_rx%RX_NB_TH][0]->Po_PUSCH,
 		     get_PL(ue->Mod_id,ue->CC_id,0),
 		     ue->frame_parms.ul_power_control_config_common.p0_NominalPUSCH,
-		     ue->ulsch[0]->PHR);
+		     ue->ulsch[proc->subframe_rx%RX_NB_TH][0]->PHR);
       len += sprintf(&buffer[len], "[UE PROC] Po_PUCCH = %d dBm (Po_NOMINAL_PUCCH %d dBm, g_pucch %d dB)\n", 
 		     get_PL(ue->Mod_id,ue->CC_id,0)+
 		     ue->frame_parms.ul_power_control_config_common.p0_NominalPUCCH+

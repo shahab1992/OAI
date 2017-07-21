@@ -233,7 +233,7 @@ uint32_t ulsch_encoding(uint8_t *a,
   uint32_t wACK_idx;
   LTE_DL_FRAME_PARMS *frame_parms=&ue->frame_parms;
   PHY_MEASUREMENTS *meas = &ue->measurements;
-  LTE_UE_ULSCH_t *ulsch=ue->ulsch[eNB_id];
+  LTE_UE_ULSCH_t *ulsch=ue->ulsch[subframe_rx%RX_NB_TH][eNB_id];
   LTE_UE_DLSCH_t **dlsch = ue->dlsch[0][eNB_id];
   uint16_t rnti = 0xffff;
 
@@ -967,7 +967,7 @@ int ulsch_encoding_emul(uint8_t *ulsch_buffer,
                         uint8_t control_only_flag)
 {
 
-  LTE_UE_ULSCH_t *ulsch = ue->ulsch[eNB_id];
+  LTE_UE_ULSCH_t *ulsch = ulsch[subframe_rx%RX_NB_TH];
   LTE_UE_DLSCH_t **dlsch = ue->dlsch[0][eNB_id];
   PHY_MEASUREMENTS *meas = &ue->measurements;
   uint8_t tmode = ue->transmission_mode[eNB_id];
@@ -993,22 +993,22 @@ int ulsch_encoding_emul(uint8_t *ulsch_buffer,
     dlsch[0]->harq_processes[harq_pid]->pmi_alloc = ((wideband_cqi_rank1_2A_5MHz *)ulsch->o)->pmi;
   }
 
-  memcpy(ue->ulsch[eNB_id]->harq_processes[harq_pid]->b,
+  memcpy(ulsch[subframe_rx%RX_NB_TH]->harq_processes[harq_pid]->b,
          ulsch_buffer,
-         ue->ulsch[eNB_id]->harq_processes[harq_pid]->TBS>>3);
+         ulsch[subframe_rx%RX_NB_TH]->harq_processes[harq_pid]->TBS>>3);
 
 
   //memcpy(&UE_transport_info[ue->Mod_id].transport_blocks[UE_transport_info_TB_index[ue->Mod_id]],
   memcpy(&UE_transport_info[ue->Mod_id][ue->CC_id].transport_blocks,
          ulsch_buffer,
-         ue->ulsch[eNB_id]->harq_processes[harq_pid]->TBS>>3);
-  //UE_transport_info_TB_index[ue->Mod_id]+=ue->ulsch[eNB_id]->harq_processes[harq_pid]->TBS>>3;
+         ulsch[subframe_rx%RX_NB_TH]->harq_processes[harq_pid]->TBS>>3);
+  //UE_transport_info_TB_index[ue->Mod_id]+=ulsch[subframe_rx%RX_NB_TH]->harq_processes[harq_pid]->TBS>>3;
   // navid: currently more than one eNB is not supported in the code
   UE_transport_info[ue->Mod_id][ue->CC_id].num_eNB = 1;
   UE_transport_info[ue->Mod_id][ue->CC_id].rnti[0] = ue->pdcch_vars[subframe_rx%RX_NB_TH][0]->crnti;
   UE_transport_info[ue->Mod_id][ue->CC_id].eNB_id[0]  = eNB_id;
   UE_transport_info[ue->Mod_id][ue->CC_id].harq_pid[0] = harq_pid;
-  UE_transport_info[ue->Mod_id][ue->CC_id].tbs[0]     = ue->ulsch[eNB_id]->harq_processes[harq_pid]->TBS>>3 ;
+  UE_transport_info[ue->Mod_id][ue->CC_id].tbs[0]     = ulsch[subframe_rx%RX_NB_TH]->harq_processes[harq_pid]->TBS>>3 ;
   // printf("\nue->Mod_id%d\n",ue->Mod_id);
 
   UE_transport_info[ue->Mod_id][ue->CC_id].cntl.pusch_flag = 1;

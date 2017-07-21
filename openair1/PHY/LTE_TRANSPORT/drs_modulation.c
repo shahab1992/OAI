@@ -56,7 +56,7 @@ int generate_drs_pusch(PHY_VARS_UE *ue,
 
   uint8_t cyclic_shift,cyclic_shift0,cyclic_shift1;
   LTE_DL_FRAME_PARMS *frame_parms = &ue->frame_parms;
-  int32_t *txdataF = ue->common_vars.txdataF[ant];
+  int32_t *txdataF = ue->common_vars.common_vars_tx_data_per_thread[subframe%RX_NB_TH].txdataF[ant];
   uint32_t u,v,alpha_ind;
   uint32_t u0=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.grouphop[subframe<<1];
   uint32_t u1=frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.grouphop[1+(subframe<<1)];
@@ -66,15 +66,15 @@ int generate_drs_pusch(PHY_VARS_UE *ue,
   uint8_t harq_pid = subframe2harq_pid(frame_parms,proc->frame_tx,subframe);
 
   cyclic_shift0 = (frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift +
-                   ue->ulsch[eNB_id]->harq_processes[harq_pid]->n_DMRS2 +
+                   ue->ulsch[subframe%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->n_DMRS2 +
                    frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[subframe<<1]+
-                   ((ue->ulsch[0]->cooperation_flag==2)?10:0)+
+                   ((ue->ulsch[subframe%RX_NB_TH][0]->cooperation_flag==2)?10:0)+
                    ant*6) % 12;
-  //  printf("PUSCH.cyclicShift %d, n_DMRS2 %d, nPRS %d\n",frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift,ue->ulsch[eNB_id]->n_DMRS2,ue->lte_frame_parms.pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[subframe<<1]);
+  //  printf("PUSCH.cyclicShift %d, n_DMRS2 %d, nPRS %d\n",frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift,ue->ulsch[subframe%RX_NB_TH][eNB_id][eNB_id]->n_DMRS2,ue->lte_frame_parms.pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[subframe<<1]);
   cyclic_shift1 = (frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.cyclicShift +
-                   ue->ulsch[eNB_id]->harq_processes[harq_pid]->n_DMRS2 +
+                   ue->ulsch[subframe%RX_NB_TH][eNB_id]->harq_processes[harq_pid]->n_DMRS2 +
                    frame_parms->pusch_config_common.ul_ReferenceSignalsPUSCH.nPRS[(subframe<<1)+1]+
-                   ((ue->ulsch[0]->cooperation_flag==2)?10:0)+
+                   ((ue->ulsch[subframe%RX_NB_TH][0]->cooperation_flag==2)?10:0)+
                    ant*6) % 12;
 
   //       cyclic_shift0 = 0;

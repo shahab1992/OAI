@@ -1586,10 +1586,10 @@ for (lcid=DCCH; (lcid < MAX_NUM_LCID) && (is_all_lcid_processed == FALSE) ; lcid
 
   // build PHR and update the timers
   if (phr_ce_len == sizeof(POWER_HEADROOM_CMD)) {
-    phr_p->PH = get_phr_mapping(module_idP,CC_id,eNB_index);
+    phr_p->PH = get_phr_mapping(module_idP,CC_id,eNB_index,subframe);
     phr_p->R  = 0;
     LOG_D(MAC,"[UE %d] Frame %d report PHR with mapping (%d->%d) for LCID %d\n",
-          module_idP,frameP, mac_xface->get_PHR(module_idP,CC_id,eNB_index), phr_p->PH,POWER_HEADROOM);
+          module_idP,frameP, mac_xface->get_PHR(module_idP,CC_id,eNB_index,subframe), phr_p->PH,POWER_HEADROOM);
     update_phr(module_idP,CC_id);
   } else {
     phr_p=NULL;
@@ -2572,7 +2572,7 @@ void update_phr(module_id_t module_idP,int CC_id)
   UE_mac_inst[module_idP].scheduling_info.prohibitPHR_SF =  get_sf_prohibitPHR_Timer(UE_mac_inst[module_idP].scheduling_info.prohibitPHR_Timer);
   // LOG_D(MAC,"phr %d %d\n ",UE_mac_inst[module_idP].scheduling_info.periodicPHR_SF, UE_mac_inst[module_idP].scheduling_info.prohibitPHR_SF);
 }
-uint8_t get_phr_mapping (module_id_t module_idP, int CC_id, uint8_t eNB_index)
+uint8_t get_phr_mapping (module_id_t module_idP, int CC_id, uint8_t eNB_index,uint8_t subframe)
 {
 
   if (CC_id>0) {
@@ -2583,12 +2583,12 @@ uint8_t get_phr_mapping (module_id_t module_idP, int CC_id, uint8_t eNB_index)
 
   //power headroom reporting range is from -23 ...+40 dB, as described in 36313
   //note: mac_xface->get_Po_NOMINAL_PUSCH(module_idP) is float
-  if (mac_xface->get_PHR(module_idP,CC_id,eNB_index) < -23) {
+  if (mac_xface->get_PHR(module_idP,CC_id,eNB_index,subframe) < -23) {
     return 0;
-  } else if (mac_xface->get_PHR(module_idP,CC_id,eNB_index) >= 40) {
+  } else if (mac_xface->get_PHR(module_idP,CC_id,eNB_index,subframe) >= 40) {
     return 63;
   } else { // -23 to 40
-    return  (uint8_t) mac_xface->get_PHR(module_idP,CC_id,eNB_index) + PHR_MAPPING_OFFSET;
+    return  (uint8_t) mac_xface->get_PHR(module_idP,CC_id,eNB_index,subframe) + PHR_MAPPING_OFFSET;
 
   }
 }

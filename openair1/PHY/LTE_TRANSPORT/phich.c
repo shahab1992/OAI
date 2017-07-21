@@ -1082,7 +1082,7 @@ void rx_phich(PHY_VARS_UE *ue,
 
   //  uint8_t HI;
   uint8_t harq_pid = phich_subframe_to_harq_pid(frame_parms,proc->frame_rx,subframe);
-  LTE_UE_ULSCH_t *ulsch = ue->ulsch[eNB_id];
+  LTE_UE_ULSCH_t *ulsch = ue->ulsch[subframe%RX_NB_TH][eNB_id];
   int16_t phich_d[24],*phich_d_ptr,HI16;
   //  unsigned int i,aa;
   int8_t d[24],*dp;

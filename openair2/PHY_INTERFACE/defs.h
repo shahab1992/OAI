@@ -313,7 +313,7 @@ typedef struct {
   int8_t (*get_deltaP_rampup)(module_id_t Mod_id,uint8_t CC_id);
 
   /// Function for UE/PHY to compute PHR
-  int8_t (*get_PHR)(module_id_t Mod_id, uint8_t CC_id,uint8_t eNB_index);
+  int8_t (*get_PHR)(module_id_t Mod_id, uint8_t CC_id,uint8_t eNB_index, uint8_t subframe);
 
   /// Function for UE to process the timing advance command
   void (*process_timing_advance)(module_id_t Mod_id,uint8_t CC_id, int16_t timing_advance);

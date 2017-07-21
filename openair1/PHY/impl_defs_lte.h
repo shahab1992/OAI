@@ -810,6 +810,16 @@ typedef struct {
 }LTE_UE_COMMON_PER_THREAD;
 
 typedef struct {
+
+	  /// \brief Holds the received data in the frequency domain.
+	  /// - first index: rx antenna [0..nb_antennas_rx[
+	  /// - second index: symbol [0..28*ofdm_symbol_size[
+	  int32_t **txdataF;
+
+}LTE_UE_COMMON_TX_PER_THREAD;
+
+
+typedef struct {
   /// \brief Holds the transmit data in time domain.
   /// For IFFT_FPGA this points to the same memory as PHY_vars->tx_vars[a].TX_DMA_BUFFER.
   /// - first index: tx antenna [0..nb_antennas_tx[
@@ -819,13 +829,15 @@ typedef struct {
   /// For IFFT_FPGA this points to the same memory as PHY_vars->rx_vars[a].RX_DMA_BUFFER.
   /// - first index: tx antenna [0..nb_antennas_tx[
   /// - second index: sample [0..FRAME_LENGTH_COMPLEX_SAMPLES_NO_PREFIX[
-  int32_t **txdataF;
+  //int32_t **txdataF;
 
   /// \brief Holds the received data in time domain.
   /// Should point to the same memory as PHY_vars->rx_vars[a].RX_DMA_BUFFER.
   /// - first index: rx antenna [0..nb_antennas_rx[
   /// - second index: sample [0..FRAME_LENGTH_COMPLEX_SAMPLES+2048[
   int32_t **rxdata;
+
+  LTE_UE_COMMON_TX_PER_THREAD common_vars_tx_data_per_thread[RX_NB_TH_MAX];
 
   LTE_UE_COMMON_PER_THREAD common_vars_rx_data_per_thread[RX_NB_TH_MAX];
 

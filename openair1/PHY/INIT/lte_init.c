@@ -757,7 +757,8 @@ void phy_config_harq_ue(uint8_t Mod_id,int CC_id,uint8_t eNB_id,
 {
 
   PHY_VARS_UE *phy_vars_ue = PHY_vars_UE_g[Mod_id][CC_id];
-  phy_vars_ue->ulsch[eNB_id]->Mlimit = max_harq_tx;
+  for (int l=0; l< RX_NB_TH; l++)
+  phy_vars_ue->ulsch[l][eNB_id]->Mlimit = max_harq_tx;
 }
 
 void phy_config_dedicated_ue(uint8_t Mod_id,int CC_id,uint8_t eNB_id,
@@ -979,8 +980,10 @@ void  phy_config_cba_rnti (module_id_t Mod_id,int CC_id,eNB_flag_t eNB_flag, uin
 
   if (eNB_flag == 0 ) {
     //LOG_D(PHY,"[UE %d] configure cba group %d with rnti %x, num active cba grp %d\n", index, index, cba_rnti, num_active_cba_groups);
-    PHY_vars_UE_g[Mod_id][CC_id]->ulsch[index]->num_active_cba_groups=num_active_cba_groups;
-    PHY_vars_UE_g[Mod_id][CC_id]->ulsch[index]->cba_rnti[cba_group_id]=cba_rnti;
+    for (int l=0; l<RX_NB_TH; l++){
+	PHY_vars_UE_g[Mod_id][CC_id]->ulsch[l][index]->num_active_cba_groups=num_active_cba_groups;
+    PHY_vars_UE_g[Mod_id][CC_id]->ulsch[l][index]->cba_rnti[cba_group_id]=cba_rnti;
+    }
   } else {
     //for (i=index; i < NUMBER_OF_UE_MAX; i+=num_active_cba_groups){
     //  LOG_D(PHY,"[eNB %d] configure cba group %d with rnti %x for UE %d, num active cba grp %d\n",Mod_id, i%num_active_cba_groups, cba_rnti, i, num_active_cba_groups);
@@ -1133,12 +1136,16 @@ int phy_init_lte_ue(PHY_VARS_UE *ue,
     // init TX buffers
 
     common_vars->txdata  = (int32_t**)malloc16( fp->nb_antennas_tx*sizeof(int32_t*) );
-    common_vars->txdataF = (int32_t **)malloc16( fp->nb_antennas_tx*sizeof(int32_t*) );
+    for (th_id=0; th_id<RX_NB_TH_MAX; th_id++) {
+    common_vars->common_vars_tx_data_per_thread[th_id].txdataF = (int32_t **)malloc16( fp->nb_antennas_tx*sizeof(int32_t*) );
+    }
 
     for (i=0; i<fp->nb_antennas_tx; i++) {
 
       common_vars->txdata[i]  = (int32_t*)malloc16_clear( fp->samples_per_tti*10*sizeof(int32_t) );
-      common_vars->txdataF[i] = (int32_t *)malloc16_clear( fp->ofdm_symbol_size*fp->symbols_per_tti*10*sizeof(int32_t) );
+      for (th_id=0; th_id<RX_NB_TH_MAX; th_id++) {
+      common_vars->common_vars_tx_data_per_thread[th_id].txdataF[i] = (int32_t *)malloc16_clear( fp->ofdm_symbol_size*fp->symbols_per_tti*10*sizeof(int32_t) );
+      }
     }
 
     // init RX buffers

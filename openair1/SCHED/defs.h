@@ -485,7 +485,7 @@ void srs_power_cntl(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uint8_t 
 
 void get_cqipmiri_params(PHY_VARS_UE *ue,uint8_t eNB_id);
 
-int8_t get_PHR(uint8_t Mod_id, uint8_t CC_id, uint8_t eNB_index);
+int8_t get_PHR(uint8_t Mod_id, uint8_t CC_id, uint8_t eNB_index, uint8_t subframe);
 
 #ifdef LOCALIZATION
 /*! \brief This function collects eNB_UE stats and aggregate them in lists for localization
@@ -506,7 +506,7 @@ LTE_DL_FRAME_PARMS *get_lte_frame_parms(module_id_t Mod_id, uint8_t CC_id);
 
 MU_MIMO_mode* get_mu_mimo_mode (module_id_t Mod_id, uint8_t CC_id, rnti_t rnti);
 
-int16_t get_hundred_times_delta_IF(PHY_VARS_UE *phy_vars_ue,uint8_t eNB_id,uint8_t harq_pid);
+int16_t get_hundred_times_delta_IF(PHY_VARS_UE *phy_vars_ue,UE_rxtx_proc_t *proc, uint8_t eNB_id,uint8_t harq_pid);
 
 int16_t get_hundred_times_delta_IF_eNB(PHY_VARS_eNB *phy_vars_eNB,uint8_t UE_id,uint8_t harq_pid, uint8_t bw_factor);
 

@@ -79,7 +79,7 @@ void srs_power_cntl(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uint8_t 
   Psrs_offset     = (ue->ul_power_control_dedicated[eNB_id].pSRS_Offset - 3);
 
 
-  f_pusch     = ue->ulsch[eNB_id]->f_pusch;
+  f_pusch     = ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->f_pusch;
   alpha       = alpha_lut[ue->frame_parms.ul_power_control_config_common.alpha];
   PL          = get_PL(ue->Mod_id,ue->CC_id,eNB_id);
 
@@ -89,12 +89,12 @@ void srs_power_cntl(PHY_VARS_UE *ue,UE_rxtx_proc_t *proc,uint8_t eNB_id,uint8_t 
   P_srs  = (p0_NominalPUSCH + p0_UE_PUSCH) + Psrs_offset + f_pusch;
   P_srs += (((int32_t)alpha * (int32_t)PL) + hundred_times_log10_NPRB[Msrs-1])/100 ;
   
-  ue->ulsch[eNB_id]->Po_SRS = P_srs;
-  if(ue->ulsch[eNB_id]->Po_SRS > ue->tx_power_max_dBm)
+  ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->Po_SRS = P_srs;
+  if(ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->Po_SRS > ue->tx_power_max_dBm)
   {
-      ue->ulsch[eNB_id]->Po_SRS = ue->tx_power_max_dBm;
+      ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->Po_SRS = ue->tx_power_max_dBm;
   }
 
   pnb_rb_srs[0]             = Msrs;
-  LOG_D(PHY," SRS Power Control; eNB_id %d, Psrs_pc[dBm] %d, Pcmax[dBm] %d, Psrs[dBm] %d\n",eNB_id,P_srs,ue->tx_power_max_dBm,ue->ulsch[eNB_id]->Po_SRS);
+  LOG_D(PHY," SRS Power Control; eNB_id %d, Psrs_pc[dBm] %d, Pcmax[dBm] %d, Psrs[dBm] %d\n",eNB_id,P_srs,ue->tx_power_max_dBm,ue->ulsch[proc->subframe_tx%RX_NB_TH][eNB_id]->Po_SRS);
 }
