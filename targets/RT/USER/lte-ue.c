@@ -649,6 +649,8 @@ void *UE_thread(void *arg) {
     char threadname[128];
     int th_id;
 
+    static uint8_t thread_idx = 0;
+
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     if ( threads.iq != -1 )
@@ -750,8 +752,15 @@ void *UE_thread(void *arg) {
             } else {
                 sub_frame++;
                 sub_frame%=10;
-                UE_rxtx_proc_t *proc = &UE->proc.proc_rxtx[sub_frame%RX_NB_TH];
+                UE_rxtx_proc_t *proc = &UE->proc.proc_rxtx[thread_idx];
+                thread_idx++;
+                if(thread_idx>=RX_NB_TH)
+                    thread_idx = 0;
 
+                // update thread index for received subframe
+                UE->current_thread_id = thread_idx;
+
+                LOG_I(PHY,"Process Suframe %d thread Idx %d \n", sub_frame, UE->current_thread_id);
                 if (UE->mode != loop_through_memory) {
                     for (i=0; i<UE->frame_parms.nb_antennas_rx; i++)
                         rxp[i] = (void*)&UE->common_vars.rxdata[i][UE->frame_parms.ofdm_symbol_size+
@@ -775,7 +784,7 @@ void *UE_thread(void *arg) {
                                 UE->rx_offset < 10*UE->frame_parms.samples_per_tti )
                             UE->rx_offset_diff = 1;
 
-                        LOG_D(PHY,"AbsSubframe %d.%d SET rx_off_diff to %d rx_offset %d \n",proc->frame_rx,sub_frame,UE->rx_offset_diff,UE->rx_offset);
+                        LOG_I(PHY,"AbsSubframe %d.%d SET rx_off_diff to %d rx_offset %d \n",proc->frame_rx,sub_frame,UE->rx_offset_diff,UE->rx_offset);
                         readBlockSize=UE->frame_parms.samples_per_tti -
                                       UE->frame_parms.ofdm_symbol_size -
                                       UE->frame_parms.nb_prefix_samples0 -
@@ -836,6 +845,7 @@ void *UE_thread(void *arg) {
                                          UE->frame_parms.ofdm_symbol_size-UE->frame_parms.nb_prefix_samples0;
 
                     proc->instance_cnt_rxtx++;
+                    LOG_I( PHY, "[SCHED][UE %d] UE RX instance_cnt_rxtx %d subframe %d !!\n", UE->Mod_id, proc->instance_cnt_rxtx,proc->subframe_rx);
                     if (proc->instance_cnt_rxtx == 0) {
                       if (pthread_cond_signal(&proc->cond_rxtx) != 0) {
                         LOG_E( PHY, "[SCHED][UE %d] ERROR pthread_cond_signal for UE RX thread\n", UE->Mod_id);
