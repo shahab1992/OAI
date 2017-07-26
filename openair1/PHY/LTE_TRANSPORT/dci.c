@@ -2838,7 +2838,7 @@ void dci_decoding_procedure0(LTE_UE_PDCCH **pdcch_vars,
         dci_alloc[*dci_cnt].L          = L;
         dci_alloc[*dci_cnt].firstCCE   = CCEind;
 
-        printf("DCI FOUND !!! crc =>%x,  sizeof_bits %d, sizeof_bytes %d \n",crc, sizeof_bits, sizeof_bytes);
+        //printf("DCI FOUND !!! crc =>%x,  sizeof_bits %d, sizeof_bytes %d \n",crc, sizeof_bits, sizeof_bytes);
         if (sizeof_bytes<=4) {
           dci_alloc[*dci_cnt].dci_pdu[3] = dci_decoded_output[current_thread_id][0];
           dci_alloc[*dci_cnt].dci_pdu[2] = dci_decoded_output[current_thread_id][1];
@@ -2901,7 +2901,7 @@ void dci_decoding_procedure0(LTE_UE_PDCCH **pdcch_vars,
           }
         }
 
-        LOG_I(PHY,"DCI decoding CRNTI  [format: %d, nCCE[subframe: %d]: %d ], AggregationLevel %d \n",format_c, subframe, pdcch_vars[eNB_id]->nCCE[subframe],L2);
+        LOG_D(PHY,"DCI decoding CRNTI  [format: %d, nCCE[subframe: %d]: %d ], AggregationLevel %d \n",format_c, subframe, pdcch_vars[eNB_id]->nCCE[subframe],L2);
         //  memcpy(&dci_alloc[*dci_cnt].dci_pdu[0],dci_decoded_output,sizeof_bytes);
 
 

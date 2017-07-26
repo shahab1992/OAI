@@ -186,9 +186,7 @@ void ue_rrc_measurements(PHY_VARS_UE *ue,
   uint16_t off;
   uint8_t previous_thread_id = ue->current_thread_id[subframe]==0 ? (RX_NB_TH-1):(ue->current_thread_id[subframe]-1);
 
-  LOG_I(PHY,"UE RRC MEAS current_thread_id %d previous_thread_id %d \n", ue->current_thread_id[subframe], previous_thread_id);
-
-  //uint8_t isPss; // indicate if this is a slot for extracting PSS
+   //uint8_t isPss; // indicate if this is a slot for extracting PSS
   //uint8_t isSss; // indicate if this is a slot for extracting SSS
   //int32_t pss_ext[4][72]; // contain the extracted 6*12 REs for mapping the PSS
   //int32_t sss_ext[4][72]; // contain the extracted 6*12 REs for mapping the SSS

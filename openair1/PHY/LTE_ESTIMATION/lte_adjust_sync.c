@@ -94,7 +94,7 @@ void lte_adjust_synch(LTE_DL_FRAME_PARMS *frame_parms,
 
 
 #ifdef DEBUG_PHY
-  LOG_I(PHY,"AbsSubframe %d.%d: rx_offset (after) = %d : max_pos = %d,max_pos_fil = %d (peak %d) target_pos %d \n",
+  LOG_D(PHY,"AbsSubframe %d.%d: rx_offset (after) = %d : max_pos = %d,max_pos_fil = %d (peak %d) target_pos %d \n",
         ue->proc.proc_rxtx[0].frame_rx,subframe,ue->rx_offset,max_pos,max_pos_fil,temp,(frame_parms->nb_prefix_samples>>3));
 #endif //DEBUG_PHY
 
