@@ -1045,6 +1045,160 @@ rrc_eNB_generate_RRCConnectionReject(
         eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].Srb0.Tx_buffer.payload_size);
 }
 
+// issue#256 RRCConnectionRe-establishment start
+//-----------------------------------------------------------------------------
+void
+rrc_eNB_generate_RRCConnectionReestablishment(
+  const protocol_ctxt_t*         const ctxt_pP,
+  rrc_eNB_ue_context_t*          const ue_context_pP,
+  const int                            CC_id
+)
+//-----------------------------------------------------------------------------
+{
+  LOG_I(RRC,"rrc_eNB_generate_RRCConnectionReestablishment start\n");
+  LogicalChannelConfig_t             *SRB1_logicalChannelConfig;
+  SRB_ToAddModList_t                 **SRB_configList;
+  SRB_ToAddMod_t                     *SRB1_config;
+  int                                 cnt;
+  LTE_DL_FRAME_PARMS *fp = mac_xface->get_lte_frame_parms(ctxt_pP->module_id,CC_id);
+
+  T(T_ENB_RRC_CONNECTION_REESTABLISHMENT, T_INT(ctxt_pP->module_id), T_INT(ctxt_pP->frame),
+    T_INT(ctxt_pP->subframe), T_INT(ctxt_pP->rnti));
+
+  SRB_configList = &ue_context_pP->ue_context.SRB_configList;
+  eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].Srb0.Tx_buffer.payload_size =
+    do_RRCConnectionReestablishment(ctxt_pP,
+                                    ue_context_pP,
+                                    CC_id,
+                                    (uint8_t*) eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].Srb0.Tx_buffer.Payload,
+                                    (fp->nb_antenna_ports_eNB==2)?2:1, //at this point we do not have the UE capability information, so it can only be TM1 or TM2
+                                    rrc_eNB_get_next_transaction_identifier(ctxt_pP->module_id),
+                                    fp,
+                                    SRB_configList,
+                                    &ue_context_pP->ue_context.physicalConfigDedicated);
+
+//#ifdef RRC_MSG_PRINT
+  LOG_E(RRC,"[MSG] RRC Connection Reestablishment\n");
+
+  for (cnt = 0; cnt < eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].Srb0.Tx_buffer.payload_size; cnt++) {
+    LOG_F(RRC,"%02x ", ((uint8_t*)eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].Srb0.Tx_buffer.Payload)[cnt]);
+  }
+
+  LOG_E(RRC,"\n");
+//#endif
+
+  // configure SRB1 for UE
+
+  if (*SRB_configList != NULL) {
+    for (cnt = 0; cnt < (*SRB_configList)->list.count; cnt++) {
+      if ((*SRB_configList)->list.array[cnt]->srb_Identity == 1) {
+        SRB1_config = (*SRB_configList)->list.array[cnt];
+
+        if (SRB1_config->logicalChannelConfig) {
+          if (SRB1_config->logicalChannelConfig->present ==
+              SRB_ToAddMod__logicalChannelConfig_PR_explicitValue) {
+            SRB1_logicalChannelConfig = &SRB1_config->logicalChannelConfig->choice.explicitValue;
+          } else {
+            SRB1_logicalChannelConfig = &SRB1_logicalChannelConfig_defaultValue;
+          }
+        } else {
+          SRB1_logicalChannelConfig = &SRB1_logicalChannelConfig_defaultValue;
+        }
+
+        LOG_D(RRC,
+              PROTOCOL_RRC_CTXT_UE_FMT" RRC_eNB --- MAC_CONFIG_REQ  (SRB1) ---> MAC_eNB\n",
+              PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP));
+        rrc_mac_config_req(ctxt_pP->module_id,
+                           ue_context_pP->ue_context.primaryCC_id,
+                           ENB_FLAG_YES,
+                           ue_context_pP->ue_context.rnti,
+                           0,
+                           (RadioResourceConfigCommonSIB_t *) NULL,
+                           ue_context_pP->ue_context.physicalConfigDedicated,
+#if defined(Rel10) || defined(Rel14)
+                           (SCellToAddMod_r10_t *)NULL,
+                           //(struct PhysicalConfigDedicatedSCell_r10 *)NULL,
+#endif
+                           (MeasObjectToAddMod_t **) NULL,
+                           ue_context_pP->ue_context.mac_MainConfig,
+                           1,
+                           SRB1_logicalChannelConfig,
+                           ue_context_pP->ue_context.measGapConfig,
+                           (TDD_Config_t *) NULL,
+                           NULL,
+                           (uint8_t *) NULL,
+                           (uint16_t *) NULL, NULL, NULL, NULL, (MBSFN_SubframeConfigList_t *) NULL
+#if defined(Rel10) || defined(Rel14)
+                           , 0, (MBSFN_AreaInfoList_r9_t *) NULL, (PMCH_InfoList_r9_t *) NULL
+#endif
+#ifdef CBA
+                           , 0, 0
+#endif
+        );
+        break;
+      }
+    }
+  }
+
+  MSC_LOG_TX_MESSAGE(MSC_RRC_ENB,
+                     MSC_RRC_UE,
+                     eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].Srb0.Tx_buffer.Header,
+                     eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].Srb0.Tx_buffer.payload_size,
+                     MSC_AS_TIME_FMT" RRCConnectionReestablishment UE %x size %u",
+                     MSC_AS_TIME_ARGS(ctxt_pP),
+                     ue_context_pP->ue_context.rnti,
+                     eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].Srb0.Tx_buffer.payload_size);
+
+
+  LOG_I(RRC,
+        PROTOCOL_RRC_CTXT_UE_FMT" [RAPROC] Logical Channel DL-CCCH, Generating RRCConnectionReestablishment (bytes %d)\n",
+        PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),
+        eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].Srb0.Tx_buffer.payload_size);
+
+  // activate release timer, if RRCComplete not received after 10 frames, remove UE
+  ue_context_pP->ue_context.ue_release_timer = 1;
+  // remove UE after 10 frames after RRCConnectionReestablishmentRelease is triggered
+  ue_context_pP->ue_context.ue_release_timer_thres = 100;
+  LOG_I(RRC,"rrc_eNB_generate_RRCConnectionReestablishment end\n");
+}
+
+//-----------------------------------------------------------------------------
+void
+rrc_eNB_process_RRCConnectionReestablishmentComplete(
+  const protocol_ctxt_t* const ctxt_pP,
+  const rnti_t const reestablish_rnti,
+  rrc_eNB_ue_context_t*         ue_context_pP,
+  RRCConnectionReestablishmentComplete_r8_IEs_t * rrcConnectionReestablishmentComplete
+)
+//-----------------------------------------------------------------------------
+{
+  LOG_I(RRC,
+        PROTOCOL_RRC_CTXT_UE_FMT" [RAPROC] Logical Channel UL-DCCH, processing RRCConnectionReestablishmentComplete from UE (SRB1 Active)\n",
+        PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP));
+  hashtable_rc_t                      h_rc;
+  hash_key_t                          key;
+  pdcp_t                             *pdcp_p   = NULL;
+
+  T(T_ENB_RRC_CONNECTION_REESTABLISHMENT_COMPLETE, T_INT(ctxt_pP->module_id), T_INT(ctxt_pP->frame),
+    T_INT(ctxt_pP->subframe), T_INT(ctxt_pP->rnti));
+  ue_context_pP->ue_context.Srb1.Active = 1;
+
+  // FIXME re-active AS security
+#if defined(ENABLE_SECURITY)
+  key = PDCP_COLL_KEY_VALUE(ctxt_pP->module_id, reestablish_rnti, ctxt_pP->enb_flag, DCCH, SRB_FLAG_YES);
+  h_rc = hashtable_get(pdcp_coll_p, key, (void**)&pdcp_p);
+  if (h_rc == HASH_TABLE_OK) {
+    pdcp_pP->security_activated = 1;
+  }
+#endif
+
+  // delete UE data of new RNTI.  Pre: UE need use old RNTI.
+  rrc_mac_remove_ue(ctxt_pP->module_id, ctxt_pP->rnti);
+  rrc_rlc_remove_ue(ctxt_pP);
+  pdcp_remove_UE(ctxt_pP);
+}
+// issue#256 RRCConnectionRe-establishment end
+
 //-----------------------------------------------------------------------------
 void
 rrc_eNB_generate_RRCConnectionReestablishmentReject(
@@ -4109,7 +4263,7 @@ rrc_eNB_decode_ccch(
         T_INT(ctxt_pP->subframe), T_INT(ctxt_pP->rnti));
 
 #ifdef RRC_MSG_PRINT
-      LOG_F(RRC,"[MSG] RRC Connection Reestablishement Request\n");
+      LOG_F(RRC,"[MSG] RRC Connection Reestablishment Request\n");
 
       for (i = 0; i < Srb_info->Rx_buffer.payload_size; i++) {
         LOG_F(RRC,"%02x ", ((uint8_t*)Srb_info->Rx_buffer.Payload)[i]);
@@ -4143,10 +4297,144 @@ rrc_eNB_decode_ccch(
       rrc_eNB_generate_RRCConnectionReestablishmentReject(enb_mod_idP, frameP, ue_mod_id);
       }
       */
-      /* reject all reestablishment attempts for the moment */
-      rrc_eNB_generate_RRCConnectionReestablishmentReject(ctxt_pP,
-                       rrc_eNB_get_ue_context(&eNB_rrc_inst[ctxt_pP->module_id], ctxt_pP->rnti),
-                       CC_id);
+      // issue#256 RRCConnectionRe-establishment modify start
+      ///* reject all reestablishment attempts for the moment */
+      //rrc_eNB_generate_RRCConnectionReestablishmentReject(ctxt_pP,
+      //                 rrc_eNB_get_ue_context(&eNB_rrc_inst[ctxt_pP->module_id], ctxt_pP->rnti),
+      //                 CC_id);
+      {
+      uint16_t                            c_rnti = 0;
+
+      if (rrcConnectionReestablishmentRequest->ue_Identity.c_RNTI.size == 0 ||
+          rrcConnectionReestablishmentRequest->ue_Identity.c_RNTI.size > 2) {
+        LOG_E(RRC,
+              PROTOCOL_RRC_CTXT_UE_FMT" RRCConnectionReestablishmentRequest c_RNTI is not set, let's reject the UE\n",
+              PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP));
+        rrc_eNB_generate_RRCConnectionReestablishmentReject(ctxt_pP, ue_context_p, CC_id);
+        break;
+
+      }
+      C_RNTI_t *recv_rnti_p = &rrcConnectionReestablishmentRequest->ue_Identity.c_RNTI;
+      // c_rnti = BIT_STRING_to_uint16(&rrcConnectionReestablishmentRequest->ue_Identity.c_RNTI);
+      if (recv_rnti_p->size == 1) {
+        c_rnti = (recv_rnti_p->buf[0] & 0xFF);
+      } else {
+        c_rnti = (((recv_rnti_p->buf[1] << 8) + recv_rnti_p->buf[0] ) & 0xFFFF);
+      }
+
+      LOG_I(RRC, "c_rnti is %d\n", c_rnti);
+      ue_context_p = rrc_eNB_get_ue_context(&eNB_rrc_inst[ctxt_pP->module_id], c_rnti);
+      if (ue_context_p == NULL) {
+        LOG_E(RRC,
+              PROTOCOL_RRC_CTXT_UE_FMT" RRCConnectionReestablishmentRequest without UE context, let's reject the UE\n",
+              PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP));
+        rrc_eNB_generate_RRCConnectionReestablishmentReject(ctxt_pP, ue_context_p, CC_id);
+        break;
+      }
+
+      // insert C-RNTI to map
+      for (i = 0; i < NUMBER_OF_UE_MAX; i++) {
+        if (reestablish_rnti_map[i][0] == 0) {
+          reestablish_rnti_map[i][0] = ctxt_pP->rnti;
+          reestablish_rnti_map[i][1] = c_rnti;
+          break;
+        }
+      }
+
+      LOG_D(RRC,
+            PROTOCOL_RRC_CTXT_UE_FMT" UE context: %p\n",
+            PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),
+            ue_context_p);
+#if defined(ENABLE_ITTI)
+        ue_context_p->ue_context.reestablishment_cause = rrcConnectionReestablishmentRequest->reestablishmentCause;
+        LOG_I(RRC, PROTOCOL_RRC_CTXT_UE_FMT" Accept connection restablishment request from UE physCellId %l cause %ld\n",
+              PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),
+              rrcConnectionReestablishmentRequest->ue_Identity.physCellId,
+              ue_context_p->ue_context.reestablishment_cause);
+#else
+        LOG_I(RRC, PROTOCOL_RRC_CTXT_UE_FMT" Accept connection restablishment request for UE\n",
+              PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP));
+#endif
+
+      ue_context_p->ue_context.Srb1.Active = 0;
+
+      // FIXME inactive AS security
+#if defined(ENABLE_SECURITY)
+      hashtable_rc_t                      h_rc;
+      hash_key_t                          key;
+      pdcp_t                             *pdcp_p   = NULL;
+      key = PDCP_COLL_KEY_VALUE(ctxt_pP->module_id, c_rnti, ctxt_pP->enb_flag, DCCH, SRB_FLAG_YES);
+      h_rc = hashtable_get(pdcp_coll_p, key, (void**)&pdcp_p);
+      if (h_rc == HASH_TABLE_OK) {
+        pdcp_pP->security_activated = 0;
+      }
+#endif
+
+#ifndef NO_RRM
+      send_msg(&S_rrc, msg_rrc_MR_attach_ind(ctxt_pP->module_id, Mac_id));
+#else
+
+      ue_context_p->ue_context.primaryCC_id = CC_id;
+
+      //LG COMMENT Idx = (ue_mod_idP * NB_RB_MAX) + DCCH;
+      Idx = DCCH;
+      // SRB1
+      ue_context_p->ue_context.Srb1.Active = 1;
+      ue_context_p->ue_context.Srb1.Srb_info.Srb_id = Idx;
+      memcpy(&ue_context_p->ue_context.Srb1.Srb_info.Lchan_desc[0],
+             &DCCH_LCHAN_DESC,
+             LCHAN_DESC_SIZE);
+      memcpy(&ue_context_p->ue_context.Srb1.Srb_info.Lchan_desc[1],
+             &DCCH_LCHAN_DESC,
+             LCHAN_DESC_SIZE);
+
+      // SRB2: set  it to go through SRB1 with id 1 (DCCH)
+      ue_context_p->ue_context.Srb2.Active = 1;
+      ue_context_p->ue_context.Srb2.Srb_info.Srb_id = Idx;
+      memcpy(&ue_context_p->ue_context.Srb2.Srb_info.Lchan_desc[0],
+             &DCCH_LCHAN_DESC,
+             LCHAN_DESC_SIZE);
+      memcpy(&ue_context_p->ue_context.Srb2.Srb_info.Lchan_desc[1],
+             &DCCH_LCHAN_DESC,
+             LCHAN_DESC_SIZE);
+      
+      rrc_eNB_generate_RRCConnectionReestablishment(ctxt_pP, ue_context_p, CC_id);
+      LOG_I(RRC, PROTOCOL_RRC_CTXT_UE_FMT"CALLING RLC CONFIG SRB1 (rbid %d)\n",
+            PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),
+            Idx);
+
+      MSC_LOG_TX_MESSAGE(MSC_RRC_ENB,
+                         MSC_PDCP_ENB,
+                         NULL,
+                         0,
+                         MSC_AS_TIME_FMT" CONFIG_REQ UE %x SRB",
+                         MSC_AS_TIME_ARGS(ctxt_pP),
+                         ue_context_p->ue_context.rnti);
+
+      rrc_pdcp_config_asn1_req(ctxt_pP,
+                               ue_context_p->ue_context.SRB_configList,
+                               (DRB_ToAddModList_t *) NULL,
+                               (DRB_ToReleaseList_t*) NULL,
+                               0xff,
+                               NULL,
+                               NULL,
+                               NULL
+#   if defined(Rel10) || defined(Rel14)
+                               , (PMCH_InfoList_r9_t *) NULL
+#   endif
+                               ,NULL);
+
+      rrc_rlc_config_asn1_req(ctxt_pP,
+                              ue_context_p->ue_context.SRB_configList,
+                              (DRB_ToAddModList_t*) NULL,
+                              (DRB_ToReleaseList_t*) NULL
+#   if defined(Rel10) || defined(Rel14)
+                              , (PMCH_InfoList_r9_t *) NULL
+#   endif
+                             );
+#endif //NO_RRM
+      }
+      // issue#256 RRCConnectionRe-establishment modify end
       break;
 
     case UL_CCCH_MessageType__c1_PR_rrcConnectionRequest:
@@ -4612,6 +4900,47 @@ rrc_eNB_decode_dcch(
             PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),
             DCCH,
             sdu_sizeP);
+      // issue#256 RRCConnectionRe-establishment start
+      {
+        rnti_t reestablish_rnti = 0;
+        // select C-RNTI from map
+        for (i = 0; i < NUMBER_OF_UE_MAX; i++) {
+          if (reestablish_rnti_map[i][0] == ctxt_pP->rnti) {
+            reestablish_rnti = reestablish_rnti_map[i][1];
+            ue_context_p = rrc_eNB_get_ue_context(
+                              &eNB_rrc_inst[ctxt_pP->module_id],
+                              reestablish_rnti);
+            // clear currentC-RNTI from map
+            reestablish_rnti_map[i][0] = 0;
+            reestablish_rnti_map[i][1] = 0;
+            break;
+          }
+        }
+
+        if (!ue_context_p) {
+          LOG_E(RRC,
+                PROTOCOL_RRC_CTXT_UE_FMT" RRCConnectionReestablishmentComplete without UE context, falt\n",
+                PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP));
+          break;
+        }
+
+        if (ul_dcch_msg->message.choice.c1.choice.rrcConnectionReestablishmentComplete.criticalExtensions.present ==
+            RRCConnectionReestablishmentComplete__criticalExtensions_PR_rrcConnectionReestablishmentComplete_r8) {
+          rrc_eNB_process_RRCConnectionReestablishmentComplete(ctxt_pP, reestablish_rnti, ue_context_p,
+              &ul_dcch_msg->message.choice.c1.choice.rrcConnectionReestablishmentComplete.criticalExtensions.choice.rrcConnectionReestablishmentComplete_r8);
+
+#if defined(FLEXRAN_AGENT_SB_IF)
+          //WARNING:Inform the controller about the UE activation. Should be moved to RRC agent in the future
+          if (mac_agent_registered[ctxt_pP->module_id]) {
+            agent_mac_xface[ctxt_pP->eNB_index]->flexran_agent_notify_ue_state_change(ctxt_pP->module_id,
+                                                                                      ue_context_p->ue_id_rnti,
+                                                                                      PROTOCOL__FLEX_UE_STATE_CHANGE_TYPE__FLUESC_ACTIVATED);
+          }
+#endif
+        }
+        ue_context_p->ue_context.ue_release_timer = 0;
+      }
+      // issue#256 RRCConnectionRe-establishment end
       break;
 
     case UL_DCCH_MessageType__c1_PR_rrcConnectionSetupComplete:
