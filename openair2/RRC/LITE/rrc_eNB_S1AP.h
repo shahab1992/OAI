@@ -213,6 +213,15 @@ int rrc_eNB_process_S1AP_UE_CONTEXT_RELEASE_REQ (MessageDef *msg_p, const char *
  */
 int rrc_eNB_process_S1AP_UE_CONTEXT_RELEASE_COMMAND (MessageDef *msg_p, const char *msg_name, instance_t instance);
 
+/*! \fn rrc_eNB_process_PAGING_IND(MessageDef *msg_p, const char *msg_name, instance_t instance)
+ *\brief process a S1AP_PAGING_IND message received from S1AP.
+ *\param msg_p Message received by RRC.
+ *\param msg_name Message name.
+ *\param instance Message instance.
+ *\return 0 when successful, -1 if the UE index can not be retrieved.
+ */
+int rrc_eNB_process_PAGING_IND(MessageDef *msg_p, const char *msg_name, instance_t instance);
+
 #   endif
 # endif /* defined(ENABLE_USE_MME) */
 #endif /* RRC_ENB_S1AP_H_ */

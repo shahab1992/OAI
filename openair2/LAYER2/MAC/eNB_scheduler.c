@@ -309,6 +309,13 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
         // TODO process CCCH data req.
         break;
 
+      case RRC_MAC_PCCH_DATA_REQ:
+        LOG_D(MAC, "Received %s from %s: instance %d, frameP %d, eNB_index %d\n",
+              msg_name, ITTI_MSG_ORIGIN_NAME(msg_p), instance,
+              RRC_MAC_PCCH_DATA_REQ (msg_p).frame, RRC_MAC_PCCH_DATA_REQ (msg_p).enb_index);
+
+        // TODO process PCCH data req.
+        break;
 #if defined(Rel10) || defined(Rel14)
 
       case RRC_MAC_MCCH_DATA_REQ:
@@ -376,7 +383,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
 
   switch (subframeP) {
   case 0:
-
+    schedule_PCH(module_idP,frameP,subframeP); 
     // FDD/TDD Schedule Downlink RA transmissions (RA response, Msg4 Contention resolution)
     // Schedule ULSCH for FDD or subframeP 4 (TDD config 0,3,6)
     // Schedule Normal DLSCH
@@ -415,7 +422,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     break;
 
   case 1:
-
+    schedule_PCH(module_idP,frameP,subframeP); 
     // TDD, schedule UL for subframeP 7 (TDD config 0,1) / subframeP 8 (TDD Config 6)
     // FDD, schedule normal UL/DLSCH
     if (mac_xface->frame_parms->frame_type == TDD) { // TDD
@@ -465,7 +472,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     break;
 
   case 2:
-
+    schedule_PCH(module_idP,frameP,subframeP); 
     // TDD, nothing
     // FDD, normal UL/DLSCH
     if (mac_xface->frame_parms->frame_type == FDD) {  //FDD
@@ -495,7 +502,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     break;
 
   case 3:
-
+    schedule_PCH(module_idP,frameP,subframeP); 
     // TDD Config 2, ULSCH for subframeP 7
     // TDD Config 2/5 normal DLSCH
     // FDD, normal UL/DLSCH
@@ -559,7 +566,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     break;
 
   case 4:
-
+    schedule_PCH(module_idP,frameP,subframeP); 
     // TDD Config 1, ULSCH for subframeP 8
     // TDD Config 1/2/4/5 DLSCH
     // FDD UL/DLSCH
@@ -632,6 +639,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     break;
 
   case 5:
+    schedule_PCH(module_idP,frameP,subframeP);
     // TDD/FDD Schedule SI
     // TDD Config 0,6 ULSCH for subframes 9,3 resp.
     // TDD normal DLSCH
@@ -694,7 +702,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     break;
 
   case 6:
-
+    schedule_PCH(module_idP,frameP,subframeP);
     // TDD Config 0,1,6 ULSCH for subframes 2,3
     // TDD Config 3,4,5 Normal DLSCH
     // FDD normal ULSCH/DLSCH
@@ -797,7 +805,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     break;
 
   case 7:
-
+    schedule_PCH(module_idP,frameP,subframeP); 
     // TDD Config 3,4,5 Normal DLSCH
     // FDD Normal UL/DLSCH
     if (mac_xface->frame_parms->frame_type == TDD) { // TDD
@@ -880,7 +888,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     break;
 
   case 8:
-
+    schedule_PCH(module_idP,frameP,subframeP);
     // TDD Config 2,3,4,5 ULSCH for subframeP 2
     //
     // FDD Normal UL/DLSCH
@@ -945,7 +953,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     break;
 
   case 9:
-
+    schedule_PCH(module_idP,frameP,subframeP);
     // TDD Config 1,3,4,6 ULSCH for subframes 3,3,3,4
     if (mac_xface->frame_parms->frame_type == TDD) {
       switch (mac_xface->frame_parms->tdd_config) {

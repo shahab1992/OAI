@@ -878,7 +878,7 @@ int generate_eNB_dlsch_params_from_dci(int frame,
   uint8_t NPRB,tbswap,tpmi=0;
   LTE_eNB_DLSCH_t *dlsch0=NULL,*dlsch1=NULL;
   uint8_t frame_type=frame_parms->frame_type;
-  uint8_t vrb_type=0;
+  uint8_t vrb_type=0, Ngap=0;;
   uint8_t mcs=0,mcs1=0,mcs2=0;
   uint8_t I_mcs = 0;
   uint8_t rv=0,rv1=0,rv2=0;
@@ -929,6 +929,7 @@ int generate_eNB_dlsch_params_from_dci(int frame,
 
       if (vrb_type==LOCALIZED) {
   dlsch0_harq->rb_alloc[0]    = localRIV2alloc_LUT6[rballoc];
+  dlsch0_harq->rb_alloc_odd[0]    = localRIV2alloc_LUT6[rballoc];
       }
       else {
   LOG_E(PHY,"Distributed RB allocation not done yet\n");
@@ -967,6 +968,7 @@ int generate_eNB_dlsch_params_from_dci(int frame,
 
       if (vrb_type==LOCALIZED) {
   dlsch0_harq->rb_alloc[0]    = localRIV2alloc_LUT25[rballoc];
+  dlsch0_harq->rb_alloc_odd[0]    = localRIV2alloc_LUT6[rballoc];
       }
       else {
   LOG_E(PHY,"Distributed RB allocation not done yet\n");
@@ -1001,6 +1003,8 @@ int generate_eNB_dlsch_params_from_dci(int frame,
       if (vrb_type==LOCALIZED) {
   dlsch0_harq->rb_alloc[0]     = localRIV2alloc_LUT50_0[rballoc];
   dlsch0_harq->rb_alloc[1]     = localRIV2alloc_LUT50_1[rballoc];
+  dlsch0_harq->rb_alloc_odd[0]     = localRIV2alloc_LUT50_0[rballoc];
+  dlsch0_harq->rb_alloc_odd[1]     = localRIV2alloc_LUT50_1[rballoc];
       }
       else {
   LOG_E(PHY,"Distributed RB allocation not done yet\n");
@@ -1040,6 +1044,10 @@ int generate_eNB_dlsch_params_from_dci(int frame,
   dlsch0_harq->rb_alloc[1]      = localRIV2alloc_LUT100_1[rballoc];
   dlsch0_harq->rb_alloc[2]      = localRIV2alloc_LUT100_2[rballoc];
   dlsch0_harq->rb_alloc[3]      = localRIV2alloc_LUT100_3[rballoc];
+  dlsch0_harq->rb_alloc_odd[0]      = localRIV2alloc_LUT100_0[rballoc];
+  dlsch0_harq->rb_alloc_odd[1]      = localRIV2alloc_LUT100_1[rballoc];
+  dlsch0_harq->rb_alloc_odd[2]      = localRIV2alloc_LUT100_2[rballoc];
+  dlsch0_harq->rb_alloc_odd[3]      = localRIV2alloc_LUT100_3[rballoc];
       }
       else {
   LOG_E(PHY,"Distributed RB allocation not done yet\n");
@@ -1132,6 +1140,120 @@ int generate_eNB_dlsch_params_from_dci(int frame,
 
     break;
 
+  case format1C:
+        dlsch[0]->subframe_tx[subframe] = 1;
+        if((rnti==si_rnti) || (rnti==ra_rnti) || (rnti==p_rnti)){
+          harq_pid=0;
+        } else {
+          LOG_E(PHY,"ERROR: Format 1C: RITI is not SI, RA or PAGING RNTI\n");
+          return(-1);
+        }
+        switch (frame_parms->N_RB_DL){
+        case 6:
+            mcs      = (uint8_t)((DCI1C_1_5MHz_t *)dci_pdu)->mcs;
+            rballoc  = conv_1C_RIV(((DCI1C_1_5MHz_t *)dci_pdu)->rballoc,6);
+            dlsch0_harq = dlsch[0]->harq_processes[harq_pid];
+            dlsch0_harq->rb_alloc[0]    = distRIV2alloc_even_LUT6[rballoc];
+            dlsch0_harq->rb_alloc_odd[0]     = distRIV2alloc_odd_LUT6[rballoc];
+            dlsch0_harq->nb_rb          = RIV2nb_rb_LUT6[rballoc];//NPRB;
+            dlsch0_harq->vrb_type  = DISTRIBUTED;
+            dlsch0_harq->codeword=0;
+            RIV_max = (uint32_t)RIV_max6;
+            break;
+         case 25:
+             mcs      = (uint8_t)((DCI1C_5MHz_t *)dci_pdu)->mcs;
+             rballoc  = conv_1C_RIV(((DCI1C_5MHz_t *)dci_pdu)->rballoc,25);
+             dlsch0_harq = dlsch[0]->harq_processes[harq_pid];
+             dlsch0_harq->rb_alloc[0]    = distRIV2alloc_even_LUT25[rballoc];
+             dlsch0_harq->rb_alloc_odd[0]     = distRIV2alloc_odd_LUT25[rballoc];
+             dlsch0_harq->nb_rb          = RIV2nb_rb_LUT25[rballoc];//NPRB;
+             dlsch0_harq->vrb_type  = DISTRIBUTED;
+             dlsch0_harq->codeword=0;
+             RIV_max                     = (uint32_t)RIV_max25;
+             break;
+         case 50:
+             mcs      = (uint8_t)((DCI1C_10MHz_t *)dci_pdu)->mcs;
+             rballoc  = conv_1C_RIV(((DCI1C_10MHz_t *)dci_pdu)->rballoc,50);
+             Ngap       = (uint8_t)((DCI1C_10MHz_t *)dci_pdu)->Ngap;
+             dlsch0_harq = dlsch[0]->harq_processes[harq_pid];
+             if(Ngap==0) {
+                 dlsch0_harq->rb_alloc[0] = distRIV2alloc_gap0_even_LUT50_0[rballoc];
+                 dlsch0_harq->rb_alloc[1] = distRIV2alloc_gap0_even_LUT50_1[rballoc];
+                 dlsch0_harq->rb_alloc_odd[0]     = distRIV2alloc_gap0_odd_LUT50_0[rballoc];
+                 dlsch0_harq->rb_alloc_odd[1]     = distRIV2alloc_gap0_odd_LUT50_1[rballoc];
+             }else if (Ngap==1) {
+                 dlsch0_harq->rb_alloc[0] = distRIV2alloc_gap1_even_LUT50_0[rballoc];
+                 dlsch0_harq->rb_alloc[1] = distRIV2alloc_gap1_even_LUT50_1[rballoc];
+                 dlsch0_harq->rb_alloc_odd[0]     = distRIV2alloc_gap1_odd_LUT50_0[rballoc];
+                 dlsch0_harq->rb_alloc_odd[1]     = distRIV2alloc_gap1_odd_LUT50_1[rballoc];
+             }else{
+                 LOG_E(PHY,"ERROR: Format 1C: mcs (%d) rb_alloc (%x) Ngap (%d) \n",mcs,rballoc,Ngap);
+                 return(-1);
+             }
+             dlsch0_harq->nb_rb           = RIV2nb_rb_LUT50[rballoc];//NPRB;
+             dlsch0_harq->vrb_type  = DISTRIBUTED;
+             dlsch0_harq->codeword=0;
+             RIV_max = (uint32_t)RIV_max50;
+             break;
+         case 100:
+             mcs      = (uint8_t)((DCI1C_20MHz_t *)dci_pdu)->mcs;
+             rballoc  = conv_1C_RIV(((DCI1C_20MHz_t *)dci_pdu)->rballoc,100);
+             Ngap       = (uint8_t)((DCI1C_20MHz_t *)dci_pdu)->Ngap;
+             dlsch0_harq = dlsch[0]->harq_processes[harq_pid];
+             if (Ngap==0) {
+                 dlsch0_harq->rb_alloc[0] = distRIV2alloc_gap0_even_LUT100_0[rballoc];
+                 dlsch0_harq->rb_alloc[1] = distRIV2alloc_gap0_even_LUT100_1[rballoc];
+                 dlsch0_harq->rb_alloc[2] = distRIV2alloc_gap0_even_LUT100_2[rballoc];
+                 dlsch0_harq->rb_alloc[3] = distRIV2alloc_gap0_even_LUT100_3[rballoc];
+                 dlsch0_harq->rb_alloc_odd[0]  = distRIV2alloc_gap0_odd_LUT100_0[rballoc];
+                 dlsch0_harq->rb_alloc_odd[1]  = distRIV2alloc_gap0_odd_LUT100_1[rballoc];
+                 dlsch0_harq->rb_alloc_odd[2]  = distRIV2alloc_gap0_odd_LUT100_2[rballoc];
+                 dlsch0_harq->rb_alloc_odd[3]  = distRIV2alloc_gap0_odd_LUT100_3[rballoc];
+             } else if (Ngap==1) {
+                 dlsch0_harq->rb_alloc[0] = distRIV2alloc_gap1_even_LUT100_0[rballoc];
+                 dlsch0_harq->rb_alloc[1] = distRIV2alloc_gap1_even_LUT100_1[rballoc];
+                 dlsch0_harq->rb_alloc[2] = distRIV2alloc_gap1_even_LUT100_2[rballoc];
+                 dlsch0_harq->rb_alloc[3] = distRIV2alloc_gap1_even_LUT100_3[rballoc];
+                 dlsch0_harq->rb_alloc_odd[0]  = distRIV2alloc_gap1_odd_LUT100_0[rballoc];
+                 dlsch0_harq->rb_alloc_odd[1]  = distRIV2alloc_gap1_odd_LUT100_1[rballoc];
+                 dlsch0_harq->rb_alloc_odd[2]  = distRIV2alloc_gap1_odd_LUT100_2[rballoc];
+                 dlsch0_harq->rb_alloc_odd[3]  = distRIV2alloc_gap1_odd_LUT100_3[rballoc];
+             } else {
+                 LOG_E(PHY,"ERROR: Format 1C: mcs (%d) rb_alloc (%x) Ngap (%d) \n",mcs,rballoc,Ngap);
+                 return(-1);
+             }
+             dlsch0_harq->nb_rb         = RIV2nb_rb_LUT100[rballoc];//NPRB;
+             dlsch0_harq->vrb_type  = DISTRIBUTED;
+             dlsch0_harq->codeword=0;
+             RIV_max = (uint32_t)RIV_max100;
+             break;
+         default:
+             LOG_E(PHY,"Invalid N_RB_D %dL\n", frame_parms->N_RB_DL);
+             DevParam (frame_parms->N_RB_DL, 0, 0);
+             break;
+         }
+         // harq_pid field is reserved
+        I_mcs     = mcs;
+
+        dlsch0_harq->rvidx          = 0;
+        dlsch0_harq->Nl          = 1;
+        dlsch0_harq->mimo_mode   = (frame_parms->mode1_flag == 1) ? SISO : ALAMOUTI;
+        dlsch0_harq->dl_power_off = 1;
+        dlsch0_harq->mcs           = mcs;
+        dlsch0_harq->TBS           = TBStable1C[I_mcs];
+        dlsch[0]->current_harq_pid   = harq_pid;
+        dlsch[0]->harq_ids[subframe] = harq_pid;
+
+        dlsch[0]->active = 1;
+        dlsch[0]->rnti = rnti;
+        if (dlsch0_harq->round == 0)
+            dlsch0_harq->status = ACTIVE;
+        //paging IT log
+        LOG_E(PHY,"Format 1C: mcs %d rballoc %d Ngap %d rb_alloc_even %d %d %d %d rb_alloc_odd %d %d %d %d nb_rb %d TBS %d\n",
+                mcs,rballoc,Ngap,dlsch0_harq->rb_alloc[0],dlsch0_harq->rb_alloc[1],dlsch0_harq->rb_alloc[2],dlsch0_harq->rb_alloc[3],
+                dlsch0_harq->rb_alloc_odd[0],dlsch0_harq->rb_alloc_odd[1],dlsch0_harq->rb_alloc_odd[2],dlsch0_harq->rb_alloc_odd[3],
+                dlsch0_harq->nb_rb,dlsch0_harq->TBS);
+   break;
   case format1:
 
     switch (frame_parms->N_RB_DL) {
@@ -1224,6 +1346,7 @@ int generate_eNB_dlsch_params_from_dci(int frame,
     conv_rballoc(rah,
                  rballoc,frame_parms->N_RB_DL,
                  dlsch0_harq->rb_alloc);
+    memcpy(&dlsch0_harq->rb_alloc_odd[0],&dlsch0_harq->rb_alloc[0],4*sizeof(uint32_t));
 
     dlsch0_harq->nb_rb = conv_nprb(rah,
                                    rballoc,
@@ -1597,12 +1720,14 @@ int generate_eNB_dlsch_params_from_dci(int frame,
                    rballoc,
                    frame_parms->N_RB_DL,
                    dlsch0_harq->rb_alloc);
+      memcpy(&dlsch0_harq->rb_alloc_odd[0],&dlsch0_harq->rb_alloc[0],4*sizeof(uint32_t));
 
       dlsch0_harq->nb_rb = conv_nprb(rah, rballoc, frame_parms->N_RB_DL);
 
       if (dlsch1 != NULL){
         dlsch1_harq->rb_alloc[0] = dlsch0_harq->rb_alloc[0];
         dlsch1_harq->nb_rb = dlsch0_harq->nb_rb;
+        dlsch1_harq->rb_alloc_odd[0] = dlsch0_harq->rb_alloc_odd[0];
       }
     } else if ((dlsch0 == NULL ) && (dlsch1 != NULL )){
         conv_rballoc(rah,
@@ -1610,6 +1735,7 @@ int generate_eNB_dlsch_params_from_dci(int frame,
                      frame_parms->N_RB_DL,
                      dlsch1_harq->rb_alloc);
 
+        memcpy(&dlsch1_harq->rb_alloc_odd[0],&dlsch1_harq->rb_alloc[0],4*sizeof(uint32_t));
         dlsch1_harq->nb_rb = conv_nprb(rah, rballoc, frame_parms->N_RB_DL);
     }
 
@@ -1974,7 +2100,9 @@ int generate_eNB_dlsch_params_from_dci(int frame,
                  frame_parms->N_RB_DL,
                  dlsch0_harq->rb_alloc);
 
+    memcpy(&dlsch0_harq->rb_alloc_odd[0],&dlsch0_harq->rb_alloc[0],4*sizeof(uint32_t));
     dlsch1_harq->rb_alloc[0]                         = dlsch0_harq->rb_alloc[0];
+    dlsch1_harq->rb_alloc_odd[0]                     = dlsch0_harq->rb_alloc_odd[0];
     dlsch0_harq->nb_rb                               = conv_nprb(rah,
         rballoc,
         frame_parms->N_RB_DL);
@@ -2242,9 +2370,9 @@ int generate_eNB_dlsch_params_from_dci(int frame,
                  rballoc,
                  frame_parms->N_RB_DL,
                  dlsch0_harq->rb_alloc);
-
+    memcpy(&dlsch0_harq->rb_alloc_odd[0],&dlsch0_harq->rb_alloc[0],4*sizeof(uint32_t));
     dlsch1_harq->rb_alloc[0]     = dlsch0_harq->rb_alloc[0];
-
+    dlsch1_harq->rb_alloc_odd[0] = dlsch0_harq->rb_alloc_odd[0];
     dlsch0_harq->nb_rb           = conv_nprb(rah,
               rballoc,
               frame_parms->N_RB_DL);
@@ -2407,8 +2535,9 @@ int generate_eNB_dlsch_params_from_dci(int frame,
                  rballoc,
                  frame_parms->N_RB_DL,
                  dlsch0_harq->rb_alloc);
+    memcpy(&dlsch0_harq->rb_alloc_odd[0],&dlsch0_harq->rb_alloc[0],4*sizeof(uint32_t));
     dlsch1_harq->rb_alloc[0]                         = dlsch0_harq->rb_alloc[0];
-
+    dlsch1_harq->rb_alloc_odd[0]                     = dlsch0_harq->rb_alloc_odd[0];
     dlsch0_harq->nb_rb                               = conv_nprb(rah,
         rballoc,
         frame_parms->N_RB_DL);
@@ -2583,8 +2712,9 @@ int generate_eNB_dlsch_params_from_dci(int frame,
                  rballoc,
                  frame_parms->N_RB_DL,
                  dlsch0_harq->rb_alloc);
+    memcpy(&dlsch0_harq->rb_alloc_odd[0],&dlsch0_harq->rb_alloc[0],4*sizeof(uint32_t));
     dlsch1_harq->rb_alloc[0]                         = dlsch0_harq->rb_alloc[0];
-
+    dlsch1_harq->rb_alloc_odd[0]                     = dlsch0_harq->rb_alloc_odd[0];
     dlsch0_harq->nb_rb                               = conv_nprb(rah,
         rballoc,
         frame_parms->N_RB_DL);
@@ -2667,6 +2797,7 @@ int generate_eNB_dlsch_params_from_dci(int frame,
                  ((DCI1E_5MHz_2A_M10PRB_TDD_t *)dci_pdu)->rballoc,frame_parms->N_RB_DL,
                  dlsch0_harq->rb_alloc);
 
+    memcpy(&dlsch0_harq->rb_alloc_odd[0],&dlsch0_harq->rb_alloc[0],4*sizeof(uint32_t));
     //dlsch1->rb_alloc[0]                         = dlsch0->rb_alloc[0];
 
     dlsch0_harq->nb_rb                               = conv_nprb(((DCI1E_5MHz_2A_M10PRB_TDD_t *)dci_pdu)->rah,

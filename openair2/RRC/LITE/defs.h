@@ -467,6 +467,8 @@ typedef struct {
 #endif
   SRB_INFO                          SI;
   SRB_INFO                          Srb0;
+  uint8_t                           *paging[NUMBER_OF_UE_MAX];
+  uint32_t                           sizeof_paging[NUMBER_OF_UE_MAX];
 } rrc_eNB_carrier_data_t;
 
 typedef struct eNB_RRC_INST_s {
@@ -590,6 +592,13 @@ typedef struct UE_RRC_INST_s {
   e_SecurityAlgorithmConfig__integrityProtAlgorithm integrity_algorithm;
 } UE_RRC_INST;
 
+typedef struct UE_PF_PO_s {
+  boolean_t enable_flag;  /* flag indicate whether current object is used */
+  uint16_t ue_index_value;  /* UE index value */
+  uint8_t PF_min;  /* minimal value of Paging Frame (PF) */
+  uint8_t PO;  /* Paging Occasion (PO) */
+  uint32_t T;  /* DRX cycle */
+} UE_PF_PO_t;
 #include "proto.h"
 
 #endif

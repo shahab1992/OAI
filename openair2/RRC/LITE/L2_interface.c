@@ -222,6 +222,44 @@ mac_rrc_data_req(
       return (Sdu_size);
     }
 
+    if( (Srb_id & RAB_OFFSET ) == PCCH) {
+      LOG_T(RRC,"[eNB %d] Frame %d PCCH request (Srb_id %d)\n",Mod_idP,frameP, Srb_id);
+
+      // check if data is there for MAC
+      if(eNB_rrc_inst[Mod_idP].carrier[CC_id].sizeof_paging[mbsfn_sync_area] > 0) { //Fill buffer
+        LOG_D(RRC,"[eNB %d] PCCH (%p) has %d bytes\n",Mod_idP,&eNB_rrc_inst[Mod_idP].carrier[CC_id],
+        		eNB_rrc_inst[Mod_idP].carrier[CC_id].sizeof_paging[mbsfn_sync_area]);
+
+#if defined(ENABLE_ITTI)
+        {
+          MessageDef *message_p;
+          int pcch_size = eNB_rrc_inst[Mod_idP].carrier[CC_id].sizeof_paging[mbsfn_sync_area];
+          int sdu_size = sizeof(RRC_MAC_PCCH_DATA_REQ (message_p).sdu);
+
+          if (pcch_size > sdu_size) {
+            LOG_E(RRC, "SDU larger than PCCH SDU buffer size (%d, %d)", pcch_size, sdu_size);
+            pcch_size = sdu_size;
+          }
+
+          message_p = itti_alloc_new_message (TASK_RRC_ENB, RRC_MAC_PCCH_DATA_REQ);
+          RRC_MAC_PCCH_DATA_REQ (message_p).frame = frameP;
+          RRC_MAC_PCCH_DATA_REQ (message_p).sdu_size = pcch_size;
+          memset (RRC_MAC_PCCH_DATA_REQ (message_p).sdu, 0, PCCH_SDU_SIZE);
+          memcpy (RRC_MAC_PCCH_DATA_REQ (message_p).sdu, eNB_rrc_inst[Mod_idP].carrier[CC_id].paging[mbsfn_sync_area], pcch_size);
+          RRC_MAC_PCCH_DATA_REQ (message_p).enb_index = eNB_index;
+
+          itti_send_msg_to_task (TASK_MAC_ENB, ENB_MODULE_ID_TO_INSTANCE(Mod_idP), message_p);
+        }
+#endif
+
+        memcpy(buffer_pP, eNB_rrc_inst[Mod_idP].carrier[CC_id].paging[mbsfn_sync_area], eNB_rrc_inst[Mod_idP].carrier[CC_id].sizeof_paging[mbsfn_sync_area]);
+        Sdu_size = eNB_rrc_inst[Mod_idP].carrier[CC_id].sizeof_paging[mbsfn_sync_area];
+        eNB_rrc_inst[Mod_idP].carrier[CC_id].sizeof_paging[mbsfn_sync_area] = 0;
+      }
+
+      return (Sdu_size);
+    }
+
 #if defined(Rel10) || defined(Rel14)
 
     if((Srb_id & RAB_OFFSET) == MCCH) {

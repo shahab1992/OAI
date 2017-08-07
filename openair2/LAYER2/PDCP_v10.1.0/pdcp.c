@@ -953,6 +953,21 @@ pdcp_run (
         AssertFatal (result == EXIT_SUCCESS, "Failed to free memory (%d)!\n", result);
         break;
 
+      case RRC_PCCH_DATA_REQ:
+      {
+        sdu_size_t     sdu_buffer_sizeP;
+        sdu_buffer_sizeP = RRC_PCCH_DATA_REQ(msg_p).sdu_size;
+        uint8_t CC_id = RRC_PCCH_DATA_REQ(msg_p).CC_id;
+        uint8_t ue_index = RRC_PCCH_DATA_REQ(msg_p).ue_index;
+        eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].sizeof_paging[ue_index] = sdu_buffer_sizeP;
+        if (sdu_buffer_sizeP > 0) {
+        	memcpy(eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].paging[ue_index], RRC_PCCH_DATA_REQ(msg_p).sdu_p, sdu_buffer_sizeP);
+        }
+        //paging pdcp log
+        LOG_D(PDCP, "PDCP Received RRC_PCCH_DATA_REQ CC_id %d length %d \n", CC_id, sdu_buffer_sizeP);
+      }
+      break;
+
       default:
         LOG_E(PDCP, "Received unexpected message %s\n", msg_name);
         break;

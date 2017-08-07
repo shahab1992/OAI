@@ -43,12 +43,13 @@
 
 #define RRC_MAC_MCCH_DATA_REQ(mSGpTR)           (mSGpTR)->ittiMsg.rrc_mac_mcch_data_req
 #define RRC_MAC_MCCH_DATA_IND(mSGpTR)           (mSGpTR)->ittiMsg.rrc_mac_mcch_data_ind
+#define RRC_MAC_PCCH_DATA_REQ(mSGpTR)           (mSGpTR)->ittiMsg.rrc_mac_pcch_data_req
 
 // Some constants from "LAYER2/MAC/defs.h"
 #define BCCH_SDU_SIZE                           (512)
 #define CCCH_SDU_SIZE                           (512)
 #define MCCH_SDU_SIZE                           (512)
-
+#define PCCH_SDU_SIZE                           (512)
 //-------------------------------------------------------------------------------------------//
 // Messages between RRC and MAC layers
 typedef struct RrcMacInSyncInd_s {
@@ -113,5 +114,12 @@ typedef struct RrcMacMcchDataInd_s {
   uint8_t   enb_index;
   uint8_t   mbsfn_sync_area;
 } RrcMacMcchDataInd;
+
+typedef struct RrcMacPcchDataReq_s {
+  uint32_t  frame;
+  uint32_t  sdu_size;
+  uint8_t   sdu[PCCH_SDU_SIZE];
+  uint8_t   enb_index;
+} RrcMacPcchDataReq;
 
 #endif /* MAC_MESSAGES_TYPES_H_ */
