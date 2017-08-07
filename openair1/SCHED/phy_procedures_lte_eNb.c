@@ -205,7 +205,11 @@ int mac_phy_remove_ue(module_id_t Mod_idP,rnti_t rntiP) {
 	  //eNB->UE_stats[i].crnti = 0;
 	  memset(&eNB->UE_stats[i],0,sizeof(LTE_eNB_UE_stats));
 	  //  mac_exit_wrapper("Removing UE");
-	  
+
+
+	  eNB->first_sr[i] = 0;
+	  eNB->physicalConfigDedicated[i] = NULL;
+
 
 	  return(i);
 	}

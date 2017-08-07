@@ -309,6 +309,7 @@ int rrc_mac_remove_ue(module_id_t mod_idP,rnti_t rntiP)
 //------------------------------------------------------------------------------
 {
   int i;
+  int j;
   UE_list_t *UE_list = &eNB_mac_inst[mod_idP].UE_list;
   int UE_id = find_UE_id(mod_idP,rntiP);
   int pCC_id;
@@ -330,18 +331,45 @@ printf("MAC: remove UE %d rnti %x\n", UE_id, rntiP);
   UE_list->num_UEs--;
 
   // clear all remaining pending transmissions
-  UE_list->UE_template[pCC_id][UE_id].bsr_info[LCGID0]  = 0;
-  UE_list->UE_template[pCC_id][UE_id].bsr_info[LCGID1]  = 0;
-  UE_list->UE_template[pCC_id][UE_id].bsr_info[LCGID2]  = 0;
-  UE_list->UE_template[pCC_id][UE_id].bsr_info[LCGID3]  = 0;
+  //UE_list->UE_template[pCC_id][UE_id].bsr_info[LCGID0]  = 0;
+  //UE_list->UE_template[pCC_id][UE_id].bsr_info[LCGID1]  = 0;
+  //UE_list->UE_template[pCC_id][UE_id].bsr_info[LCGID2]  = 0;
+  //UE_list->UE_template[pCC_id][UE_id].bsr_info[LCGID3]  = 0;
 
-  UE_list->UE_template[pCC_id][UE_id].ul_SR             = 0;
-  UE_list->UE_template[pCC_id][UE_id].rnti              = NOT_A_RNTI;
-  UE_list->UE_template[pCC_id][UE_id].ul_active         = FALSE;
+  //UE_list->UE_template[pCC_id][UE_id].ul_SR             = 0;
+  //UE_list->UE_template[pCC_id][UE_id].rnti              = NOT_A_RNTI;
+  //UE_list->UE_template[pCC_id][UE_id].ul_active         = FALSE;
+
+  memset (&UE_list->UE_template[pCC_id][UE_id],0,sizeof(UE_TEMPLATE));
+
+  UE_list->eNB_UE_stats[pCC_id][UE_id].total_rbs_used = 0;
+  UE_list->eNB_UE_stats[pCC_id][UE_id].total_rbs_used_retx = 0;
+  for ( j = 0; j < NB_RB_MAX; j++ ) {
+    UE_list->eNB_UE_stats[pCC_id][UE_id].num_pdu_tx[j] = 0;
+    UE_list->eNB_UE_stats[pCC_id][UE_id].num_bytes_tx[j] = 0;
+  }
+  UE_list->eNB_UE_stats[pCC_id][UE_id].num_retransmission = 0;
+  UE_list->eNB_UE_stats[pCC_id][UE_id].total_sdu_bytes = 0;
+  UE_list->eNB_UE_stats[pCC_id][UE_id].total_pdu_bytes = 0;
+  UE_list->eNB_UE_stats[pCC_id][UE_id].total_num_pdus = 0;
+  UE_list->eNB_UE_stats[pCC_id][UE_id].total_rbs_used_rx = 0;
+  for ( j = 0; j < NB_RB_MAX; j++ ) {
+    UE_list->eNB_UE_stats[pCC_id][UE_id].num_pdu_rx[j] = 0;
+    UE_list->eNB_UE_stats[pCC_id][UE_id].num_bytes_rx[j] = 0;
+  }
+  UE_list->eNB_UE_stats[pCC_id][UE_id].num_errors_rx = 0;
+  UE_list->eNB_UE_stats[pCC_id][UE_id].total_pdu_bytes_rx = 0;
+  UE_list->eNB_UE_stats[pCC_id][UE_id].total_num_pdus_rx = 0;
+  UE_list->eNB_UE_stats[pCC_id][UE_id].total_num_errors_rx = 0;
+
   eNB_ulsch_info[mod_idP][pCC_id][UE_id].rnti                        = NOT_A_RNTI;
   eNB_ulsch_info[mod_idP][pCC_id][UE_id].status                      = S_UL_NONE;
   eNB_dlsch_info[mod_idP][pCC_id][UE_id].rnti                        = NOT_A_RNTI;
   eNB_dlsch_info[mod_idP][pCC_id][UE_id].status                      = S_DL_NONE;
+
+  eNB_ulsch_info[mod_idP][pCC_id][UE_id].serving_num = 0;
+  eNB_dlsch_info[mod_idP][pCC_id][UE_id].serving_num = 0;
+
 
   mac_phy_remove_ue(mod_idP,rntiP);
 
@@ -357,6 +385,7 @@ printf("MAC: remove UE %d rnti %x\n", UE_id, rntiP);
       RA_template->timing_offset=0;
       RA_template->RRC_timer=20;
       RA_template->rnti = 0;
+      RA_template->Msg3_subframe=0;
       //break;
     }
   }

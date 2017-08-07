@@ -703,9 +703,23 @@ rrc_eNB_free_mem_UE_context(
     ue_context_pP->ue_context.SRB_configList = NULL;
   }
 
+  for(i = 0;i < RRC_TRANSACTION_IDENTIFIER_NUMBER;i++){
+      if (ue_context_pP->ue_context.SRB_configList2[i]) {
+          free(ue_context_pP->ue_context.SRB_configList2[i]);
+          ue_context_pP->ue_context.SRB_configList2[i] = NULL;
+      }
+  }
+
   if (ue_context_pP->ue_context.DRB_configList) {
     ASN_STRUCT_FREE(asn_DEF_DRB_ToAddModList, ue_context_pP->ue_context.DRB_configList);
     ue_context_pP->ue_context.DRB_configList = NULL;
+  }
+
+  for(i = 0;i < RRC_TRANSACTION_IDENTIFIER_NUMBER;i++){
+      if (ue_context_pP->ue_context.DRB_configList2[i]) {
+          free(ue_context_pP->ue_context.DRB_configList2[i]);
+          ue_context_pP->ue_context.DRB_configList2[i] = NULL;
+      }
   }
 
   memset(ue_context_pP->ue_context.DRB_active, 0, sizeof(ue_context_pP->ue_context.DRB_active));
@@ -758,10 +772,14 @@ rrc_eNB_free_mem_UE_context(
     ue_context_pP->ue_context.measConfig = NULL;
   }
 
-  if (ue_context_pP->ue_context.measConfig) {
-    ASN_STRUCT_FREE(asn_DEF_MeasConfig, ue_context_pP->ue_context.measConfig);
-    ue_context_pP->ue_context.measConfig = NULL;
-  }
+//  if (ue_context_pP->ue_context.measConfig) {
+//    ASN_STRUCT_FREE(asn_DEF_MeasConfig, ue_context_pP->ue_context.measConfig);
+//    ue_context_pP->ue_context.measConfig = NULL;
+//  }
+    if (ue_context_pP->ue_context.handover_info) {
+      ASN_STRUCT_FREE(asn_DEF_Handover, ue_context_pP->ue_context.handover_info);
+      ue_context_pP->ue_context.handover_info = NULL;
+    }
 
   //HANDOVER_INFO                     *handover_info;
 #if defined(ENABLE_SECURITY)
@@ -815,6 +833,8 @@ rrc_eNB_free_UE(const module_id_t enb_mod_idP,const struct rrc_eNB_ue_context_s*
     LOG_W(RRC, "[eNB %d] Removing UE RNTI %x\n", enb_mod_idP, rnti);
 
 #if defined(ENABLE_USE_MME)
+    if( ue_context_pP->ue_context.ul_failure_timer >= 20000 ) {
+
     rrc_eNB_send_S1AP_UE_CONTEXT_RELEASE_REQ(enb_mod_idP, ue_context_pP, S1AP_CAUSE_RADIO_NETWORK, 21); // send cause 21: connection with ue lost
     /* From 3GPP 36300v10 p129 : 19.2.2.2.2 S1 UE Context Release Request (eNB triggered)
      * If the E-UTRAN internal reason is a radio link failure detected in the eNB, the eNB shall wait a sufficient time before
@@ -822,6 +842,8 @@ rrc_eNB_free_UE(const module_id_t enb_mod_idP,const struct rrc_eNB_ue_context_s*
      *  in order to allow the UE to perform the NAS recovery
      *  procedure, see TS 23.401 [17].
      */
+        return;
+    }
 #else
 #if defined(OAI_EMU)
     AssertFatal(ue_context_pP->local_uid < NUMBER_OF_UE_MAX, "local_uid invalid (%d<%d) for UE %x!", ue_context_pP->local_uid, NUMBER_OF_UE_MAX, rnti);

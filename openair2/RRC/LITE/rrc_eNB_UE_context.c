@@ -184,6 +184,8 @@ void rrc_eNB_remove_ue_context(
   rrc_eNB_free_mem_UE_context(ctxt_pP, ue_context_pP);
   uid_linear_allocator_free(rrc_instance_pP, ue_context_pP->local_uid);
   free(ue_context_pP);
+  rrc_instance_pP->Nb_ue --;
+
   LOG_I(RRC,
         PROTOCOL_RRC_CTXT_UE_FMT" Removed UE context\n",
         PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP));

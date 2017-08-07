@@ -765,6 +765,9 @@ gtpv1u_create_s1u_tunnel(
       gtpv1u_ue_data_p->bearers[eps_bearer_id - GTPV1U_BEARER_OFFSET].teid_eNB               = s1u_teid;
       gtpv1u_ue_data_p->bearers[eps_bearer_id - GTPV1U_BEARER_OFFSET].teid_eNB_stack_session = stack_req.apiInfo.createTunnelEndPointInfo.hStackSession;
       gtpv1u_ue_data_p->bearers[eps_bearer_id - GTPV1U_BEARER_OFFSET].teid_sgw               = create_tunnel_req_pP->sgw_S1u_teid[i];
+
+      gtpv1u_ue_data_p->num_bearers++;
+
       create_tunnel_resp_pP->enb_S1u_teid[i] = s1u_teid;
 
     } else {

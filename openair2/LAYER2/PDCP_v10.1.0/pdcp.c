@@ -1042,6 +1042,13 @@ pdcp_remove_UE(
 
   // check and remove SRBs first
 
+  for(int i = 0;i<NUMBER_OF_UE_MAX;i++){
+    if(pdcp_eNB_UE_instance_to_rnti[i] == ctxt_pP->rnti){
+      pdcp_eNB_UE_instance_to_rnti[i] = NOT_A_RNTI;
+      break;
+    }
+  }
+
   for (srb_id=0; srb_id<2; srb_id++) {
     key = PDCP_COLL_KEY_VALUE(ctxt_pP->module_id, ctxt_pP->rnti, ctxt_pP->enb_flag, srb_id, SRB_FLAG_YES);
     h_rc = hashtable_remove(pdcp_coll_p, key);
@@ -1477,7 +1484,17 @@ pdcp_config_req_asn1 (
     if (ctxt_pP->enb_flag == ENB_FLAG_YES) {
       pdcp_pP->is_ue = FALSE;
       //pdcp_eNB_UE_instance_to_rnti[ctxtP->module_id] = ctxt_pP->rnti;
-      pdcp_eNB_UE_instance_to_rnti[pdcp_eNB_UE_instance_to_rnti_index] = ctxt_pP->rnti;
+//      pdcp_eNB_UE_instance_to_rnti[pdcp_eNB_UE_instance_to_rnti_index] = ctxt_pP->rnti;
+      if( srb_flagP == SRB_FLAG_NO ) {
+          for(int i = 0;i<NUMBER_OF_UE_MAX;i++){
+              if(pdcp_eNB_UE_instance_to_rnti[pdcp_eNB_UE_instance_to_rnti_index] == NOT_A_RNTI){
+                  break;
+              }
+              pdcp_eNB_UE_instance_to_rnti_index = (pdcp_eNB_UE_instance_to_rnti_index + 1) % NUMBER_OF_UE_MAX;
+          }
+          pdcp_eNB_UE_instance_to_rnti[pdcp_eNB_UE_instance_to_rnti_index] = ctxt_pP->rnti;
+          pdcp_eNB_UE_instance_to_rnti_index = (pdcp_eNB_UE_instance_to_rnti_index + 1) % NUMBER_OF_UE_MAX;
+      }
       //pdcp_eNB_UE_instance_to_rnti_index = (pdcp_eNB_UE_instance_to_rnti_index + 1) % NUMBER_OF_UE_MAX;
     } else {
       pdcp_pP->is_ue = TRUE;

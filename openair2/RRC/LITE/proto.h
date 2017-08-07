@@ -324,6 +324,12 @@ void mac_eNB_rrc_ul_failure(const module_id_t Mod_instP,
 			    const sub_frame_t subframeP,
 			    const rnti_t rnti);
 
+void mac_eNB_rrc_uplane_failure(const module_id_t Mod_instP,
+                const int CC_id,
+                const frame_t frameP,
+                const sub_frame_t subframeP,
+                const rnti_t rnti);
+
 void mac_eNB_rrc_ul_in_sync(const module_id_t Mod_instP, 
 			    const int CC_id, 
 			    const frame_t frameP,
