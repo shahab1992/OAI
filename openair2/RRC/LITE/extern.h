@@ -96,6 +96,7 @@ extern uint32_t timeToTrigger_ms[16];
 extern float RSRP_meas_mapping[100];
 extern float RSRQ_meas_mapping[33];
 
+extern uint16_t reestablish_rnti_map[NUMBER_OF_UE_MAX][2];
 #endif
 
 
