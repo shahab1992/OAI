@@ -1051,24 +1051,25 @@ int s1ap_eNB_handle_paging(uint32_t               assoc_id,
   }
 
   /* convert Paging DRX(optional) */
-  switch(paging_p->pagingDRX) {
-  case S1ap_PagingDRX_v32:
-      S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_32;
-    break;
-  case S1ap_PagingDRX_v64:
-      S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_64;
-    break;
-  case S1ap_PagingDRX_v128:
-      S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_128;
-    break;
-  case S1ap_PagingDRX_v256:
-      S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_256;
-    break;
-  default:
-    // when UE Paging DRX is no value
-      S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_256;
-    break;
-  }
+//  switch(paging_p->pagingDRX) {
+//  case S1ap_PagingDRX_v32:
+//      S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_32;
+//    break;
+//  case S1ap_PagingDRX_v64:
+//      S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_64;
+//    break;
+//  case S1ap_PagingDRX_v128:
+//      S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_128;
+//    break;
+//  case S1ap_PagingDRX_v256:
+//      S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_256;
+//    break;
+//  default:
+//    // when UE Paging DRX is no value
+//      S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_256;
+//    break;
+//  }
+  S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_256;
 
   /* convert cnDomain */
   if (paging_p->cnDomain == S1ap_CNDomain_ps) {
@@ -1084,29 +1085,17 @@ int s1ap_eNB_handle_paging(uint32_t               assoc_id,
   memset (&S1AP_PAGING_IND(message_p).plmn_identity[0], 0, sizeof(plmn_identity_t)*256);
   memset (&S1AP_PAGING_IND(message_p).tac[0], 0, sizeof(int16_t)*256);
 
-  // from S1AP_TAIList_t to S1AP_TAIListIEs_t
-  S1ap_TAIListIEs_t s1ap_TAIList;
-  memset (&s1ap_TAIList, 0, sizeof(S1ap_TAIListIEs_t));
-  s1ap_decode_s1ap_tailist(&s1ap_TAIList, &paging_p->taiList);
-  for (int i = 0; i < s1ap_TAIList.s1ap_TAIItem.count; i++) {
-     S1AP_DEBUG("[SCTP %d] Received Paging taiList: i %d, count %d\n", assoc_id, i, s1ap_TAIList.s1ap_TAIItem.count);
+  for (int i = 0; i < paging_p->taiList.s1ap_TAIItem.count; i++) {
+     S1AP_DEBUG("[SCTP %d] Received Paging taiList: i %d, count %d\n", assoc_id, i, paging_p->taiList.s1ap_TAIItem.count);
      S1ap_TAIItem_t s1ap_TAIItem;
-     S1ap_TAI_t tAI;
-     S1ap_PLMNidentity_t pLMNidentity;
-     S1ap_TAC_t          tAC;
      memset (&s1ap_TAIItem, 0, sizeof(S1ap_TAIItem_t));
-     memset (&tAI, 0, sizeof(S1ap_TAI_t));
-     memset (&pLMNidentity, 0, sizeof(S1ap_PLMNidentity_t));
-     memset (&tAC, 0, sizeof(S1ap_TAC_t));
 
-     memcpy(&s1ap_TAIItem, &s1ap_TAIList.s1ap_TAIItem.array[i], sizeof(S1ap_TAIItem_t));
-     memcpy(&tAI, &s1ap_TAIItem.tAI, sizeof(S1ap_TAI_t));
-     memcpy(&pLMNidentity, &tAI.pLMNidentity, sizeof(S1ap_PLMNidentity_t));
-     memcpy(&tAC, &tAI.tAC, sizeof(S1ap_TAC_t));
-     TBCD_TO_MCC_MNC(&pLMNidentity, S1AP_PAGING_IND(message_p).plmn_identity[i].mcc,
+     memcpy(&s1ap_TAIItem, paging_p->taiList.s1ap_TAIItem.array[i], sizeof(S1ap_TAIItem_t));
+
+     TBCD_TO_MCC_MNC(&s1ap_TAIItem.tAI.pLMNidentity, S1AP_PAGING_IND(message_p).plmn_identity[i].mcc,
               S1AP_PAGING_IND(message_p).plmn_identity[i].mnc,
               S1AP_PAGING_IND(message_p).plmn_identity[i].mnc_digit_length);
-      OCTET_STRING_TO_INT16(&tAC, S1AP_PAGING_IND(message_p).tac[i]);
+      OCTET_STRING_TO_INT16(&s1ap_TAIItem.tAI.tAC, S1AP_PAGING_IND(message_p).tac[i]);
       S1AP_PAGING_IND(message_p).tai_size++;
       S1AP_DEBUG("[SCTP %d] Received Paging: MCC %d, MNC %d, TAC %d\n", assoc_id, S1AP_PAGING_IND(message_p).plmn_identity[i].mcc, S1AP_PAGING_IND(message_p).plmn_identity[i].mnc, S1AP_PAGING_IND(message_p).tac[i]);
   }
@@ -1114,38 +1103,38 @@ int s1ap_eNB_handle_paging(uint32_t               assoc_id,
   // CSG Id(optional) List is not used
 
   /* convert pagingPriority (optional) if has value */
-  if (paging_p->pagingPriority >= 0) {
-      switch(paging_p->pagingPriority) {
-      case S1ap_PagingPriority_priolevel1:
-          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL1;
-        break;
-      case S1ap_PagingPriority_priolevel2:
-          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL2;
-        break;
-      case S1ap_PagingPriority_priolevel3:
-          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL3;
-        break;
-      case S1ap_PagingPriority_priolevel4:
-          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL4;
-        break;
-      case S1ap_PagingPriority_priolevel5:
-          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL5;
-        break;
-      case S1ap_PagingPriority_priolevel6:
-          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL6;
-        break;
-      case S1ap_PagingPriority_priolevel7:
-          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL7;
-        break;
-      case S1ap_PagingPriority_priolevel8:
-          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL8;
-        break;
-      default:
-        /* invalid paging_p->pagingPriority */
-        S1AP_ERROR("[SCTP %d] Received paging : pagingPriority(%ld) is invalid\n", assoc_id, paging_p->pagingPriority);
-        return -1;
-      }
-  }
+//  if (paging_p->pagingPriority >= 0) {
+//      switch(paging_p->pagingPriority) {
+//      case S1ap_PagingPriority_priolevel1:
+//          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL1;
+//        break;
+//      case S1ap_PagingPriority_priolevel2:
+//          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL2;
+//        break;
+//      case S1ap_PagingPriority_priolevel3:
+//          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL3;
+//        break;
+//      case S1ap_PagingPriority_priolevel4:
+//          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL4;
+//        break;
+//      case S1ap_PagingPriority_priolevel5:
+//          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL5;
+//        break;
+//      case S1ap_PagingPriority_priolevel6:
+//          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL6;
+//        break;
+//      case S1ap_PagingPriority_priolevel7:
+//          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL7;
+//        break;
+//      case S1ap_PagingPriority_priolevel8:
+//          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL8;
+//        break;
+//      default:
+//        /* invalid paging_p->pagingPriority */
+//        S1AP_ERROR("[SCTP %d] Received paging : pagingPriority(%ld) is invalid\n", assoc_id, paging_p->pagingPriority);
+//        return -1;
+//      }
+//  }
   //paging parameter values
   S1AP_DEBUG("[SCTP %d] Received Paging parameters: ue_index_value %d  cn_domain %d paging_drx %d paging_priority %d\n",assoc_id,
           S1AP_PAGING_IND(message_p).ue_index_value, S1AP_PAGING_IND(message_p).cn_domain,

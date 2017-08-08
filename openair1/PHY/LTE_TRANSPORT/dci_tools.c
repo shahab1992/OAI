@@ -878,7 +878,7 @@ int generate_eNB_dlsch_params_from_dci(int frame,
   uint8_t NPRB,tbswap,tpmi=0;
   LTE_eNB_DLSCH_t *dlsch0=NULL,*dlsch1=NULL;
   uint8_t frame_type=frame_parms->frame_type;
-  uint8_t vrb_type=0, Ngap=0;;
+  uint8_t vrb_type=0, Ngap=0;
   uint8_t mcs=0,mcs1=0,mcs2=0;
   uint8_t I_mcs = 0;
   uint8_t rv=0,rv1=0,rv2=0;
@@ -968,7 +968,7 @@ int generate_eNB_dlsch_params_from_dci(int frame,
 
       if (vrb_type==LOCALIZED) {
   dlsch0_harq->rb_alloc[0]    = localRIV2alloc_LUT25[rballoc];
-  dlsch0_harq->rb_alloc_odd[0]    = localRIV2alloc_LUT6[rballoc];
+  dlsch0_harq->rb_alloc_odd[0]    = localRIV2alloc_LUT25[rballoc];
       }
       else {
   LOG_E(PHY,"Distributed RB allocation not done yet\n");

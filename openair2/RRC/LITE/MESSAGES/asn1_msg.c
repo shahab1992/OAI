@@ -2619,7 +2619,11 @@ uint8_t do_Paging(uint8_t Mod_id, uint8_t *buffer, ue_paging_identity_t ue_pagin
   }
 
   /* set cn_domain */
-  paging_record_p->cn_Domain = cn_domain;
+  if (cn_domain == CN_DOMAIN_PS) {
+    paging_record_p->cn_Domain = PagingRecord__cn_Domain_ps;
+  } else {
+    paging_record_p->cn_Domain = PagingRecord__cn_Domain_cs;
+  }
   /* add to list */
   ASN_SEQUENCE_ADD(&pcch_msg.message.choice.c1.choice.paging.pagingRecordList->list, paging_record_p);
   LOG_D(RRC, "[eNB %d] do_Paging paging_record: cn_Domain %d, ue_paging_identity.presenceMask %d, PagingRecordList.count %d\n",
