@@ -2109,7 +2109,7 @@ void schedule_PCH(module_id_t module_idP,frame_t frameP,sub_frame_t subframeP)
   /* PDU:eNB_rrc_inst[Mod_idP].common_channels[CC_id].PCCH_pdu.payload */
   eNB_MAC_INST *eNB      = &eNB_mac_inst[module_idP];
 
-  int CC_id,i;
+  int CC_id;
   void *PCCH_alloc_pdu;
   uint8_t *vrb_map;
   DCI_PDU *DCI_pdu;
@@ -2119,6 +2119,7 @@ void schedule_PCH(module_id_t module_idP,frame_t frameP,sub_frame_t subframeP)
   int rballoc[MAX_NUM_CCs];
   uint16_t n_rb_dl = 0,first_rb = 0;
 #ifdef FORMAT1C
+  int i = 0;
   uint16_t     rb_bit    = 168;    /* RB bit number value is unsure */
   int gap_index = 0;      /* indicate which gap(1st or 2nd) is used (0:1st) */
   int TBS = 0;
@@ -2126,9 +2127,6 @@ void schedule_PCH(module_id_t module_idP,frame_t frameP,sub_frame_t subframeP)
   int sizeof1C_bytes,sizeof1C_bits = -1;
   uint8_t n_rb_step = 0,n_gap = 0;
   uint8_t n_vrb_dl = 0,Lcrbs = 0;
-#else
-  int sizeof1A_bytes,sizeof1A_bits = -1;
-#endif
   const int GAP_MAP [9][2] = {
       {-1, 0},        /* N_RB_DL [6-10] -1: |N_RB/2| 0: N/A*/
       {4, 0},         /* N_RB_DL [11] */
@@ -2140,7 +2138,9 @@ void schedule_PCH(module_id_t module_idP,frame_t frameP,sub_frame_t subframeP)
       {32, 16},       /* N_RB_DL [64-79] */
       {48, 16}        /* N_RB_DL [80-110] */
   };
-
+#else
+  int sizeof1A_bytes,sizeof1A_bits = -1;
+#endif
   start_meas(&eNB->schedule_pch);
 
   for (CC_id=0; CC_id<MAX_NUM_CCs; CC_id++) {
