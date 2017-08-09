@@ -2193,8 +2193,21 @@ do_RRCConnectionReestablishment(
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.sps_Config = NULL;
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.physicalConfigDedicated = physicalConfigDedicated2;
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig = NULL;
-  // FIXME nextHopChainingCount = 0
-  rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nextHopChainingCount = 0;
+
+  uint8_t KeNB_star[32] = { 0 };
+  const Enb_properties_array_t *enb_properties = enb_config_get();
+  uint16_t pci = enb_properties->properties[ctxt_pP->instance]->Nid_cell[CC_id];
+  uint32_t earfcn_dl = (uint32_t)freq_to_arfcn10(enb_properties->properties[ctxt_pP->instance]->eutra_band[CC_id],
+                  enb_properties->properties[ctxt_pP->instance]->downlink_frequency[CC_id]);
+  if (ue_context_pP->ue_context.nh_ncc >= 0) {
+    derive_keNB_star (ue_context_pP->ue_context.nh, pci, earfcn_dl, false, KeNB_star);
+    rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nextHopChainingCount = ue_context_pP->ue_context.nh_ncc;
+  } else { // first HO 
+    derive_keNB_star (ue_context_pP->ue_context.kenb, pci, earfcn_dl, false, KeNB_star);
+    // LG: really 1
+    rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nextHopChainingCount = 1;
+  }
+
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nonCriticalExtension = NULL;
 
 #ifdef XER_PRINT
