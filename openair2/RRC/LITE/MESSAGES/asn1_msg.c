@@ -2612,9 +2612,10 @@ uint8_t do_Paging(uint8_t Mod_id, uint8_t *buffer, ue_paging_identity_t ue_pagin
                              &paging_record_p->ue_Identity.choice.s_TMSI.m_TMSI);
     paging_record_p->ue_Identity.choice.s_TMSI.m_TMSI.bits_unused = 0;
   } else if (ue_paging_identity.presenceMask == UE_PAGING_IDENTITY_imsi) {
-    paging_record_p->ue_Identity.present = PagingUE_Identity_PR_imsi;
-    for (j = 0; j< 15; j++) {  /* IMSI size if 15 */
-      ASN_SEQUENCE_ADD(&paging_record_p->ue_Identity.choice.imsi.list, ue_paging_identity.choice.imsi[j]);
+    IMSI_Digit_t imsi_digit[21];
+    for (j = 0; j< strlen(ue_paging_identity.choice.imsi); j++) {  /* IMSI size */
+      imsi_digit[j] = (IMSI_Digit_t)(ue_paging_identity.choice.imsi[j] - '0');
+      ASN_SEQUENCE_ADD(&paging_record_p->ue_Identity.choice.imsi.list, &imsi_digit[j]);
     }
   }
 
@@ -2884,4 +2885,6 @@ EXPORT_SYMBOL(asn_DEF_DL_CCCH_Message);
 EXPORT_SYMBOL(uper_decode_complete);
 EXPORT_SYMBOL(uper_decode);
 EXPORT_SYMBOL(transmission_mode_rrc);
+EXPORT_SYMBOL(do_Paging);
+EXPORT_SYMBOL(asn_DEF_PCCH_Message);
 #endif

@@ -639,13 +639,13 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
     break;
 
   case 5:
-    schedule_PCH(module_idP,frameP,subframeP);
     // TDD/FDD Schedule SI
     // TDD Config 0,6 ULSCH for subframes 9,3 resp.
     // TDD normal DLSCH
     // FDD normal UL/DLSCH
     schedule_SI(module_idP,frameP,subframeP);
 
+    schedule_PCH(module_idP,frameP,subframeP);
     //schedule_RA(module_idP,frameP,subframeP,5);
     if (mac_xface->frame_parms->frame_type == FDD) {
       schedule_RA(module_idP,frameP,subframeP,1);

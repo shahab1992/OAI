@@ -1038,12 +1038,16 @@ int s1ap_eNB_handle_paging(uint32_t               assoc_id,
       OCTET_STRING_TO_INT32(&paging_p->uePagingID.choice.s_TMSI.m_TMSI, S1AP_PAGING_IND(message_p).ue_paging_identity.choice.s_tmsi.m_tmsi);
   } else if (paging_p->uePagingID.present == S1ap_UEPagingID_PR_iMSI) {
       S1AP_PAGING_IND(message_p).ue_paging_identity.presenceMask = UE_PAGING_IDENTITY_imsi;
-      if (paging_p->uePagingID.choice.iMSI.size > S1AP_IMSI_LENGTH) {
+      uint64_t imsiBuf = 0;
+      for (int i = 0; i < paging_p->uePagingID.choice.iMSI.size; i++) {
+          imsiBuf |= ((uint64_t)paging_p->uePagingID.choice.iMSI.buf[i]) << (paging_p->uePagingID.choice.iMSI.size - 1 - i) * 8;
+      }
+      int res = snprintf(S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi, sizeof(S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi), "%lld", (long long int)imsiBuf);
+      if (res > S1AP_IMSI_LENGTH) {
           /* invalid paging_p->uePagingID.choise.iMSI.size */
-          S1AP_ERROR("[SCTP %d] Received Paging : uePagingID.choise.iMSI.size(%d) is over IMSI length(%d)\n", assoc_id, paging_p->uePagingID.choice.iMSI.size, S1AP_IMSI_LENGTH);
+          S1AP_ERROR("[SCTP %d] Received Paging : uePagingID.choise.iMSI.size(%d) is over IMSI length(%d)\n", assoc_id, res, S1AP_IMSI_LENGTH);
           return -1;
       }
-      memcpy(&S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi[0], paging_p->uePagingID.choice.iMSI.buf,  paging_p->uePagingID.choice.iMSI.size);
   } else {
       /* invalid paging_p->uePagingID.present */
       S1AP_ERROR("[SCTP %d] Received Paging : uePagingID.present(%d) is unknown\n", assoc_id, paging_p->uePagingID.present);

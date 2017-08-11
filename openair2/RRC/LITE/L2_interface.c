@@ -228,7 +228,7 @@ mac_rrc_data_req(
       // check if data is there for MAC
       if(eNB_rrc_inst[Mod_idP].carrier[CC_id].sizeof_paging[mbsfn_sync_area] > 0) { //Fill buffer
         LOG_D(RRC,"[eNB %d] PCCH (%p) has %d bytes\n",Mod_idP,&eNB_rrc_inst[Mod_idP].carrier[CC_id],
-        		eNB_rrc_inst[Mod_idP].carrier[CC_id].sizeof_paging[mbsfn_sync_area]);
+               eNB_rrc_inst[Mod_idP].carrier[CC_id].sizeof_paging[mbsfn_sync_area]);
 
 #if defined(ENABLE_ITTI)
         {

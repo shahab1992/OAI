@@ -108,7 +108,7 @@ static int s1ap_eNB_decode_initiating_message(s1ap_message *message,
     ret = s1ap_decode_s1ap_pagingies(
             &message->msg.s1ap_PagingIEs, &initiating_p->value);
     s1ap_xer_print_s1ap_paging(s1ap_xer__print2sp, message_string, message);
-    S1AP_ERROR("TODO Paging initiating message\n");
+    S1AP_INFO("Paging initiating message\n");
     free(message_string);
     break;
 
