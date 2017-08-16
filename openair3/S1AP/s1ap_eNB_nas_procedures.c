@@ -837,3 +837,134 @@ int s1ap_eNB_e_rab_setup_resp(instance_t instance,
 
   return ret;
 }
+
+//------------------------------------------------------------------------------
+int s1ap_eNB_e_rab_release_resp(instance_t instance,
+			      s1ap_e_rab_release_resp_t *e_rab_release_resp_p)
+//------------------------------------------------------------------------------
+{
+  s1ap_eNB_instance_t          *s1ap_eNB_instance_p = NULL;
+  struct s1ap_eNB_ue_context_s *ue_context_p        = NULL;
+
+  S1ap_E_RABReleaseResponseIEs_t  *release_response_ies_p  = NULL;
+
+  s1ap_message  message;
+
+  uint8_t  *buffer  = NULL;
+  uint32_t length;
+  int      ret = -1;
+  int      i;
+  /* Retrieve the S1AP eNB instance associated with Mod_id */
+  s1ap_eNB_instance_p = s1ap_eNB_get_instance(instance);
+  DevAssert(e_rab_release_resp_p != NULL);
+  DevAssert(s1ap_eNB_instance_p != NULL);
+
+  /* Prepare the S1AP message to encode */
+  memset(&message, 0, sizeof(s1ap_message));
+
+  message.direction     = S1AP_PDU_PR_successfulOutcome;
+  message.procedureCode = S1ap_ProcedureCode_id_E_RABRelease;
+  message.criticality = S1ap_Criticality_ignore;
+
+  if ((ue_context_p = s1ap_eNB_get_ue_context(s1ap_eNB_instance_p,
+          e_rab_release_resp_p->eNB_ue_s1ap_id)) == NULL) {
+    /* The context for this eNB ue s1ap id doesn't exist in the map of eNB UEs */
+    S1AP_WARN("Failed to find ue context associated with eNB ue s1ap id: %u\n",
+            e_rab_release_resp_p->eNB_ue_s1ap_id);
+    return -1;
+  }
+
+  release_response_ies_p = &message.msg.s1ap_E_RABReleaseResponseIEs;
+  release_response_ies_p->eNB_UE_S1AP_ID = e_rab_release_resp_p->eNB_ue_s1ap_id;
+  release_response_ies_p->mme_ue_s1ap_id = ue_context_p->mme_ue_s1ap_id;
+
+  if ( e_rab_release_resp_p->nb_of_e_rabs_released > 0 )
+      release_response_ies_p->presenceMask |= S1AP_E_RABRELEASERESPONSEIES_E_RABRELEASELISTBEARERRELCOMP_PRESENT;
+
+  //release
+  for (i = 0; i < e_rab_release_resp_p->nb_of_e_rabs_released; i++) {
+
+    S1ap_E_RABReleaseItemBearerRelComp_t *new_item;
+
+    new_item = calloc(1, sizeof(S1ap_E_RABReleaseItemBearerRelComp_t));
+
+    new_item->e_RAB_ID = e_rab_release_resp_p->e_rab_release[i].e_rab_id;
+
+    S1AP_DEBUG("e_rab_release_resp: e_rab ID %ld\n",new_item->e_RAB_ID);
+
+    S1ap_IE_t *ie = s1ap_new_ie(S1ap_ProtocolIE_ID_id_E_RABReleaseItemBearerRelComp,
+				S1ap_Criticality_ignore,
+				&asn_DEF_S1ap_E_RABReleaseItemBearerRelComp,
+				new_item);
+
+    ASN_SEQUENCE_ADD(&release_response_ies_p->e_RABReleaseListBearerRelComp.s1ap_E_RABReleaseItemBearerRelComp,
+                     ie);
+  }
+
+  if ( e_rab_release_resp_p->nb_of_e_rabs_failed > 0 )
+      release_response_ies_p->presenceMask |= S1AP_E_RABRELEASERESPONSEIES_E_RABFAILEDTORELEASELIST_PRESENT;
+
+  //release failed
+  for (i = 0; i < e_rab_release_resp_p->nb_of_e_rabs_failed; i++) {
+      S1ap_E_RABItem_t     *new_rabitem;
+      new_rabitem = calloc(1, sizeof(S1ap_E_RABItem_t));
+      //e_rab_id
+      new_rabitem->e_RAB_ID = e_rab_release_resp_p->e_rabs_failed[i].e_rab_id;
+      //cause
+      switch(e_rab_release_resp_p->e_rabs_failed[i].cause)
+      {
+      case 0:
+          new_rabitem->cause.present = S1ap_Cause_PR_radioNetwork;
+          new_rabitem->cause.choice.radioNetwork = e_rab_release_resp_p->e_rabs_failed[i].cause_id;
+          break;
+      case 1:
+          new_rabitem->cause.present = S1ap_Cause_PR_transport;
+          new_rabitem->cause.choice.radioNetwork = e_rab_release_resp_p->e_rabs_failed[i].cause_id;
+          break;
+      case 2:
+          new_rabitem->cause.present = S1ap_Cause_PR_nas;
+          new_rabitem->cause.choice.radioNetwork = e_rab_release_resp_p->e_rabs_failed[i].cause_id;
+          break;
+      case 3:
+          new_rabitem->cause.present = S1ap_Cause_PR_protocol;
+          new_rabitem->cause.choice.radioNetwork = e_rab_release_resp_p->e_rabs_failed[i].cause_id;
+          break;
+      case 4:
+          new_rabitem->cause.present = S1ap_Cause_PR_misc;
+          new_rabitem->cause.choice.radioNetwork = e_rab_release_resp_p->e_rabs_failed[i].cause_id;
+          break;
+      default:
+          new_rabitem->cause.present = S1ap_Cause_PR_NOTHING;
+          break;
+      }
+      ASN_SEQUENCE_ADD(&release_response_ies_p->e_RABFailedToReleaseList.s1ap_E_RABItem, new_rabitem);
+  }
+
+  fprintf(stderr, "start encode\n");
+  if (s1ap_eNB_encode_pdu(&message, &buffer, &length) < 0) {
+    S1AP_ERROR("Failed to encode release response\n");
+    /* Encode procedure has failed... */
+    return -1;
+  }
+
+  MSC_LOG_TX_MESSAGE(
+    MSC_S1AP_ENB,
+    MSC_S1AP_MME,
+    (const char *)buffer,
+    length,
+    MSC_AS_TIME_FMT" E_RAN Release successfulOutcome eNB_ue_s1ap_id %u mme_ue_s1ap_id %u",
+    0,0,//MSC_AS_TIME_ARGS(ctxt_pP),
+    e_rab_release_resp_p->eNB_ue_s1ap_id,
+    ue_context_p->mme_ue_s1ap_id);
+
+  /* UE associated signalling -> use the allocated stream */
+  s1ap_eNB_itti_send_sctp_data_req(s1ap_eNB_instance_p->instance,
+                                   ue_context_p->mme_ref->assoc_id, buffer,
+                                   length, ue_context_p->tx_stream);
+
+  S1AP_INFO("e_rab_release_response sended eNB_UE_S1AP_ID %d  mme_ue_s1ap_id %d\n",
+          e_rab_release_resp_p->eNB_ue_s1ap_id, ue_context_p->mme_ue_s1ap_id);
+
+  return ret;
+}
+

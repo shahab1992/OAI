@@ -397,6 +397,12 @@ void *s1ap_eNB_task(void *arg)
     }
     break;
 
+    case S1AP_E_RAB_RELEASE_RESPONSE: {
+        s1ap_eNB_e_rab_release_resp(ITTI_MESSAGE_GET_INSTANCE(received_msg),
+                                    &S1AP_E_RAB_RELEASE_RESPONSE(received_msg));
+    }
+    break;
+
     default:
       S1AP_ERROR("Received unhandled message: %d:%s\n",
                  ITTI_MSG_ID(received_msg), ITTI_MSG_NAME(received_msg));

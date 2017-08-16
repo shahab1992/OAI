@@ -136,6 +136,9 @@ rrc_eNB_allocate_new_UE_context(
 
   memset(new_p, 0, sizeof(struct rrc_eNB_ue_context_s));
   new_p->local_uid = uid_linear_allocator_new(rrc_instance_pP);
+  for(int i = 0; i < NB_RB_MAX; i++) {
+      new_p->ue_context.e_rab[i].xid = -1;
+  }
   return new_p;
 }
 

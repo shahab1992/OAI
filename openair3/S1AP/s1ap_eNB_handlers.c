@@ -81,6 +81,10 @@ int s1ap_eNB_handle_e_rab_setup_request(uint32_t               assoc_id,
 					uint32_t               stream,
 					struct s1ap_message_s *s1ap_message_p);
 
+static
+int s1ap_eNB_handle_e_rab_release_command(uint32_t               assoc_id,
+					uint32_t               stream,
+					struct s1ap_message_s *s1ap_message_p);
 
 /* Handlers matrix. Only eNB related procedure present here */
 s1ap_message_decoded_callback messages_callback[][3] = {
@@ -91,7 +95,7 @@ s1ap_message_decoded_callback messages_callback[][3] = {
   { 0, 0, 0 }, /* HandoverCancel */
   { s1ap_eNB_handle_e_rab_setup_request, 0, 0 }, /* E_RABSetup */
   { 0, 0, 0 }, /* E_RABModify */
-  { 0, 0, 0 }, /* E_RABRelease */
+  { s1ap_eNB_handle_e_rab_release_command, 0, 0 }, /* E_RABRelease */
   { 0, 0, 0 }, /* E_RABReleaseIndication */
   { s1ap_eNB_handle_initial_context_request, 0, 0 }, /* InitialContextSetup */
   { 0, 0, 0 }, /* Paging */
@@ -983,4 +987,77 @@ int s1ap_eNB_handle_e_rab_setup_request(uint32_t               assoc_id,
   return 0;
 }
 
+// handle e-rab release command and send it to rrc_end
+static
+int s1ap_eNB_handle_e_rab_release_command(uint32_t               assoc_id,
+                                          uint32_t               stream,
+                                          struct s1ap_message_s *s1ap_message_p) {
 
+  int i;
+
+  s1ap_eNB_mme_data_t   *mme_desc_p       = NULL;
+  s1ap_eNB_ue_context_t *ue_desc_p        = NULL;
+  MessageDef            *message_p        = NULL;
+
+  S1ap_E_RABReleaseCommandIEs_t         *s1ap_E_RABReleaseCommand;
+  DevAssert(s1ap_message_p != NULL);
+  s1ap_E_RABReleaseCommand = &s1ap_message_p->msg.s1ap_E_RABReleaseCommandIEs;
+  
+  if ((mme_desc_p = s1ap_eNB_get_MME(NULL, assoc_id, 0)) == NULL) {
+    S1AP_ERROR("[SCTP %d] Received E-RAB release command for non existing MME context\n", assoc_id);
+    return -1;
+  }
+  if ((ue_desc_p = s1ap_eNB_get_ue_context(mme_desc_p->s1ap_eNB_instance,
+          s1ap_E_RABReleaseCommand->eNB_UE_S1AP_ID)) == NULL) {
+    S1AP_ERROR("[SCTP %d] Received E-RAB release command for non existing UE context 0x%06lx\n", assoc_id,
+               s1ap_E_RABReleaseCommand->eNB_UE_S1AP_ID);
+    return -1;
+  }
+
+  /* Initial context request = UE-related procedure -> stream != 0 */
+  if (stream == 0) {
+    S1AP_ERROR("[SCTP %d] Received UE-related procedure on stream (%d)\n",
+               assoc_id, stream);
+    return -1;
+  }
+
+  ue_desc_p->rx_stream = stream;
+
+  if ( ue_desc_p->mme_ue_s1ap_id != s1ap_E_RABReleaseCommand->mme_ue_s1ap_id){
+    S1AP_WARN("UE context mme_ue_s1ap_id is different form that of the message (%d != %ld)",
+          ue_desc_p->mme_ue_s1ap_id, s1ap_E_RABReleaseCommand->mme_ue_s1ap_id);
+  }
+
+  S1AP_DEBUG("[SCTP %d] Received E-RAB release command for eNB_UE_S1AP_ID %ld mme_ue_s1ap_id %ld\n",
+          assoc_id, s1ap_E_RABReleaseCommand->eNB_UE_S1AP_ID, s1ap_E_RABReleaseCommand->mme_ue_s1ap_id);
+
+  message_p        = itti_alloc_new_message(TASK_S1AP, S1AP_E_RAB_RELEASE_COMMAND);
+
+  S1AP_E_RAB_RELEASE_COMMAND(message_p).eNB_ue_s1ap_id = s1ap_E_RABReleaseCommand->eNB_UE_S1AP_ID;
+  S1AP_E_RAB_RELEASE_COMMAND(message_p).mme_ue_s1ap_id = s1ap_E_RABReleaseCommand->mme_ue_s1ap_id;
+  if(s1ap_E_RABReleaseCommand->nas_pdu.size > 0 ){
+    S1AP_E_RAB_RELEASE_COMMAND(message_p).nas_pdu.length = s1ap_E_RABReleaseCommand->nas_pdu.size;
+
+    S1AP_E_RAB_RELEASE_COMMAND(message_p).nas_pdu.buffer =
+      malloc(sizeof(uint8_t) * s1ap_E_RABReleaseCommand->nas_pdu.size);
+
+    memcpy(S1AP_E_RAB_RELEASE_COMMAND(message_p).nas_pdu.buffer,
+    		s1ap_E_RABReleaseCommand->nas_pdu.buf,
+    		s1ap_E_RABReleaseCommand->nas_pdu.size);
+  } else {
+	  S1AP_E_RAB_RELEASE_COMMAND(message_p).nas_pdu.length = 0;
+	  S1AP_E_RAB_RELEASE_COMMAND(message_p).nas_pdu.buffer = NULL;
+  }
+
+  S1AP_E_RAB_RELEASE_COMMAND(message_p).nb_e_rabs_torelease = s1ap_E_RABReleaseCommand->e_RABToBeReleasedList.s1ap_E_RABItem.count;
+  for(i=0; i < s1ap_E_RABReleaseCommand->e_RABToBeReleasedList.s1ap_E_RABItem.count; i++){
+	  S1ap_E_RABItem_t *item_p;
+	  item_p = (S1ap_E_RABItem_t*)s1ap_E_RABReleaseCommand->e_RABToBeReleasedList.s1ap_E_RABItem.array[i];
+	  S1AP_E_RAB_RELEASE_COMMAND(message_p).e_rab_release_params[i].e_rab_id = item_p->e_RAB_ID;
+	  S1AP_DEBUG("[SCTP] Received E-RAB release command for e-rab id %ld\n", item_p->e_RAB_ID);
+  }
+
+  itti_send_msg_to_task(TASK_RRC_ENB, ue_desc_p->eNB_instance->instance, message_p);
+
+  return 0;
+}

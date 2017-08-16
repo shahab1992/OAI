@@ -1356,7 +1356,7 @@ rrc_pdcp_config_asn1_req (
     for (cnt=0; cnt<drb2release_list_pP->list.count; cnt++) {
       pdrb_id_p = drb2release_list_pP->list.array[cnt];
       drb_id =  *pdrb_id_p;
-      key = PDCP_COLL_KEY_VALUE(ctxt_pP->module_id, ctxt_pP->rnti, ctxt_pP->enb_flag, srb_id, SRB_FLAG_NO);
+      key = PDCP_COLL_KEY_VALUE(ctxt_pP->module_id, ctxt_pP->rnti, ctxt_pP->enb_flag, drb_id, SRB_FLAG_NO);
       h_rc = hashtable_get(pdcp_coll_p, key, (void**)&pdcp_p);
 
       if (h_rc != HASH_TABLE_OK) {

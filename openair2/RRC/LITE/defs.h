@@ -276,6 +276,7 @@ typedef enum e_rab_satus_e {
   E_RAB_STATUS_DONE, // from the eNB perspective
   E_RAB_STATUS_ESTABLISHED, // get the reconfigurationcomplete form UE
   E_RAB_STATUS_FAILED,
+  E_RAB_STATUS_TORELEASE  // to release DRB between eNB and UE
 } e_rab_status_t;
 
 typedef struct e_rab_param_s {
@@ -359,6 +360,7 @@ typedef struct eNB_RRC_UE_s {
   SRB_ToAddModList_t*                SRB_configList2[RRC_TRANSACTION_IDENTIFIER_NUMBER];
   DRB_ToAddModList_t*                DRB_configList;
   DRB_ToAddModList_t*                DRB_configList2[RRC_TRANSACTION_IDENTIFIER_NUMBER];
+  DRB_ToReleaseList_t*               DRB_Release_configList2[RRC_TRANSACTION_IDENTIFIER_NUMBER];
   uint8_t                            DRB_active[8];
   struct PhysicalConfigDedicated*    physicalConfigDedicated;
   struct SPS_Config*                 sps_Config;
@@ -409,7 +411,9 @@ typedef struct eNB_RRC_UE_s {
   uint8_t                            nb_of_e_rabs;
   /* list of e_rab to be setup by RRC layers */
   e_rab_param_t                      e_rab[NB_RB_MAX];//[S1AP_MAX_E_RAB];
-
+  //release e_rabs
+  uint8_t                            nb_release_of_e_rabs;
+  e_rab_failed_t                     e_rabs_release_failed[S1AP_MAX_E_RAB];
   // LG: For GTPV1 TUNNELS
   uint32_t                           enb_gtp_teid[S1AP_MAX_E_RAB];
   transport_layer_addr_t             enb_gtp_addrs[S1AP_MAX_E_RAB];
@@ -418,6 +422,7 @@ typedef struct eNB_RRC_UE_s {
   uint32_t                           ul_failure_timer;
   uint32_t                           ue_release_timer;
   uint32_t                           ue_release_timer_thres;
+  uint8_t                            e_rab_release_command_flag;
 } eNB_RRC_UE_t;
 
 typedef uid_t ue_uid_t;
