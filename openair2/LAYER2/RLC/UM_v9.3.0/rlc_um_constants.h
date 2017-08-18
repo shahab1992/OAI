@@ -73,5 +73,15 @@
 
 /** Marker in RX buffer meaning that a PDU has been received. */
 #        define RLC_UM_PDU_PREVIOUSLY_RECEIVED 0x01
+
+#       define RLC_UM_SN_MODULUS(snSize)                (1 << snSize)
+#       define RLC_UM_WINDOW_SIZE(snSize)               (1 << (snSize-1))
+#       define RLC_DIFF_SN(sn,snref,modulus)            ((sn+(modulus)-snref) & ((modulus)-1))
+#       define RLC_UM_NEXT_SN(sn, umSnLength)         (((sn) + 1) & (RLC_UM_SN_MODULUS(umSnLength) - 1))
+#       define RLC_UM_PREV_SN(sn, umSnLength)         (((sn) + RLC_UM_SN_MODULUS(umSnLength) - 1) & (RLC_UM_SN_MODULUS(umSnLength) - 1))
+#       define RLC_UM_DIFF_SN(sn,snref, umSnLength)   (RLC_DIFF_SN(sn, snref, RLC_UM_SN_MODULUS(umSnLength)))
+
+#       define RLC_UM_SN_IN_REORDER_WINDOW(sn, vrUH, snLowerEdge, umSnLength) (RLC_UM_DIFF_SN(sn, snLowerEdge, umSnLength) < RLC_UM_DIFF_SN(vrUH, snLowerEdge, umSnLength))
+
 /** @} */
 #    endif

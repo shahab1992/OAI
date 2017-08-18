@@ -254,7 +254,8 @@ rlc_um_try_reassembly(
   //check_mem_area();
 
   while (continue_reassembly) {
-    if ((pdu_mem_p = rlc_pP->dar_buffer[sn])) {
+    pdu_mem_p = rlc_pP->dar_buffer[sn];
+    if (pdu_mem_p != NULL) {
 
       if ((rlc_pP->last_reassemblied_sn+1)%rlc_pP->rx_sn_modulo != sn) {
 #if TRACE_RLC_UM_DAR
@@ -973,6 +974,207 @@ rlc_um_receive_process_dar (
   rlc_um_pdu_sn_10_t * const   pdu_pP,
   const sdu_size_t             tb_sizeP)
 {
+    // 36.322v9.3.0 section 5.1.2.2.1:
+    // The receiving UM RLC entity shall maintain a reordering window according to state variable VR(UH) as follows:
+    //      -a SN falls within the reordering window if (VR(UH) – UM_Window_Size) <= SN < VR(UH);
+    //      -a SN falls outside of the reordering window otherwise.
+    // When receiving an UMD PDU from lower layer, the receiving UM RLC entity shall:
+    //      -either discard the received UMD PDU or place it in the reception buffer (see sub clause 5.1.2.2.2);
+    //      -if the received UMD PDU was placed in the reception buffer:
+    //          -update state variables, reassemble and deliver RLC SDUs to upper layer and start/stop t-Reordering as needed (see sub clause 5.1.2.2.3);
+    // When t-Reordering expires, the receiving UM RLC entity shall:
+    // -   update state variables, reassemble and deliver RLC SDUs to upper layer and start t-Reordering as needed (see sub clause 5.1.2.2.4).
+
+    // When an UMD PDU with SN = x is received from lower layer, the receiving UM RLC entity shall:
+    // -if VR(UR) < x < VR(UH) and the UMD PDU with SN = x has been received before; or
+    // -if (VR(UH) – UM_Window_Size) <= x < VR(UR):
+    //      -discard the received UMD PDU;
+    // -else:
+    //      -place the received UMD PDU in the reception buffer.
+
+    rlc_sn_t sn = -1;
+    boolean_t in_reordering_window;
+    rlc_sn_t snLowerEdge;
+    rlc_sn_t newVrUR = rlc_pP->vr_ur;
+    uint16_t windowSize = RLC_UM_WINDOW_SIZE(rlc_pP->rx_sn_length);
+
+    VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_RLC_UM_RECEIVE_PROCESS_DAR, VCD_FUNCTION_IN);
+
+    if (rlc_pP->rx_sn_length == 10) {
+        sn = ((pdu_pP->b1 & 0x00000003) << 8) + pdu_pP->b2;
+    } else if (rlc_pP->rx_sn_length == 5) {
+        sn = pdu_pP->b1 & 0x1F;
+    } else {
+        free_mem_block(pdu_mem_pP, __func__);
+        pdu_mem_pP = NULL;
+        return;
+    }
+
+    RLC_UM_MUTEX_LOCK(&rlc_pP->lock_dar_buffer, ctxt_pP, rlc_pP);
+
+    /* Get the lower edge of the reordering window: [ VR(UH)-WS ; VR(UH) [ which is assumed as the modulus base */
+    /* at the receiving side of an UM RLC entity. This modulus base is subtracted from all the values involved */
+    snLowerEdge = RLC_UM_DIFF_SN(rlc_pP->vr_uh, windowSize,
+            rlc_pP->rx_sn_length);
+
+    //in_window = rlc_um_in_window(ctxt_pP, rlc_pP, rlc_pP->vr_uh - rlc_pP->rx_um_window_size, sn, rlc_pP->vr_ur);
+
+    /* Determine whether the PDU shall be placed in rx buffer or discarded */
+    if (RLC_UM_DIFF_SN(sn, snLowerEdge,
+            rlc_pP->rx_sn_length) < RLC_UM_DIFF_SN(rlc_pP->vr_ur, snLowerEdge, rlc_pP->rx_sn_length)) {
+        /* SN < VR(UR), discard it */
+#if TRACE_RLC_UM_DAR
+        LOG_D(RLC, PROTOCOL_RLC_UM_CTXT_FMT" RX PDU  VR(UH) – UM_Window_Size) <= SN %d < VR(UR) -> GARBAGE\n",
+                PROTOCOL_RLC_UM_CTXT_ARGS(ctxt_pP, rlc_pP),
+                sn);
+#endif
+
+        rlc_pP->stat_rx_data_pdu_out_of_window += 1;
+        rlc_pP->stat_rx_data_bytes_out_of_window += tb_sizeP;
+        free_mem_block(pdu_mem_pP, __func__);
+        pdu_mem_pP = NULL;
+        RLC_UM_MUTEX_UNLOCK(&rlc_pP->lock_dar_buffer);VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_RLC_UM_RECEIVE_PROCESS_DAR, VCD_FUNCTION_OUT);
+        return;
+    } else if (rlc_pP->dar_buffer[sn] != NULL) {
+        /* PDU is a duplicate , discard it */
+        rlc_pP->stat_rx_data_pdus_duplicate += 1;
+        rlc_pP->stat_rx_data_bytes_duplicate += tb_sizeP;
+#if TRACE_RLC_UM_DAR
+        LOG_D(RLC, PROTOCOL_RLC_UM_CTXT_FMT" RX PDU  VR(UR) < SN %d < VR(UH) and RECEIVED BEFORE-> GARBAGE\n",
+                PROTOCOL_RLC_UM_CTXT_ARGS(ctxt_pP, rlc_pP),
+                sn);
+#endif
+        free_mem_block(pdu_mem_pP, __func__);
+        RLC_UM_MUTEX_UNLOCK(&rlc_pP->lock_dar_buffer); VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_RLC_UM_RECEIVE_PROCESS_DAR, VCD_FUNCTION_OUT);
+        return;
+
+    } else {
+        /* Determine whether PDU falls into reordering window: sn in [ VR(UH)-WS ; VR(UH) [ */
+        in_reordering_window = RLC_UM_SN_IN_REORDER_WINDOW(sn, rlc_pP->vr_uh,
+                snLowerEdge, rlc_pP->rx_sn_length);
+    }
+
+#if TRACE_RLC_PAYLOAD
+    rlc_util_print_hex_octets(RLC, &pdu_pP->b1, tb_sizeP);
+#endif
+
+    rlc_um_store_pdu_in_dar_buffer(ctxt_pP, rlc_pP, pdu_mem_pP, sn);
+
+    // -if x falls outside of the reordering window:
+    //      -update VR(UH) to x + 1;
+    //      -reassemble RLC SDUs from any UMD PDUs with SN that falls outside of
+    //       the reordering window, remove RLC headers when doing so and deliver
+    //       the reassembled RLC SDUs to upper layer in ascending order of the
+    //       RLC SN if not delivered before;
+    //
+    //      -if VR(UR) falls outside of the reordering window:
+    //          -set VR(UR) to (VR(UH) – UM_Window_Size);
+    if (in_reordering_window == FALSE) {
+#if TRACE_RLC_UM_DAR
+        LOG_D(RLC, PROTOCOL_RLC_UM_CTXT_FMT" RX PDU  SN %d OUTSIDE REORDERING WINDOW VR(UH)=%d UM_Window_Size=%d\n",
+                PROTOCOL_RLC_UM_CTXT_ARGS(ctxt_pP, rlc_pP),
+                sn,
+                rlc_pP->vr_uh,
+                rlc_pP->rx_um_window_size);
+#endif
+        rlc_pP->vr_uh = RLC_UM_NEXT_SN(sn, rlc_pP->rx_sn_length);
+
+        /* update VR(UR) if needed (i.e. VR(UR) falls outside the reordering window)*/
+        snLowerEdge = RLC_UM_DIFF_SN(rlc_pP->vr_uh, windowSize,
+                rlc_pP->rx_sn_length);
+
+        if (!RLC_UM_SN_IN_REORDER_WINDOW(rlc_pP->vr_ur, rlc_pP->vr_uh,
+                snLowerEdge, rlc_pP->rx_sn_length)) {
+            newVrUR = snLowerEdge;
+        }
+
+    }
+
+    // -if the reception buffer contains an UMD PDU with SN = VR(UR):
+    //      -update VR(UR) to the SN of the first UMD PDU with SN > current
+    //          VR(UR) that has not been received;
+    //      -reassemble RLC SDUs from any UMD PDUs with SN < updated VR(UR),
+    //          remove RLC headers when doing so and deliver the reassembled RLC
+    //          SDUs to upper layer in ascending order of the RLC SN if not
+    //          delivered before;
+
+    /* Determine first not-received PDU starting from newVrUR */
+    while (rlc_pP->dar_buffer[newVrUR] != NULL) {
+        newVrUR = RLC_UM_NEXT_SN(newVrUR, rlc_pP->rx_sn_length);
+    }
+
+    if (rlc_pP->vr_ur != newVrUR) {
+        /* Flush reordering buffer up-to newVrUR */
+        rlc_um_try_reassembly(ctxt_pP, rlc_pP, rlc_pP->vr_ur, newVrUR);
+
+        /* Update VR(UR) */
+        rlc_pP->vr_ur = newVrUR;
+    }
+
+    // -if t-Reordering is running:
+    //      -if VR(UX) <= VR(UR); or
+    //      -if VR(UX) falls outside of the reordering window and VR(UX) is not
+    //          equal to VR(UH)::
+    //          -stop and reset t-Reordering;
+    if (rlc_pP->t_reordering.running) {
+
+        if ((RLC_UM_DIFF_SN(rlc_pP->vr_ux, snLowerEdge, rlc_pP->rx_sn_length)
+                <= RLC_UM_DIFF_SN(rlc_pP->vr_ur, snLowerEdge,
+                        rlc_pP->rx_sn_length))
+                || ((rlc_pP->vr_ux != rlc_pP->vr_ur)
+                        && (!RLC_UM_SN_IN_REORDER_WINDOW(rlc_pP->vr_ux,
+                                rlc_pP->vr_uh, snLowerEdge,
+                                rlc_pP->rx_sn_length)))) {
+            /* Stop and reset t-Reordering timer */
+#if TRACE_RLC_UM_DAR
+            LOG_D(RLC,
+                    PROTOCOL_RLC_UM_CTXT_FMT" STOP and RESET t-Reordering because VR(UX) falls outside of the reordering window and VR(UX)=%d is not equal to VR(UH)=%d -or- VR(UX) <= VR(UR)\n",
+                    PROTOCOL_RLC_UM_CTXT_ARGS(ctxt_pP, rlc_pP),
+                    rlc_pP->vr_ux,
+                    rlc_pP->vr_uh);
+#endif
+            rlc_um_stop_and_reset_timer_reordering(ctxt_pP, rlc_pP);
+        }
+    }
+
+    // -if t-Reordering is not running (includes the case when t-Reordering is
+    //      stopped due to actions above):
+    //      -if VR(UH) > VR(UR):
+    //          -start t-Reordering;
+    //          -set VR(UX) to VR(UH).
+    if ((rlc_pP->t_reordering.running == 0)
+            && (rlc_pP->vr_uh != rlc_pP->vr_ur)) {
+        if (rlc_pP->t_reordering.ms_duration != 0) {
+            rlc_um_start_timer_reordering(ctxt_pP, rlc_pP);
+            rlc_pP->vr_ux = rlc_pP->vr_uh;
+#if TRACE_RLC_UM_DAR
+            LOG_D(RLC, PROTOCOL_RLC_UM_CTXT_FMT" RESTART t-Reordering set VR(UX) to VR(UH) =%d\n",
+                    PROTOCOL_RLC_UM_CTXT_ARGS(ctxt_pP, rlc_pP),
+                    rlc_pP->vr_ux);
+#endif
+        } else {
+            /* Flush Reordering buffer as if TReordering had expired, up to vrUH */
+            rlc_um_try_reassembly(ctxt_pP, rlc_pP, rlc_pP->vr_ur,
+                    rlc_pP->vr_uh);
+
+            /* Set VR(UR) to vrUH */
+            rlc_pP->vr_ur = rlc_pP->vr_uh;
+        }
+    }
+
+    RLC_UM_MUTEX_UNLOCK(&rlc_pP->lock_dar_buffer); VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_RLC_UM_RECEIVE_PROCESS_DAR, VCD_FUNCTION_OUT);
+}
+
+#if 0
+//-----------------------------------------------------------------------------
+void
+rlc_um_receive_process_dar_old (
+  const protocol_ctxt_t* const ctxt_pP,
+  rlc_um_entity_t * const      rlc_pP,
+  mem_block_t *                pdu_mem_pP,
+  rlc_um_pdu_sn_10_t * const   pdu_pP,
+  const sdu_size_t             tb_sizeP)
+{
   // 36.322v9.3.0 section 5.1.2.2.1:
   // The receiving UM RLC entity shall maintain a reordering window according to state variable VR(UH) as follows:
   //      -a SN falls within the reordering window if (VR(UH) – UM_Window_Size) <= SN < VR(UH);
@@ -1185,3 +1387,4 @@ rlc_um_receive_process_dar (
   RLC_UM_MUTEX_UNLOCK(&rlc_pP->lock_dar_buffer);
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_RLC_UM_RECEIVE_PROCESS_DAR, VCD_FUNCTION_OUT);
 }
+#endif
