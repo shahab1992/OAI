@@ -310,7 +310,7 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
         break;
 
       case RRC_MAC_PCCH_DATA_REQ:
-        LOG_D(MAC, "Received %s from %s: instance %d, frameP %d, eNB_index %d\n",
+        LOG_E(MAC, "Received %s from %s: instance %d, frameP %d, eNB_index %d\n",
               msg_name, ITTI_MSG_ORIGIN_NAME(msg_p), instance,
               RRC_MAC_PCCH_DATA_REQ (msg_p).frame, RRC_MAC_PCCH_DATA_REQ (msg_p).enb_index);
 

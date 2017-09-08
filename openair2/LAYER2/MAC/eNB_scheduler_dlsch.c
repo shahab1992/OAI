@@ -2352,7 +2352,7 @@ void schedule_PCH(module_id_t module_idP,frame_t frameP,sub_frame_t subframeP)
                   continue;
               }
               //paging parameter log
-              LOG_D(MAC,"frame %d subframe %d PCH: paging_ue_index %d pcch_sdu_length %d mcs %d n_rb_step %d n_vrb_dl %d first_rb%d Lcrbs %d\n",
+              LOG_D(MAC,"frame %d subframe %d PCH: paging_ue_index %d pcch_sdu_length %d mcs %d n_rb_step %d n_vrb_dl %d first_rb %d Lcrbs %d\n",
                     frameP, subframeP, UE_PF_PO[CC_id][i].ue_index_value, pcch_sdu_length, mcs, n_rb_step, n_vrb_dl, first_rb, Lcrbs);
 #else
               //NO SIB
@@ -2526,7 +2526,7 @@ void schedule_PCH(module_id_t module_idP,frame_t frameP,sub_frame_t subframeP)
                     continue;
                 }
                 //paging first_rb log
-                LOG_D(MAC,"[eNB %d] Frame %d subframe %d PCH: paging_ue_index %d pcch_sdu_length %d mcs %d first_rb%d\n",
+                LOG_D(MAC,"[eNB %d] Frame %d subframe %d PCH: paging_ue_index %d pcch_sdu_length %d mcs %d first_rb %d\n",
                       module_idP, frameP, subframeP, UE_PF_PO[CC_id][i].ue_index_value, pcch_sdu_length, mcs, first_rb);
 #endif
               pthread_mutex_lock(&ue_pf_po_mutex);
@@ -2545,7 +2545,7 @@ void schedule_PCH(module_id_t module_idP,frame_t frameP,sub_frame_t subframeP)
                             eNB->subframe,
                             0,
                             0);
-                  LOG_D(OPT,"[eNB %d][PCH] Frame %d trace pdu for CC_id %d rnti %x with size %d\n",
+                  LOG_E(OPT,"[eNB %d][PCH] Frame %d trace pdu for CC_id %d rnti %x with size %d\n",
                         module_idP, frameP, CC_id, 0xffff, pcch_sdu_length);
               }
               LOG_D(MAC,"[eNB %d] Frame %d : Scheduling PCCH->DLSCH for CC_id %d Paging %d bytes (mcs %d, rb 3, TBS %d)\n",

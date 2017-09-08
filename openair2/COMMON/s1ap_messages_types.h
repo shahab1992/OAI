@@ -175,6 +175,11 @@ typedef struct s1ap_gummei_s {
   uint16_t mme_group_id;
 } s1ap_gummei_t;
 
+typedef struct s1ap_imsi_s {
+  uint8_t  buffer[S1AP_IMSI_LENGTH];
+  uint8_t  length;
+} s1ap_imsi_t;
+
 typedef struct s_tmsi_s {
   uint8_t  mme_code;
   uint32_t m_tmsi;
@@ -189,7 +194,7 @@ typedef enum ue_paging_identity_presenceMask_e {
 typedef struct ue_paging_identity_s {
   ue_paging_identity_presenceMask_t presenceMask;
   union {
-    char     imsi[S1AP_IMSI_LENGTH];
+    s1ap_imsi_t  imsi;
     s_tmsi_t s_tmsi;
   } choice;
 } ue_paging_identity_t;

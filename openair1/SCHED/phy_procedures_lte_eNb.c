@@ -713,7 +713,7 @@ void generate_eNB_dlsch_params(PHY_VARS_eNB *eNB,eNB_rxtx_proc_t *proc,DCI_ALLOC
     
   } else if (dci_alloc->rnti == P_RNTI) {
     // if we have P_RNTI, configure dlsch parameters and CCE index
-    LOG_D(PHY,"Generating dlsch params for P_RNTI\n");
+    LOG_E(PHY,"Generating dlsch params for P_RNTI\n");
     generate_eNB_dlsch_params_from_dci(frame,
                subframe,
                &dci_alloc->dci_pdu[0],
@@ -731,7 +731,7 @@ void generate_eNB_dlsch_params(PHY_VARS_eNB *eNB,eNB_rxtx_proc_t *proc,DCI_ALLOC
 
     eNB->dlsch_PCH->nCCE[subframe] = dci_alloc->firstCCE;
 
-    LOG_T(PHY,"[eNB %"PRIu8"] Frame %d subframe %d : CCE resource for common DCI (PCH)  => %"PRIu8"\n",eNB->Mod_id,frame,subframe,
+    LOG_D(PHY,"[eNB %"PRIu8"] Frame %d subframe %d : CCE resource for common DCI (PCH)  => %"PRIu8"\n",eNB->Mod_id,frame,subframe,
     eNB->dlsch_PCH->nCCE[subframe]);
 
 #if defined(SMBV)
@@ -2071,6 +2071,10 @@ void prach_procedures(PHY_VARS_eNB *eNB) {
         preamble_energy_list[preamble_max],
         preamble_delay_list[preamble_max]);
 #endif
+LOG_E(PHY, "[RAPROC] Most likely preamble %d, energy %d dB delay %d\n",
+        preamble_max,
+        preamble_energy_list[preamble_max],
+        preamble_delay_list[preamble_max]);
 
   if (preamble_energy_list[preamble_max] > 580) {
 
