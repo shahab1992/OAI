@@ -5261,6 +5261,10 @@ rrc_enb_task(
       rrc_eNB_process_S1AP_E_RAB_SETUP_REQ(msg_p, msg_name_p, instance);
       LOG_D(RRC, "[eNB %d] Received the message %s\n", instance, msg_name_p);
       break;
+
+    case S1AP_E_RAB_RELEASE_COMMAND:
+      rrc_eNB_process_S1AP_E_RAB_RELEASE_COMMAND(msg_p, msg_name_p, instance);
+      break;
     
     case S1AP_UE_CONTEXT_RELEASE_REQ:
       rrc_eNB_process_S1AP_UE_CONTEXT_RELEASE_REQ(msg_p, msg_name_p, instance);
@@ -5307,10 +5311,6 @@ rrc_enb_task(
       //                                                     eNB_rrc_inst[instance].HO_flag);
       break;
 #   endif
-
-    case S1AP_E_RAB_RELEASE_COMMAND:
-      rrc_eNB_process_S1AP_E_RAB_RELEASE_COMMAND(msg_p, msg_name_p, instance);
-      break;
 
     default:
       LOG_E(RRC, "[eNB %d] Received unexpected message %s\n", instance, msg_name_p);

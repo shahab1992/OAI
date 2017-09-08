@@ -1460,7 +1460,7 @@ int rrc_eNB_process_S1AP_E_RAB_RELEASE_COMMAND(MessageDef *msg_p, const char *ms
     uint8_t nb_e_rabs_torelease;
     int erab;
     int i;
-    uint8_t b_existed;
+    uint8_t b_existed,is_existed;
     uint8_t xid;
     uint8_t e_rab_release_drb;
     MessageDef *                    msg_delete_tunnels_p = NULL;
@@ -1480,6 +1480,17 @@ int rrc_eNB_process_S1AP_E_RAB_RELEASE_COMMAND(MessageDef *msg_p, const char *ms
             mme_ue_s1ap_id, eNB_ue_s1ap_id,nb_e_rabs_torelease);
         for(erab = 0; erab < nb_e_rabs_torelease; erab++){
             b_existed = 0;
+            is_existed = 0;
+            for ( i = erab-1;  i>= 0; i--){
+                if (e_rab_release_params[erab].e_rab_id == e_rab_release_params[i].e_rab_id){
+                    is_existed = 1;
+                    break;
+                }
+            }
+            if(is_existed == 1){
+                //e_rab_id is existed
+                continue;
+            }
             for ( i = 0;  i < NB_RB_MAX; i++){
                 if (e_rab_release_params[erab].e_rab_id == ue_context_p->ue_context.e_rab[i].param.e_rab_id){
                     b_existed = 1;
@@ -1489,8 +1500,8 @@ int rrc_eNB_process_S1AP_E_RAB_RELEASE_COMMAND(MessageDef *msg_p, const char *ms
             if(b_existed == 0) {
                 //no e_rab_id
                 ue_context_p->ue_context.e_rabs_release_failed[ue_context_p->ue_context.nb_release_of_e_rabs].e_rab_id = e_rab_release_params[erab].e_rab_id;
-                ue_context_p->ue_context.e_rabs_release_failed[ue_context_p->ue_context.nb_release_of_e_rabs].cause = 0;
-                ue_context_p->ue_context.e_rabs_release_failed[ue_context_p->ue_context.nb_release_of_e_rabs].cause_id = 30;
+                ue_context_p->ue_context.e_rabs_release_failed[ue_context_p->ue_context.nb_release_of_e_rabs].cause = S1AP_CAUSE_RADIO_NETWORK;
+                ue_context_p->ue_context.e_rabs_release_failed[ue_context_p->ue_context.nb_release_of_e_rabs].cause_value = 30;
                 ue_context_p->ue_context.nb_release_of_e_rabs++;
             } else {
                 if(ue_context_p->ue_context.e_rab[i].status == E_RAB_STATUS_FAILED){
@@ -1503,8 +1514,8 @@ int rrc_eNB_process_S1AP_E_RAB_RELEASE_COMMAND(MessageDef *msg_p, const char *ms
                 }else{
                     //e_rab_id status NG
                     ue_context_p->ue_context.e_rabs_release_failed[ue_context_p->ue_context.nb_release_of_e_rabs].e_rab_id = e_rab_release_params[erab].e_rab_id;
-                    ue_context_p->ue_context.e_rabs_release_failed[ue_context_p->ue_context.nb_release_of_e_rabs].cause = 0;
-                    ue_context_p->ue_context.e_rabs_release_failed[ue_context_p->ue_context.nb_release_of_e_rabs].cause_id = 0;
+                    ue_context_p->ue_context.e_rabs_release_failed[ue_context_p->ue_context.nb_release_of_e_rabs].cause = S1AP_CAUSE_RADIO_NETWORK;
+                    ue_context_p->ue_context.e_rabs_release_failed[ue_context_p->ue_context.nb_release_of_e_rabs].cause_value = 0;
                     ue_context_p->ue_context.nb_release_of_e_rabs++;
                 }
             }

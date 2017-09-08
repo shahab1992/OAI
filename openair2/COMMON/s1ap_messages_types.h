@@ -263,13 +263,24 @@ typedef struct e_rab_setup_s {
   uint32_t gtp_teid;
 } e_rab_setup_t;
 
+typedef enum S1ap_Cause_e {
+  S1AP_CAUSE_NOTHING,  /* No components present */
+  S1AP_CAUSE_RADIO_NETWORK,
+  S1AP_CAUSE_TRANSPORT,
+  S1AP_CAUSE_NAS,
+  S1AP_CAUSE_PROTOCOL,
+  S1AP_CAUSE_MISC,
+  /* Extensions may appear below */
+
+} s1ap_Cause_t;
+
 typedef struct e_rab_failed_s {
   /* Unique e_rab_id for the UE. */
   uint8_t e_rab_id;
   /* Cause of the failure */
   //     cause_t cause;
-  uint8_t cause;
-  uint8_t cause_id;
+  s1ap_Cause_t cause;
+  uint8_t cause_value;
 } e_rab_failed_t;
 
 typedef enum s1ap_ue_ctxt_modification_present_s {
@@ -567,16 +578,6 @@ typedef struct s1ap_ue_release_command_s {
 
 
 //-------------------------------------------------------------------------------------------//
-typedef enum S1ap_Cause_e {
-  S1AP_CAUSE_NOTHING,  /* No components present */
-  S1AP_CAUSE_RADIO_NETWORK,
-  S1AP_CAUSE_TRANSPORT,
-  S1AP_CAUSE_NAS,
-  S1AP_CAUSE_PROTOCOL,
-  S1AP_CAUSE_MISC,
-  /* Extensions may appear below */
-
-} s1ap_Cause_t;
 // S1AP <-- RRC messages
 typedef struct s1ap_ue_release_req_s {
   unsigned      eNB_ue_s1ap_id:24;

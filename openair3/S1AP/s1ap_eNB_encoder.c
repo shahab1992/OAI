@@ -272,6 +272,12 @@ int s1ap_eNB_encode_successfull_outcome(s1ap_message *s1ap_message_p,
   case S1ap_ProcedureCode_id_E_RABRelease:
     ret = s1ap_eNB_encode_e_rab_release_response (
            &s1ap_message_p->msg.s1ap_E_RABReleaseResponseIEs, buffer, len);
+    s1ap_xer_print_s1ap_e_rabreleaseresponse(s1ap_xer__print2sp, message_string, s1ap_message_p);
+    message_id =  S1AP_E_RAB_RELEASE_RESPONSE_LOG ;
+    message_p = itti_alloc_new_message_sized(TASK_S1AP, message_id, message_string_size + sizeof (IttiMsgText));
+    message_p->ittiMsg.s1ap_e_rab_release_response_log.size = message_string_size;
+    memcpy(&message_p->ittiMsg.s1ap_e_rab_release_response_log.text, message_string, message_string_size);
+    itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
     free(message_string);
     S1AP_INFO("E_RAB Release successful message\n");
     break;

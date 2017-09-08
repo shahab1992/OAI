@@ -913,30 +913,37 @@ int s1ap_eNB_e_rab_release_resp(instance_t instance,
       //cause
       switch(e_rab_release_resp_p->e_rabs_failed[i].cause)
       {
-      case 0:
-          new_rabitem->cause.present = S1ap_Cause_PR_radioNetwork;
-          new_rabitem->cause.choice.radioNetwork = e_rab_release_resp_p->e_rabs_failed[i].cause_id;
-          break;
-      case 1:
-          new_rabitem->cause.present = S1ap_Cause_PR_transport;
-          new_rabitem->cause.choice.radioNetwork = e_rab_release_resp_p->e_rabs_failed[i].cause_id;
-          break;
-      case 2:
-          new_rabitem->cause.present = S1ap_Cause_PR_nas;
-          new_rabitem->cause.choice.radioNetwork = e_rab_release_resp_p->e_rabs_failed[i].cause_id;
-          break;
-      case 3:
-          new_rabitem->cause.present = S1ap_Cause_PR_protocol;
-          new_rabitem->cause.choice.radioNetwork = e_rab_release_resp_p->e_rabs_failed[i].cause_id;
-          break;
-      case 4:
-          new_rabitem->cause.present = S1ap_Cause_PR_misc;
-          new_rabitem->cause.choice.radioNetwork = e_rab_release_resp_p->e_rabs_failed[i].cause_id;
-          break;
-      default:
+        case S1AP_CAUSE_NOTHING:
           new_rabitem->cause.present = S1ap_Cause_PR_NOTHING;
-          break;
+        break;
+
+        case S1AP_CAUSE_RADIO_NETWORK:
+          new_rabitem->cause.present = S1ap_Cause_PR_radioNetwork;
+          new_rabitem->cause.choice.radioNetwork = e_rab_release_resp_p->e_rabs_failed[i].cause_value;
+        break;
+
+        case S1AP_CAUSE_TRANSPORT:
+          new_rabitem->cause.present = S1ap_Cause_PR_transport;
+          new_rabitem->cause.choice.transport = e_rab_release_resp_p->e_rabs_failed[i].cause_value;
+        break;
+
+        case S1AP_CAUSE_NAS:
+          new_rabitem->cause.present = S1ap_Cause_PR_nas;
+          new_rabitem->cause.choice.nas = e_rab_release_resp_p->e_rabs_failed[i].cause_value;
+        break;
+
+        case S1AP_CAUSE_PROTOCOL:
+          new_rabitem->cause.present = S1ap_Cause_PR_protocol;
+          new_rabitem->cause.choice.protocol = e_rab_release_resp_p->e_rabs_failed[i].cause_value;
+        break;
+
+        case S1AP_CAUSE_MISC:
+        default:
+          new_rabitem->cause.present = S1ap_Cause_PR_misc;
+          new_rabitem->cause.choice.misc = e_rab_release_resp_p->e_rabs_failed[i].cause_value;
+        break;
       }
+      S1AP_DEBUG("e_rab_release_resp: failed e_rab ID %ld\n",new_rabitem->e_RAB_ID);
       ASN_SEQUENCE_ADD(&release_response_ies_p->e_RABFailedToReleaseList.s1ap_E_RABItem, new_rabitem);
   }
 
@@ -962,8 +969,8 @@ int s1ap_eNB_e_rab_release_resp(instance_t instance,
                                    ue_context_p->mme_ref->assoc_id, buffer,
                                    length, ue_context_p->tx_stream);
 
-  S1AP_INFO("e_rab_release_response sended eNB_UE_S1AP_ID %d  mme_ue_s1ap_id %d\n",
-          e_rab_release_resp_p->eNB_ue_s1ap_id, ue_context_p->mme_ue_s1ap_id);
+  S1AP_INFO("e_rab_release_response sended eNB_UE_S1AP_ID %d  mme_ue_s1ap_id %d nb_of_e_rabs_released %d nb_of_e_rabs_failed %d\n",
+          e_rab_release_resp_p->eNB_ue_s1ap_id, ue_context_p->mme_ue_s1ap_id,e_rab_release_resp_p->nb_of_e_rabs_released,e_rab_release_resp_p->nb_of_e_rabs_failed);
 
   return ret;
 }
