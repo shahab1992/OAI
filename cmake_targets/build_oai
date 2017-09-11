@@ -258,6 +258,10 @@ function main() {
             SIMUS_PHY=1
             echo_info "Will compile dlsim, ulsim, ..."
             shift;;
+       --mexfiles)
+            MEX_PHY=1
+            echo_info "Will compile mexfiles, ..."
+            shift;;
        --core_simulators)
             SIMUS_CORE=1
             echo_info "Will compile security unitary tests"
@@ -618,6 +622,20 @@ function main() {
       compilations \
       lte-simulators $f \
 	  $f $dbin/$f.$REL
+    done
+  fi
+
+  # Mexfiles
+  if [ "$MEX_PHY" = "1" ] ; then
+    cd $OPENAIR_DIR/cmake_targets/mexfiles
+    [ "$CLEAN" = "1" ] && rm -rf build
+    mkdir -p build
+    cd build
+    cmake ../
+    echo_info "Compiling stuff for mexfiles"
+    mexFileList="mexAdd mexGetTbs mexDlschEncoding"
+    for mexFile in $mexFileList ; do
+	make $mexFile
     done
   fi
 
