@@ -2106,6 +2106,7 @@ do_RRCConnectionReestablishment(
 
   long* logicalchannelgroup = NULL;
   struct SRB_ToAddMod* SRB1_config = NULL;
+  struct SRB_ToAddMod* SRB2_config = NULL;
   struct SRB_ToAddMod__rlc_Config* SRB1_rlc_config = NULL;
   struct SRB_ToAddMod__logicalChannelConfig* SRB1_lchan_config = NULL;
   struct LogicalChannelConfig__ul_SpecificParameters* SRB1_ul_SpecificParameters = NULL;
@@ -2121,6 +2122,14 @@ do_RRCConnectionReestablishment(
 
   RRCConnectionReestablishment_t* rrcConnectionReestablishment = NULL;
 
+  int i = 0;
+  SRB_ToAddModList_t **SRB_configList2 = NULL;
+  SRB_configList2 = &ue_context_pP->ue_context.SRB_configList2[Transaction_id];
+  if (*SRB_configList2) {
+    free(*SRB_configList2);
+  }
+  *SRB_configList2 = CALLOC(1, sizeof(SRB_ToAddModList_t));
+
   memset((void *)&dl_ccch_msg, 0, sizeof(DL_CCCH_Message_t));
   dl_ccch_msg.message.present           = DL_CCCH_MessageType_PR_c1;
   dl_ccch_msg.message.choice.c1.present = DL_CCCH_MessageType__c1_PR_rrcConnectionReestablishment;
@@ -2128,6 +2137,26 @@ do_RRCConnectionReestablishment(
 
   // RRCConnectionReestablishment
   // Configure SRB1
+
+
+  // get old configuration of SRB2
+  if (*SRB_configList != NULL) {
+    for (i = 0; (i < (*SRB_configList)->list.count) && (i < 3); i++) {
+      LOG_D(RRC, "(*SRB_configList)->list.array[%d]->srb_Identity=%ld\n",
+          i, (*SRB_configList)->list.array[i]->srb_Identity);
+      if ((*SRB_configList)->list.array[i]->srb_Identity == 2 ){
+        SRB2_config = (*SRB_configList)->list.array[i];
+        break;
+      }
+    }
+  }
+
+  if (SRB2_config == NULL) {
+    // FIXME whether use default SRB2 configuration or reject the re-establishment.
+    // Hear use default SRB2 configuration
+    LOG_W(RRC,"SRB2 configuration does not exist in SRB configuration list, use default.\n");
+  }
+
   if (*SRB_configList) {
     free(*SRB_configList);
   }
@@ -2181,6 +2210,7 @@ do_RRCConnectionReestablishment(
   SRB1_ul_SpecificParameters->logicalChannelGroup = logicalchannelgroup;
 
   ASN_SEQUENCE_ADD(&(*SRB_configList)->list,SRB1_config);
+  ASN_SEQUENCE_ADD(&(*SRB_configList2)->list, SRB2_config);
 
   physicalConfigDedicated2 = *physicalConfigDedicated;
 
@@ -2192,7 +2222,18 @@ do_RRCConnectionReestablishment(
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.drb_ToReleaseList = NULL;
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.sps_Config = NULL;
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.physicalConfigDedicated = physicalConfigDedicated2;
-  rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig = NULL;
+  // FIXME mac_MainConfig
+  if (ue_context_pP->ue_context.mac_MainConfig != NULL) {
+    rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig =
+        CALLOC(1, sizeof(*rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig));
+    rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig->present =
+        RadioResourceConfigDedicated__mac_MainConfig_PR_explicitValue;
+    memcpy((void*)&rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig->choice.explicitValue,
+           (void *)ue_context_pP->ue_context.mac_MainConfig,
+           sizeof(MAC_MainConfig_t));
+  } else {
+    rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig = NULL;
+  }
 
   uint8_t KeNB_star[32] = { 0 };
   const Enb_properties_array_t *enb_properties = enb_config_get();
@@ -2205,8 +2246,12 @@ do_RRCConnectionReestablishment(
   } else { // first HO 
     derive_keNB_star (ue_context_pP->ue_context.kenb, pci, earfcn_dl, false, KeNB_star);
     // LG: really 1
-    rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nextHopChainingCount = 1;
+    rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nextHopChainingCount = 0;
   }
+
+  // copy KeNB_star to ue_context_pP->ue_context.kenb
+  memcpy (ue_context_pP->ue_context.kenb, KeNB_star, 32);
+  ue_context_pP->ue_context.kenb_ncc = 0;
 
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nonCriticalExtension = NULL;
 

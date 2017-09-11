@@ -354,7 +354,7 @@ static void process_eNB_security_key (
 
 
 //------------------------------------------------------------------------------
-static void
+void
 rrc_pdcp_config_security(
   const protocol_ctxt_t* const ctxt_pP,
   rrc_eNB_ue_context_t*          const ue_context_pP,
