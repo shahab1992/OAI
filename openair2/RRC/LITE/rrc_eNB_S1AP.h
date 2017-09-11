@@ -79,6 +79,11 @@ rrc_eNB_generate_dedicatedRRCConnectionReconfiguration(const protocol_ctxt_t* co
                                                      const uint8_t                ho_state
                                                      );
 
+int
+rrc_eNB_modify_dedicatedRRCConnectionReconfiguration(const protocol_ctxt_t* const ctxt_pP,
+                                                     rrc_eNB_ue_context_t*          const ue_context_pP,
+                                                     const uint8_t                ho_state
+                                                     );
 
 /*! \fn void rrc_eNB_send_S1AP_INITIAL_CONTEXT_SETUP_RESP(uint8_t mod_id, uint8_t ue_index)
  *\brief create a S1AP_INITIAL_CONTEXT_SETUP_RESP for S1AP.
@@ -185,6 +190,24 @@ int rrc_eNB_process_S1AP_E_RAB_SETUP_REQ(MessageDef *msg_p, const char *msg_name
  *\return 0 when successful, -1 if the UE index can not be retrieved.
  */
 int rrc_eNB_send_S1AP_E_RAB_SETUP_RESP(const protocol_ctxt_t* const ctxt_pP, rrc_eNB_ue_context_t*  const ue_context_pP, uint8_t xid );  
+
+/*! \fn rrc_eNB_process_S1AP_E_RAB_MODIFY_REQ(MessageDef *msg_p, const char *msg_name, instance_t instance);
+ *\brief process a S1AP dedicated E_RAB modify request message received from S1AP.
+ *\param msg_p Message received by RRC.
+ *\param msg_name Message name.
+ *\param instance Message instance.
+ *\return 0 when successful, -1 if the UE index can not be retrieved.
+ */
+int rrc_eNB_process_S1AP_E_RAB_MODIFY_REQ(MessageDef *msg_p, const char *msg_name, instance_t instance);
+
+/*! \fn rrc_eNB_send_S1AP_E_RAB_MODIFY_RESP(const protocol_ctxt_t* const ctxt_pP, rrc_eNB_ue_context_t*  const ue_context_pP, uint8_t xid )
+ *\brief send a S1AP dedicated E_RAB modify response
+ *\param ctxt_pP contxt infirmation
+ *\param e_contxt_pP ue specific context at the eNB
+ *\param xid transaction identifier
+ *\return 0 when successful, -1 if the UE index can not be retrieved.
+ */
+int rrc_eNB_send_S1AP_E_RAB_MODIFY_RESP(const protocol_ctxt_t* const ctxt_pP, rrc_eNB_ue_context_t*  const ue_context_pP, uint8_t xid );
 
 /*! \fn rrc_eNB_process_S1AP_UE_CTXT_MODIFICATION_REQ(MessageDef *msg_p, const char *msg_name, instance_t instance)
  *\brief process a S1AP_UE_CTXT_MODIFICATION_REQ message received from S1AP.

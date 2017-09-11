@@ -81,6 +81,10 @@ int s1ap_eNB_handle_e_rab_setup_request(uint32_t               assoc_id,
 					uint32_t               stream,
 					struct s1ap_message_s *s1ap_message_p);
 
+static
+int s1ap_eNB_handle_e_rab_modify_request(uint32_t               assoc_id,
+          uint32_t               stream,
+          struct s1ap_message_s *s1ap_message_p);
 
 /* Handlers matrix. Only eNB related procedure present here */
 s1ap_message_decoded_callback messages_callback[][3] = {
@@ -90,7 +94,7 @@ s1ap_message_decoded_callback messages_callback[][3] = {
   { 0, 0, 0 }, /* PathSwitchRequest */
   { 0, 0, 0 }, /* HandoverCancel */
   { s1ap_eNB_handle_e_rab_setup_request, 0, 0 }, /* E_RABSetup */
-  { 0, 0, 0 }, /* E_RABModify */
+  { s1ap_eNB_handle_e_rab_modify_request, 0, 0 }, /* E_RABModify */
   { 0, 0, 0 }, /* E_RABRelease */
   { 0, 0, 0 }, /* E_RABReleaseIndication */
   { s1ap_eNB_handle_initial_context_request, 0, 0 }, /* InitialContextSetup */
@@ -983,4 +987,115 @@ int s1ap_eNB_handle_e_rab_setup_request(uint32_t               assoc_id,
   return 0;
 }
 
+static
+int s1ap_eNB_handle_e_rab_modify_request(uint32_t               assoc_id,
+          uint32_t               stream,
+          struct s1ap_message_s *s1ap_message_p) {
 
+  int i;
+
+  s1ap_eNB_mme_data_t   *mme_desc_p       = NULL;
+  s1ap_eNB_ue_context_t *ue_desc_p        = NULL;
+  MessageDef            *message_p        = NULL;
+  int nb_of_e_rabs_failed = 0;
+
+  S1ap_E_RABModifyRequestIEs_t         *s1ap_E_RABModifyRequest;
+  DevAssert(s1ap_message_p != NULL);
+
+  s1ap_E_RABModifyRequest = &s1ap_message_p->msg.s1ap_E_RABModifyRequestIEs;
+
+  if ((mme_desc_p = s1ap_eNB_get_MME(NULL, assoc_id, 0)) == NULL) {
+    S1AP_ERROR("[SCTP %d] Received E-RAB modify request for non "
+               "existing MME context\n", assoc_id);
+    return -1;
+  }
+
+
+  if ((ue_desc_p = s1ap_eNB_get_ue_context(mme_desc_p->s1ap_eNB_instance,
+                   s1ap_E_RABModifyRequest->eNB_UE_S1AP_ID)) == NULL) {
+    S1AP_ERROR("[SCTP %d] Received E-RAB modify request for non "
+               "existing UE context 0x%06lx\n", assoc_id,
+               s1ap_E_RABModifyRequest->eNB_UE_S1AP_ID);
+    return -1;
+  }
+
+  /* E-RAB modify request = UE-related procedure -> stream != 0 */
+  if (stream == 0) {
+    S1AP_ERROR("[SCTP %d] Received UE-related procedure on stream (%d)\n",
+               assoc_id, stream);
+    return -1;
+  }
+
+  ue_desc_p->rx_stream = stream;
+
+  if ( ue_desc_p->mme_ue_s1ap_id != s1ap_E_RABModifyRequest->mme_ue_s1ap_id){
+    S1AP_WARN("UE context mme_ue_s1ap_id is different form that of the message (%d != %ld)",
+        ue_desc_p->mme_ue_s1ap_id, s1ap_E_RABModifyRequest->mme_ue_s1ap_id);
+    message_p = itti_alloc_new_message (TASK_RRC_ENB, S1AP_E_RAB_MODIFY_RESP);
+
+    S1AP_E_RAB_MODIFY_RESP (message_p).eNB_ue_s1ap_id = s1ap_E_RABModifyRequest->eNB_UE_S1AP_ID;
+//        S1AP_E_RAB_MODIFY_RESP (msg_fail_p).e_rabs[S1AP_MAX_E_RAB];
+    S1AP_E_RAB_MODIFY_RESP (message_p).nb_of_e_rabs = 0;
+
+    for(nb_of_e_rabs_failed = 0; nb_of_e_rabs_failed < s1ap_E_RABModifyRequest->e_RABToBeModifiedListBearerModReq.s1ap_E_RABToBeModifiedItemBearerModReq.count; nb_of_e_rabs_failed++) {
+      S1AP_E_RAB_MODIFY_RESP (message_p).e_rabs_failed[nb_of_e_rabs_failed].e_rab_id =
+            ((S1ap_E_RABToBeModifiedItemBearerModReq_t *)s1ap_E_RABModifyRequest->e_RABToBeModifiedListBearerModReq.s1ap_E_RABToBeModifiedItemBearerModReq.array[nb_of_e_rabs_failed])->e_RAB_ID;
+      S1AP_E_RAB_MODIFY_RESP (message_p).e_rabs_failed[nb_of_e_rabs_failed].cause = S1AP_CAUSE_RADIO_NETWORK;
+      S1AP_E_RAB_MODIFY_RESP (message_p).e_rabs_failed[nb_of_e_rabs_failed].cause_value = 13;//S1ap_CauseRadioNetwork_unknown_mme_ue_s1ap_id;
+    }
+    S1AP_E_RAB_MODIFY_RESP (message_p).nb_of_e_rabs_failed = nb_of_e_rabs_failed;
+
+    s1ap_eNB_e_rab_modify_resp(mme_desc_p->s1ap_eNB_instance->instance,
+                               &S1AP_E_RAB_MODIFY_RESP(message_p));
+
+    message_p = NULL;
+    return -1;
+  }
+
+  message_p        = itti_alloc_new_message(TASK_S1AP, S1AP_E_RAB_MODIFY_REQ);
+
+  S1AP_E_RAB_MODIFY_REQ(message_p).ue_initial_id  = ue_desc_p->ue_initial_id;
+
+  S1AP_E_RAB_MODIFY_REQ(message_p).mme_ue_s1ap_id  = s1ap_E_RABModifyRequest->mme_ue_s1ap_id;
+  S1AP_E_RAB_MODIFY_REQ(message_p).eNB_ue_s1ap_id  = s1ap_E_RABModifyRequest->eNB_UE_S1AP_ID;
+
+  S1AP_E_RAB_MODIFY_REQ(message_p).nb_e_rabs_tomodify =
+    s1ap_E_RABModifyRequest->e_RABToBeModifiedListBearerModReq.s1ap_E_RABToBeModifiedItemBearerModReq.count;
+
+  for (i = 0; i < s1ap_E_RABModifyRequest->e_RABToBeModifiedListBearerModReq.s1ap_E_RABToBeModifiedItemBearerModReq.count; i++) {
+    S1ap_E_RABToBeModifiedItemBearerModReq_t *item_p;
+
+    item_p = (S1ap_E_RABToBeModifiedItemBearerModReq_t *)s1ap_E_RABModifyRequest->e_RABToBeModifiedListBearerModReq.s1ap_E_RABToBeModifiedItemBearerModReq.array[i];
+
+    S1AP_E_RAB_MODIFY_REQ(message_p).e_rab_modify_params[i].e_rab_id = item_p->e_RAB_ID;
+
+    // check for the NAS PDU
+    if (item_p->nAS_PDU.size > 0 ) {
+      S1AP_E_RAB_MODIFY_REQ(message_p).e_rab_modify_params[i].nas_pdu.length = item_p->nAS_PDU.size;
+
+      S1AP_E_RAB_MODIFY_REQ(message_p).e_rab_modify_params[i].nas_pdu.buffer = malloc(sizeof(uint8_t) * item_p->nAS_PDU.size);
+
+      memcpy(S1AP_E_RAB_MODIFY_REQ(message_p).e_rab_modify_params[i].nas_pdu.buffer,
+             item_p->nAS_PDU.buf, item_p->nAS_PDU.size);
+    } else {
+      S1AP_E_RAB_MODIFY_REQ(message_p).e_rab_modify_params[i].nas_pdu.length = 0;
+      S1AP_E_RAB_MODIFY_REQ(message_p).e_rab_modify_params[i].nas_pdu.buffer = NULL;
+      continue;
+    }
+
+    /* Set the QOS informations */
+    S1AP_E_RAB_MODIFY_REQ(message_p).e_rab_modify_params[i].qos.qci = item_p->e_RABLevelQoSParameters.qCI;
+
+    S1AP_E_RAB_MODIFY_REQ(message_p).e_rab_modify_params[i].qos.allocation_retention_priority.priority_level =
+      item_p->e_RABLevelQoSParameters.allocationRetentionPriority.priorityLevel;
+    S1AP_E_RAB_MODIFY_REQ(message_p).e_rab_modify_params[i].qos.allocation_retention_priority.pre_emp_capability =
+      item_p->e_RABLevelQoSParameters.allocationRetentionPriority.pre_emptionCapability;
+    S1AP_E_RAB_MODIFY_REQ(message_p).e_rab_modify_params[i].qos.allocation_retention_priority.pre_emp_vulnerability =
+      item_p->e_RABLevelQoSParameters.allocationRetentionPriority.pre_emptionVulnerability;
+
+  }
+
+  itti_send_msg_to_task(TASK_RRC_ENB, ue_desc_p->eNB_instance->instance, message_p);
+
+  return 0;
+}
