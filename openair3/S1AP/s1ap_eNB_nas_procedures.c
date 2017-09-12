@@ -892,13 +892,8 @@ int s1ap_eNB_e_rab_release_resp(instance_t instance,
 
     S1AP_DEBUG("e_rab_release_resp: e_rab ID %ld\n",new_item->e_RAB_ID);
 
-    S1ap_IE_t *ie = s1ap_new_ie(S1ap_ProtocolIE_ID_id_E_RABReleaseItemBearerRelComp,
-				S1ap_Criticality_ignore,
-				&asn_DEF_S1ap_E_RABReleaseItemBearerRelComp,
-				new_item);
-
     ASN_SEQUENCE_ADD(&release_response_ies_p->e_RABReleaseListBearerRelComp.s1ap_E_RABReleaseItemBearerRelComp,
-                     ie);
+                     new_item);
   }
 
   if ( e_rab_release_resp_p->nb_of_e_rabs_failed > 0 )
