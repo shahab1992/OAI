@@ -1110,8 +1110,7 @@ rrc_eNB_generate_RRCConnectionReestablishment(
         rrc_mac_config_req(ctxt_pP->module_id,
                            ue_context_pP->ue_context.primaryCC_id,
                            ENB_FLAG_YES,
-                           //ue_context_pP->ue_context.rnti,
-                           ctxt_pP->rnti,  // FIXME use prior rnti or current rnti
+                           ctxt_pP->rnti,
                            0,
                            (RadioResourceConfigCommonSIB_t *) NULL,
                            (struct PhysicalConfigDedicated* ) ue_context_pP->ue_context.physicalConfigDedicated,
@@ -1182,8 +1181,8 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
   hashtable_rc_t                      h_rc;
   DRB_ToAddModList_t*                 DRB_configList = ue_context_pP->ue_context.DRB_configList;
   SRB_ToAddModList_t*                 SRB_configList = ue_context_pP->ue_context.SRB_configList;
-  SRB_ToAddModList_t*                 SRB_configList2 = ue_context_pP->ue_context.SRB_configList2[xid];
-  DRB_ToAddModList_t*                 DRB_configList2 = ue_context_pP->ue_context.DRB_configList2[xid];
+  SRB_ToAddModList_t**                SRB_configList2 = NULL;
+  DRB_ToAddModList_t**                DRB_configList2 = NULL;
   struct SRB_ToAddMod                *SRB2_config = NULL;
   struct DRB_ToAddMod                *DRB_config = NULL;
   int i = 0;
@@ -1207,38 +1206,53 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
   /* for no gcc warnings */
   (void)dedicatedInfoNas;
   C_RNTI_t                           *cba_RNTI                         = NULL;
+  uint8_t next_xid = rrc_eNB_get_next_transaction_identifier(ctxt_pP->module_id);
 
   ue_context_pP->ue_context.Status = RRC_CONNECTED;
 
+  SRB_configList2 = &ue_context_pP->ue_context.SRB_configList2[xid];
   // get old configuration of SRB2
-  if (SRB_configList2 != NULL) {
+  if (*SRB_configList2 != NULL) {
     LOG_D(RRC, "SRB_configList2(%p) count is %d\n           SRB_configList2->list.array[0] addr is %p",
-          SRB_configList2, SRB_configList2->list.count,  SRB_configList2->list.array[0]);
-    for (i = 0; (i < SRB_configList2->list.count) && (i < 3); i++) {
-      if (SRB_configList2->list.array[i]->srb_Identity == 2 ){
+          SRB_configList2, (*SRB_configList2)->list.count,  (*SRB_configList2)->list.array[0]);
+    for (i = 0; (i < (*SRB_configList2)->list.count) && (i < 3); i++) {
+      if ((*SRB_configList2)->list.array[i]->srb_Identity == 2 ){
         LOG_D(RRC, "get SRB2_config from (ue_context_pP->ue_context.SRB_configList2[%d])\n", xid);
-        SRB2_config = SRB_configList2->list.array[i];
+        SRB2_config = (*SRB_configList2)->list.array[i];
         break;
       }
     }
   }
+  SRB_configList2 = &ue_context_pP->ue_context.SRB_configList2[next_xid];
+  DRB_configList2 = &ue_context_pP->ue_context.DRB_configList2[next_xid];
 
-  if (SRB2_config == NULL) {
-    // FIXME whether use default SRB2 configuration or reject the re-establishment.
-    // Hear use default SRB2 configuration
-    LOG_W(RRC,"SRB2 configuration does not exist in SRB configuration list, use default.\n");
+  if (*SRB_configList2) {
+    free(*SRB_configList2);
+    LOG_D(RRC, "free(ue_context_pP->ue_context.SRB_configList2[%d])\n", next_xid);
+  }
+  *SRB_configList2 = CALLOC(1, sizeof(**SRB_configList2));
+  if (SRB2_config != NULL) {
+    // Add SRB2 to SRB configuration list
+
+    ASN_SEQUENCE_ADD(&SRB_configList->list, SRB2_config);
+    ASN_SEQUENCE_ADD(&(*SRB_configList2)->list, SRB2_config);
+
+    LOG_D(RRC, "Add SRB2_config (srb_Identity:%ld) to ue_context_pP->ue_context.SRB_configList\n",
+            SRB2_config->srb_Identity);
+    LOG_D(RRC, "Add SRB2_config (srb_Identity:%ld) to ue_context_pP->ue_context.SRB_configList2[%d]\n",
+                SRB2_config->srb_Identity, next_xid);
+  } else {
+    // SRB configuration list only contains SRB1.
+    LOG_W(RRC,"SRB2 configuration does not exist in SRB configuration list\n");
   }
 
-  // Add SRB2 to SRB configuration list
-  ASN_SEQUENCE_ADD(&SRB_configList->list, SRB2_config);
-  LOG_D(RRC, "Add SRB2_config (srb_Identity:%ld) to ue_context_pP->ue_context.SRB_configList",
-          SRB2_config->srb_Identity);
 
-  if (DRB_configList2) {
-    free(DRB_configList2);
-    LOG_D(RRC, "free(ue_context_pP->ue_context.DRB_configList2[%d])\n", xid);
+
+  if (*DRB_configList2) {
+    free(*DRB_configList2);
+    LOG_D(RRC, "free(ue_context_pP->ue_context.DRB_configList2[%d])\n", next_xid);
   }
-  DRB_configList2 = CALLOC(1, sizeof(*DRB_configList2));
+  *DRB_configList2 = CALLOC(1, sizeof(**DRB_configList2));
 
   if (DRB_configList != NULL) {
     LOG_D(RRC, "get DRB_config from (ue_context_pP->ue_context.DRB_configList)\n");
@@ -1246,8 +1260,8 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
       DRB_config = DRB_configList->list.array[i];
 
       // Add DRB to DRB configuration list, for RRCConnectionReconfigurationComplete
-      ASN_SEQUENCE_ADD(&DRB_configList2->list, DRB_config);
-     }
+      ASN_SEQUENCE_ADD(&(*DRB_configList2)->list, DRB_config);
+    }
   }
   ue_context_pP->ue_context.Srb1.Active = 1;
   //ue_context_pP->ue_context.Srb2.Srb_info.Srb_id = 2;
@@ -1558,7 +1572,7 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
     //rrc_inst->handover_info.as_config.sourceRadioResourceConfig.srb_ToAddModList = CALLOC(1,sizeof());
     ue_context_pP->ue_context.handover_info = CALLOC(1, sizeof(*(ue_context_pP->ue_context.handover_info)));
     //memcpy((void *)rrc_inst->handover_info[ue_mod_idP]->as_config.sourceRadioResourceConfig.srb_ToAddModList,(void *)SRB_list,sizeof(SRB_ToAddModList_t));
-    ue_context_pP->ue_context.handover_info->as_config.sourceRadioResourceConfig.srb_ToAddModList = SRB_configList2;
+    ue_context_pP->ue_context.handover_info->as_config.sourceRadioResourceConfig.srb_ToAddModList = *SRB_configList2;
     //memcpy((void *)rrc_inst->handover_info[ue_mod_idP]->as_config.sourceRadioResourceConfig.drb_ToAddModList,(void *)DRB_list,sizeof(DRB_ToAddModList_t));
     ue_context_pP->ue_context.handover_info->as_config.sourceRadioResourceConfig.drb_ToAddModList = DRB_configList;
     ue_context_pP->ue_context.handover_info->as_config.sourceRadioResourceConfig.drb_ToReleaseList = NULL;
@@ -1643,8 +1657,8 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
 
   size = do_RRCConnectionReconfiguration(ctxt_pP,
                                          buffer,
-                                         xid,   //Transaction_id,
-                                         (SRB_ToAddModList_t*)SRB_configList2, // SRB_configList
+                                         next_xid,   //Transaction_id,
+                                         (SRB_ToAddModList_t*)*SRB_configList2, // SRB_configList
                                          (DRB_ToAddModList_t*)DRB_configList,
                                          (DRB_ToReleaseList_t*)NULL,  // DRB2_list,
                                          (struct SPS_Config*)NULL,    // maybe ue_context_pP->ue_context.sps_Config,
@@ -5202,7 +5216,6 @@ rrc_eNB_decode_ccch(
 
       {
       uint16_t                          c_rnti = 0;
-      C_RNTI_t                          *recv_rnti_p  = NULL;
 
       if (rrcConnectionReestablishmentRequest->ue_Identity.physCellId != eNB_rrc_inst[ctxt_pP->module_id].carrier[CC_id].physCellId) {
         LOG_E(RRC,
@@ -5229,13 +5242,8 @@ rrc_eNB_decode_ccch(
         break;
 
       }
-      recv_rnti_p = &rrcConnectionReestablishmentRequest->ue_Identity.c_RNTI;
-      // FIXME c_rnti = BIT_STRING_to_uint16(&rrcConnectionReestablishmentRequest->ue_Identity.c_RNTI);
-      if (recv_rnti_p->size == 1) {
-        c_rnti = (recv_rnti_p->buf[0] & 0xFF);
-      } else {
-        c_rnti = (((recv_rnti_p->buf[0] << 8) + recv_rnti_p->buf[1] ) & 0xFFFF);
-      }
+
+      c_rnti = BIT_STRING_to_uint16(&rrcConnectionReestablishmentRequest->ue_Identity.c_RNTI);
       LOG_D(RRC, "c_rnti is %x\n", c_rnti);
 
       ue_context_p = rrc_eNB_get_ue_context(&eNB_rrc_inst[ctxt_pP->module_id], c_rnti);
@@ -5463,6 +5471,7 @@ rrc_eNB_decode_ccch(
 
 #if defined(ENABLE_ITTI)
           ue_context_p->ue_context.establishment_cause = rrcConnectionRequest->establishmentCause;
+          ue_context_p->ue_context.reestablishment_cause = ReestablishmentCause_spare1;
 	  if (stmsi_received==0)
 	    LOG_I(RRC, PROTOCOL_RRC_CTXT_UE_FMT" Accept new connection from UE random UE identity (0x%" PRIx64 ") MME code %u TMSI %u cause %ld\n",
 		  PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),
@@ -5776,10 +5785,14 @@ rrc_eNB_decode_dcch(
                              ul_dcch_msg->message.choice.c1.choice.rrcConnectionReconfigurationComplete.rrc_TransactionIdentifier);
           }
         }else {
-          rrc_eNB_send_S1AP_INITIAL_CONTEXT_SETUP_RESP(ctxt_pP,
+          if(ue_context_p->ue_context.reestablishment_cause == ReestablishmentCause_spare1){
+            rrc_eNB_send_S1AP_INITIAL_CONTEXT_SETUP_RESP(ctxt_pP,
                              ue_context_p);
+          } else {
+            ue_context_p->ue_context.reestablishment_cause = ReestablishmentCause_spare1;
+          }
         }
-      }    
+      }
 #else  // establish a dedicated bearer 
       if (dedicated_DRB == 0 ) {
 	//	ue_context_p->ue_context.e_rab[0].status = E_RAB_STATUS_ESTABLISHED;

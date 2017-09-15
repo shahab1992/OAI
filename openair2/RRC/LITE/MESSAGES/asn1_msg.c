@@ -2146,15 +2146,66 @@ do_RRCConnectionReestablishment(
           i, (*SRB_configList)->list.array[i]->srb_Identity);
       if ((*SRB_configList)->list.array[i]->srb_Identity == 2 ){
         SRB2_config = (*SRB_configList)->list.array[i];
-        break;
+      } else if ((*SRB_configList)->list.array[i]->srb_Identity == 1 ){
+        SRB1_config = (*SRB_configList)->list.array[i];
       }
     }
   }
 
+  if (SRB1_config == NULL) {
+    // default SRB1 configuration
+    LOG_W(RRC,"SRB1 configuration does not exist in SRB configuration list, use default\n");
+    /// SRB1
+    SRB1_config = CALLOC(1, sizeof(*SRB1_config));
+
+    SRB1_config->srb_Identity = 1;
+    SRB1_rlc_config = CALLOC(1, sizeof(*SRB1_rlc_config));
+    SRB1_config->rlc_Config   = SRB1_rlc_config;
+
+    SRB1_rlc_config->present = SRB_ToAddMod__rlc_Config_PR_explicitValue;
+    SRB1_rlc_config->choice.explicitValue.present=RLC_Config_PR_am;
+  #if defined(ENABLE_ITTI)
+    SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.t_PollRetransmit = enb_properties.properties[ctxt_pP->module_id]->srb1_timer_poll_retransmit;
+    SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.pollPDU          = enb_properties.properties[ctxt_pP->module_id]->srb1_poll_pdu;
+    SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.pollByte         = enb_properties.properties[ctxt_pP->module_id]->srb1_poll_byte;
+    SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.maxRetxThreshold = enb_properties.properties[ctxt_pP->module_id]->srb1_max_retx_threshold;
+    SRB1_rlc_config->choice.explicitValue.choice.am.dl_AM_RLC.t_Reordering     = enb_properties.properties[ctxt_pP->module_id]->srb1_timer_reordering;
+    SRB1_rlc_config->choice.explicitValue.choice.am.dl_AM_RLC.t_StatusProhibit = enb_properties.properties[ctxt_pP->module_id]->srb1_timer_status_prohibit;
+  #else
+    SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.t_PollRetransmit = T_PollRetransmit_ms20;;
+    SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.pollPDU          = PollPDU_p4;;
+    SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.pollByte         = PollByte_kBinfinity;
+    SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.maxRetxThreshold = UL_AM_RLC__maxRetxThreshold_t8;
+    SRB1_rlc_config->choice.explicitValue.choice.am.dl_AM_RLC.t_Reordering     = T_Reordering_ms35;
+    SRB1_rlc_config->choice.explicitValue.choice.am.dl_AM_RLC.t_StatusProhibit = T_StatusProhibit_ms0;
+  #endif
+
+    SRB1_lchan_config = CALLOC(1, sizeof(*SRB1_lchan_config));
+    SRB1_config->logicalChannelConfig = SRB1_lchan_config;
+
+    SRB1_lchan_config->present = SRB_ToAddMod__logicalChannelConfig_PR_explicitValue;
+    SRB1_ul_SpecificParameters = CALLOC(1, sizeof(*SRB1_ul_SpecificParameters));
+
+    SRB1_lchan_config->choice.explicitValue.ul_SpecificParameters = SRB1_ul_SpecificParameters;
+
+
+    SRB1_ul_SpecificParameters->priority = 1;
+
+    //assign_enum(&SRB1_ul_SpecificParameters->prioritisedBitRate,LogicalChannelConfig__ul_SpecificParameters__prioritisedBitRate_infinity);
+    SRB1_ul_SpecificParameters->prioritisedBitRate=LogicalChannelConfig__ul_SpecificParameters__prioritisedBitRate_infinity;
+
+    //assign_enum(&SRB1_ul_SpecificParameters->bucketSizeDuration,LogicalChannelConfig__ul_SpecificParameters__bucketSizeDuration_ms50);
+    SRB1_ul_SpecificParameters->bucketSizeDuration=LogicalChannelConfig__ul_SpecificParameters__bucketSizeDuration_ms50;
+
+    logicalchannelgroup = CALLOC(1, sizeof(long));
+    *logicalchannelgroup = 0;
+    SRB1_ul_SpecificParameters->logicalChannelGroup = logicalchannelgroup;
+  }
+
   if (SRB2_config == NULL) {
-    // FIXME whether use default SRB2 configuration or reject the re-establishment.
-    // Hear use default SRB2 configuration
-    LOG_W(RRC,"SRB2 configuration does not exist in SRB configuration list, use default.\n");
+    LOG_W(RRC,"SRB2 configuration does not exist in SRB configuration list\n");
+  } else {
+    ASN_SEQUENCE_ADD(&(*SRB_configList2)->list, SRB2_config);
   }
 
   if (*SRB_configList) {
@@ -2163,54 +2214,7 @@ do_RRCConnectionReestablishment(
 
   *SRB_configList = CALLOC(1, sizeof(SRB_ToAddModList_t));
 
-  /// SRB1
-  SRB1_config = CALLOC(1, sizeof(*SRB1_config));
-
-  SRB1_config->srb_Identity = 1;
-  SRB1_rlc_config = CALLOC(1, sizeof(*SRB1_rlc_config));
-  SRB1_config->rlc_Config   = SRB1_rlc_config;
-
-  SRB1_rlc_config->present = SRB_ToAddMod__rlc_Config_PR_explicitValue;
-  SRB1_rlc_config->choice.explicitValue.present=RLC_Config_PR_am;
-#if defined(ENABLE_ITTI)
-  SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.t_PollRetransmit = enb_properties.properties[ctxt_pP->module_id]->srb1_timer_poll_retransmit;
-  SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.pollPDU          = enb_properties.properties[ctxt_pP->module_id]->srb1_poll_pdu;
-  SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.pollByte         = enb_properties.properties[ctxt_pP->module_id]->srb1_poll_byte;
-  SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.maxRetxThreshold = enb_properties.properties[ctxt_pP->module_id]->srb1_max_retx_threshold;
-  SRB1_rlc_config->choice.explicitValue.choice.am.dl_AM_RLC.t_Reordering     = enb_properties.properties[ctxt_pP->module_id]->srb1_timer_reordering;
-  SRB1_rlc_config->choice.explicitValue.choice.am.dl_AM_RLC.t_StatusProhibit = enb_properties.properties[ctxt_pP->module_id]->srb1_timer_status_prohibit;
-#else 
-  SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.t_PollRetransmit = T_PollRetransmit_ms20;;
-  SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.pollPDU          = PollPDU_p4;;
-  SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.pollByte         = PollByte_kBinfinity;
-  SRB1_rlc_config->choice.explicitValue.choice.am.ul_AM_RLC.maxRetxThreshold = UL_AM_RLC__maxRetxThreshold_t8;
-  SRB1_rlc_config->choice.explicitValue.choice.am.dl_AM_RLC.t_Reordering     = T_Reordering_ms35;
-  SRB1_rlc_config->choice.explicitValue.choice.am.dl_AM_RLC.t_StatusProhibit = T_StatusProhibit_ms0;
-#endif 
-
-  SRB1_lchan_config = CALLOC(1, sizeof(*SRB1_lchan_config));
-  SRB1_config->logicalChannelConfig = SRB1_lchan_config;
-
-  SRB1_lchan_config->present = SRB_ToAddMod__logicalChannelConfig_PR_explicitValue;
-  SRB1_ul_SpecificParameters = CALLOC(1, sizeof(*SRB1_ul_SpecificParameters));
-
-  SRB1_lchan_config->choice.explicitValue.ul_SpecificParameters = SRB1_ul_SpecificParameters;
-
-
-  SRB1_ul_SpecificParameters->priority = 1;
-
-  //assign_enum(&SRB1_ul_SpecificParameters->prioritisedBitRate,LogicalChannelConfig__ul_SpecificParameters__prioritisedBitRate_infinity);
-  SRB1_ul_SpecificParameters->prioritisedBitRate=LogicalChannelConfig__ul_SpecificParameters__prioritisedBitRate_infinity;
-
-  //assign_enum(&SRB1_ul_SpecificParameters->bucketSizeDuration,LogicalChannelConfig__ul_SpecificParameters__bucketSizeDuration_ms50);
-  SRB1_ul_SpecificParameters->bucketSizeDuration=LogicalChannelConfig__ul_SpecificParameters__bucketSizeDuration_ms50;
-
-  logicalchannelgroup = CALLOC(1, sizeof(long));
-  *logicalchannelgroup = 0;
-  SRB1_ul_SpecificParameters->logicalChannelGroup = logicalchannelgroup;
-
   ASN_SEQUENCE_ADD(&(*SRB_configList)->list,SRB1_config);
-  ASN_SEQUENCE_ADD(&(*SRB_configList2)->list, SRB2_config);
 
   physicalConfigDedicated2 = *physicalConfigDedicated;
 
@@ -2222,29 +2226,30 @@ do_RRCConnectionReestablishment(
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.drb_ToReleaseList = NULL;
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.sps_Config = NULL;
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.physicalConfigDedicated = physicalConfigDedicated2;
-  // FIXME mac_MainConfig
-  if (ue_context_pP->ue_context.mac_MainConfig != NULL) {
-    rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig =
-        CALLOC(1, sizeof(*rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig));
-    rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig->present =
-        RadioResourceConfigDedicated__mac_MainConfig_PR_explicitValue;
-    memcpy((void*)&rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig->choice.explicitValue,
-           (void *)ue_context_pP->ue_context.mac_MainConfig,
-           sizeof(MAC_MainConfig_t));
-  } else {
-    rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig = NULL;
-  }
+  rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.radioResourceConfigDedicated.mac_MainConfig = NULL;
 
   uint8_t KeNB_star[32] = { 0 };
   const Enb_properties_array_t *enb_properties = enb_config_get();
   uint16_t pci = enb_properties->properties[ctxt_pP->instance]->Nid_cell[CC_id];
   uint32_t earfcn_dl = (uint32_t)freq_to_arfcn10(enb_properties->properties[ctxt_pP->instance]->eutra_band[CC_id],
                   enb_properties->properties[ctxt_pP->instance]->downlink_frequency[CC_id]);
+  bool     is_rel8_only = true;
+  if (earfcn_dl > 65535) {
+    is_rel8_only = false;
+  }
+
+  LOG_D(RRC, "pci=%d, eutra_band=%d, downlink_frequency=%lu, earfcn_dl=%u, is_rel8_only=%s\n",
+      pci,
+      enb_properties->properties[ctxt_pP->instance]->eutra_band[CC_id],
+      enb_properties->properties[ctxt_pP->instance]->downlink_frequency[CC_id],
+      earfcn_dl,
+      is_rel8_only == true ? "true": "false");
+
   if (ue_context_pP->ue_context.nh_ncc >= 0) {
-    derive_keNB_star (ue_context_pP->ue_context.nh, pci, earfcn_dl, false, KeNB_star);
+    derive_keNB_star (ue_context_pP->ue_context.nh, pci, earfcn_dl, is_rel8_only, KeNB_star);
     rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nextHopChainingCount = ue_context_pP->ue_context.nh_ncc;
   } else { // first HO 
-    derive_keNB_star (ue_context_pP->ue_context.kenb, pci, earfcn_dl, false, KeNB_star);
+    derive_keNB_star (ue_context_pP->ue_context.kenb, pci, earfcn_dl, is_rel8_only, KeNB_star);
     // LG: really 1
     rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nextHopChainingCount = 0;
   }
