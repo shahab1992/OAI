@@ -2043,7 +2043,8 @@ if (is_secondary_ue) {
   pdcch_unscrambling(frame_parms,
                      subframe,
                      pdcch_vars[eNB_id]->e_rx,
-                     get_nCCE(n_pdcch_symbols,frame_parms,mi)*72);
+                     8*get_nquad(n_pdcch_symbols, frame_parms, mi));
+//                     get_nCCE(n_pdcch_symbols,frame_parms,mi)*72);
 
   pdcch_vars[eNB_id]->num_pdcch_symbols = n_pdcch_symbols;
 
@@ -2119,9 +2120,6 @@ uint8_t get_num_pdcch_symbols(uint8_t num_dci,
   uint16_t numCCE = 0;
   uint8_t i;
   uint8_t nCCEmin = 0;
-  uint16_t CCE_max_used_index = 0;
-  uint16_t firstCCE_max = dci_alloc[0].firstCCE;
-  uint8_t  L = dci_alloc[0].L;
 
   // check pdcch duration imposed by PHICH duration (Section 6.9 of 36-211)
   if (frame_parms->Ncp==1) { // extended prefix
@@ -2138,22 +2136,16 @@ uint8_t get_num_pdcch_symbols(uint8_t num_dci,
   for (i=0; i<num_dci; i++) {
     //     printf("dci %d => %d\n",i,dci_alloc[i].L);
     numCCE += (1<<(dci_alloc[i].L));
-
-    if(firstCCE_max < dci_alloc[i].firstCCE) {
-      firstCCE_max = dci_alloc[i].firstCCE;
-      L            = dci_alloc[i].L;
-    }
   }
-  CCE_max_used_index = firstCCE_max + (1<<L) - 1;
 
   //if ((9*numCCE) <= (frame_parms->N_RB_DL*2))
-  if (CCE_max_used_index < get_nCCE(1, frame_parms, get_mi(frame_parms, subframe)))
+  if (numCCE < get_nCCE(1, frame_parms, get_mi(frame_parms, subframe)))
     return(cmax(1,nCCEmin));
   //else if ((9*numCCE) <= (frame_parms->N_RB_DL*((frame_parms->nb_antenna_ports_eNB==4) ? 4 : 5)))
-  else if (CCE_max_used_index < get_nCCE(2, frame_parms, get_mi(frame_parms, subframe)))
+  else if (numCCE < get_nCCE(2, frame_parms, get_mi(frame_parms, subframe)))
     return(cmax(2,nCCEmin));
   //else if ((9*numCCE) <= (frame_parms->N_RB_DL*((frame_parms->nb_antenna_ports_eNB==4) ? 7 : 8)))
-  else if (CCE_max_used_index < get_nCCE(3, frame_parms, get_mi(frame_parms, subframe)))
+  else if (numCCE < get_nCCE(3, frame_parms, get_mi(frame_parms, subframe)))
     return(cmax(3,nCCEmin));
   else if (frame_parms->N_RB_DL<=10) {
     if (frame_parms->Ncp == 0) { // normal CP
@@ -2683,7 +2675,7 @@ uint16_t get_nquad(uint8_t num_pdcch_symbols,LTE_DL_FRAME_PARMS *frame_parms,uin
     }
 
   //   printf("Nreg %d (%d)\n",Nreg,Nreg - 4 - (3*Ngroup_PHICH));
-  return(Nreg - 4 - (3*Ngroup_PHICH));
+  return(Nreg - 4 - (3*Ngroup_PHICH) - (2*frame_parms->nb_antenna_ports_eNB));
 }
 
 uint16_t get_nCCE_mac(uint8_t Mod_id,uint8_t CC_id,int num_pdcch_symbols,int subframe)
@@ -2832,8 +2824,8 @@ void dci_decoding_procedure0(LTE_UE_PDCCH **pdcch_vars,
 
   nCCE = get_nCCE(pdcch_vars[eNB_id]->num_pdcch_symbols,frame_parms,mi);
 
-  if (nCCE > get_nCCE(3,frame_parms,1)) {
-    LOG_D(PHY,"skip DCI decoding: nCCE=%d > get_nCCE(3,frame_parms,1)=%d\n", nCCE, get_nCCE(3,frame_parms,1));
+  if (nCCE > get_nCCE(3,frame_parms,mi)) {
+    LOG_D(PHY,"skip DCI decoding: nCCE=%d > get_nCCE(3,frame_parms,1)=%d\n", nCCE, get_nCCE(3,frame_parms,mi));
     return;
   }
 
@@ -3047,6 +3039,7 @@ void dci_decoding_procedure0(LTE_UE_PDCCH **pdcch_vars,
           *CCEmap|=(1<<(CCEind&0x1f));
           break;
         }
+
 
 #ifdef DEBUG_DCI_DECODING
         LOG_I(PHY,"[DCI search] Found DCI %d rnti %x Aggregation %d length %d format %s in CCE %d (CCEmap %x) candidate %d / %d \n",
