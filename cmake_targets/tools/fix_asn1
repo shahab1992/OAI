@@ -8,11 +8,11 @@ RRC_Rel14=(
 )
 
 RRC_Rel10=(
-  "SystemInformation-r8-IEs.h" 603cd6615cff36ec7020692d72c0d6de7c4859cb "fix_asn1.data/RRC.rel10/SystemInformation-r8-IEs.h.diff"
+  "SystemInformation-r8-IEs.h" 05de89f1eb529fd0eefff0dfbf32f20518e68cd7 "fix_asn1.data/RRC.rel10/SystemInformation-r8-IEs.h.diff"
 )
 
 X2AP_Rel11_2=(
-  "X2ap-CriticalityDiagnostics-IE-List.h" ae96308b37fcbcbf39da5012e42968135fc5f27b "fix_asn1.data/X2AP.rel11.2/X2ap-CriticalityDiagnostics-IE-List.h.diff"
+  "X2ap-CriticalityDiagnostics-IE-List.h" f72cb1d5086cc6dfa33b4ffb2704a6a9603bf3eb "fix_asn1.data/X2AP.rel11.2/X2ap-CriticalityDiagnostics-IE-List.h.diff"
 )
 
 red_color="$(tput setaf 1)"
@@ -41,7 +41,8 @@ function check_sha1()
   # installation (this is for *.h files, for *.c
   # files it's no big deal to skip that line)
   local computed_sha1=$(sed 4d "$file" | sha1sum | cut -f 1 -d ' ')
-
+  echo $target_sha1
+  echo $computed_sha1
   if [ "$target_sha1" != "$computed_sha1" ]
   then
     error "$file: wrong SHA1"

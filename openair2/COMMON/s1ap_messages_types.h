@@ -48,7 +48,7 @@
 #define S1AP_UE_CONTEXT_RELEASE_COMMAND(mSGpTR) (mSGpTR)->ittiMsg.s1ap_ue_release_command
 #define S1AP_UE_CONTEXT_RELEASE_COMPLETE(mSGpTR) (mSGpTR)->ittiMsg.s1ap_ue_release_complete
 #define S1AP_E_RAB_SETUP_REQ(mSGpTR)              (mSGpTR)->ittiMsg.s1ap_e_rab_setup_req
-#define S1AP_PAGIND_IND(mSGpTR)                 (mSGpTR)->ittiMsg.s1ap_paging_ind
+#define S1AP_PAGING_IND(mSGpTR)                 (mSGpTR)->ittiMsg.s1ap_paging_ind
 
 #define S1AP_UE_CONTEXT_RELEASE_REQ(mSGpTR)     (mSGpTR)->ittiMsg.s1ap_ue_release_req
 
@@ -175,6 +175,11 @@ typedef struct s1ap_gummei_s {
   uint16_t mme_group_id;
 } s1ap_gummei_t;
 
+typedef struct s1ap_imsi_s {
+  uint8_t  buffer[S1AP_IMSI_LENGTH];
+  uint8_t  length;
+} s1ap_imsi_t;
+
 typedef struct s_tmsi_s {
   uint8_t  mme_code;
   uint32_t m_tmsi;
@@ -189,7 +194,7 @@ typedef enum ue_paging_identity_presenceMask_e {
 typedef struct ue_paging_identity_s {
   ue_paging_identity_presenceMask_t presenceMask;
   union {
-    char     imsi[S1AP_IMSI_LENGTH];
+    s1ap_imsi_t  imsi;
     s_tmsi_t s_tmsi;
   } choice;
 } ue_paging_identity_t;
@@ -460,6 +465,12 @@ typedef struct s1ap_initial_context_setup_req_s {
   e_rab_t  e_rab_param[S1AP_MAX_E_RAB];
 } s1ap_initial_context_setup_req_t;
 
+typedef struct tai_plmn_identity_s {
+  uint16_t mcc;
+  uint16_t mnc;
+  uint8_t  mnc_digit_length;
+} plmn_identity_t;
+
 typedef struct s1ap_paging_ind_s {
   /* UE identity index value.
    * Specified in 3GPP TS 36.304
@@ -471,6 +482,15 @@ typedef struct s1ap_paging_ind_s {
 
   /* Indicates origin of paging */
   cn_domain_t cn_domain;
+
+  /* PLMN_identity in TAI of Paging*/
+  plmn_identity_t plmn_identity[256];
+
+  /* TAC in TAIList of Paging*/
+  int16_t tac[256];
+
+  /* size of TAIList*/
+  int16_t tai_size;
 
   /* Optional fields */
   paging_drx_t paging_drx;

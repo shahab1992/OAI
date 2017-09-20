@@ -2005,6 +2005,8 @@ int dlsch_modulation(PHY_VARS_eNB* phy_vars_eNB,
   uint16_t l,rb,re_offset;
   uint32_t rb_alloc_ind;
   uint32_t *rb_alloc = NULL; //=dlsch0_harq->rb_alloc;
+  uint32_t *rb_alloc_even = NULL;
+  uint32_t *rb_alloc_odd = NULL;
 
   uint8_t pilots=0;
   uint8_t skip_dc,skip_half;
@@ -2063,7 +2065,9 @@ int dlsch_modulation(PHY_VARS_eNB* phy_vars_eNB,
     dlsch0_harq = dlsch0->harq_processes[harq_pid];
     mimo_mode = dlsch0_harq->mimo_mode;
     mod_order0 = get_Qm(dlsch0_harq->mcs);
-    rb_alloc = dlsch0_harq->rb_alloc;
+    //rb_alloc = dlsch0_harq->rb_alloc;
+    rb_alloc_even = dlsch0_harq->rb_alloc;
+    rb_alloc_odd = dlsch0_harq->rb_alloc_odd;
 #ifdef DEBUG_DLSCH_MODULATION
     Nl0 = dlsch0_harq->Nl;
 #endif
@@ -2080,7 +2084,9 @@ int dlsch_modulation(PHY_VARS_eNB* phy_vars_eNB,
     dlsch0_harq = dlsch0->harq_processes[harq_pid];
     mimo_mode = dlsch0_harq->mimo_mode;
     mod_order0 = get_Qm(dlsch0_harq->mcs);
-    rb_alloc = dlsch0_harq->rb_alloc;
+    //rb_alloc = dlsch0_harq->rb_alloc;
+    rb_alloc_even = dlsch0_harq->rb_alloc;
+    rb_alloc_odd = dlsch0_harq->rb_alloc_odd;
 #ifdef DEBUG_DLSCH_MODULATION
     Nl0 = dlsch0_harq->Nl;
 #endif
@@ -2097,7 +2103,9 @@ int dlsch_modulation(PHY_VARS_eNB* phy_vars_eNB,
     dlsch1_harq = dlsch1->harq_processes[harq_pid];
     mimo_mode = dlsch1_harq->mimo_mode;
     mod_order0 = get_Qm(dlsch1_harq->mcs);
-    rb_alloc = dlsch1_harq->rb_alloc;
+    //rb_alloc = dlsch1_harq->rb_alloc;
+    rb_alloc_even = dlsch1_harq->rb_alloc;
+    rb_alloc_odd = dlsch1_harq->rb_alloc_odd;
 #ifdef DEBUG_DLSCH_MODULATION
     Nl0 = dlsch1_harq->Nl;
 #endif
@@ -2156,13 +2164,15 @@ int dlsch_modulation(PHY_VARS_eNB* phy_vars_eNB,
 
   if (dlsch0 != NULL ) {
 #ifdef DEBUG_DLSCH_MODULATION
-    printf("Generating DLSCH (harq_pid %d,mimo %d, pmi_alloc0 %lx, mod0 %d, mod1 %d, rb_alloc[0] %d) in %d\n",
+    printf("Generating DLSCH (harq_pid %d,mimo %d, pmi_alloc0 %lx, mod0 %d, mod1 %d, rb_alloc_even[0] %d, rb_alloc_odd[0] %d) in %d\n",
             harq_pid,
             dlsch0_harq->mimo_mode,
             pmi2hex_2Ar2(dlsch0_harq->pmi_alloc),
             mod_order0,
             mod_order1,
-            rb_alloc[0],
+//            rb_alloc[0],
+            rb_alloc_even[0],
+            rb_alloc_odd[0],
             len);
 #endif
   }
@@ -2329,6 +2339,12 @@ int dlsch_modulation(PHY_VARS_eNB* phy_vars_eNB,
     //for (aa=0;aa<frame_parms->nb_antennas_tx;aa++)
     //memset(&txdataF[aa][symbol_offset],0,frame_parms->ofdm_symbol_size<<2);
     //printf("symbol_offset %d,subframe offset %d : pilots %d\n",symbol_offset,subframe_offset,pilots);
+    if (l < (nsymb/2)){
+        rb_alloc = rb_alloc_even;
+    } else {
+        rb_alloc = rb_alloc_odd;
+    }
+
     for (rb=0; rb<frame_parms->N_RB_DL; rb++) {
 
       if (rb < 32)

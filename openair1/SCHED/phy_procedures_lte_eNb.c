@@ -735,7 +735,39 @@ void generate_eNB_dlsch_params(PHY_VARS_eNB *eNB,eNB_rxtx_proc_t *proc,DCI_ALLOC
     
 #endif
     
-    
+  } else if (dci_alloc->rnti == P_RNTI) {
+    // if we have P_RNTI, configure dlsch parameters and CCE index
+    LOG_E(PHY,"Generating dlsch params for P_RNTI\n");
+    generate_eNB_dlsch_params_from_dci(frame,
+               subframe,
+               &dci_alloc->dci_pdu[0],
+               dci_alloc->rnti,
+               dci_alloc->format,
+               &eNB->dlsch_PCH,
+               fp,
+               NULL,
+               SI_RNTI,
+               0,
+               P_RNTI,
+               eNB->UE_stats[0].DL_pmi_single,
+               0);
+
+
+    eNB->dlsch_PCH->nCCE[subframe] = dci_alloc->firstCCE;
+
+    LOG_D(PHY,"[eNB %"PRIu8"] Frame %d subframe %d : CCE resource for common DCI (PCH)  => %"PRIu8"\n",eNB->Mod_id,frame,subframe,
+    eNB->dlsch_PCH->nCCE[subframe]);
+
+#if defined(SMBV)
+
+    // configure Paging DCI
+    if (smbv_is_config_frame(frame) && (smbv_frame_cnt < 4)) {
+      LOG_D(PHY,"[SMBV] Frame %3d, Paging in SF %d DCI %"PRIu32"\n",frame,subframe,i);
+      smbv_configure_common_dci(smbv_fname,(smbv_frame_cnt*10) + (subframe), "Paging", dci_alloc, i);
+    }
+
+#endif
+ 
   } else if (dci_alloc->ra_flag == 1) {  // This is format 1A allocation for RA
     // configure dlsch parameters and CCE index
     LOG_D(PHY,"Generating dlsch params for RA_RNTI\n");    
@@ -1487,6 +1519,22 @@ void phy_procedures_eNB_TX(PHY_VARS_eNB *eNB,
     eNB->dlsch_ra->active = 0;
   }
 
+if ((eNB->dlsch_PCH) && (eNB->dlsch_PCH->active == 1)) {
+    //Paging log
+    LOG_D(PHY,"Generating Paging DLSCH \n");
+    pdsch_procedures(eNB,proc,eNB->dlsch_PCH,(LTE_eNB_DLSCH_t*)NULL,(LTE_eNB_UE_stats*)NULL,0,num_pdcch_symbols);
+    eNB->dlsch_PCH->active = 0;
+#if defined(SMBV)
+
+    // Configures the data source of allocation (allocation is configured by DCI)
+    if (smbv_is_config_frame(frame) && (smbv_frame_cnt < 4)) {
+      LOG_D(PHY,"[SMBV] Frame %3d, Configuring PCH payload in SF %d alloc %"PRIu8"\n",frame,(smbv_frame_cnt*10) + (subframe),smbv_alloc_cnt);
+      smbv_configure_datalist_for_alloc(smbv_fname, smbv_alloc_cnt++, (smbv_frame_cnt*10) + (subframe), DLSCH_pdu, input_buffer_length);
+    }
+
+#endif
+  }
+
   // Now scan UE specific DLSCH
   for (UE_id=0; UE_id<NUMBER_OF_UE_MAX; UE_id++)
     {
@@ -2046,6 +2094,10 @@ void prach_procedures(PHY_VARS_eNB *eNB) {
         preamble_energy_list[preamble_max],
         preamble_delay_list[preamble_max]);
 #endif
+LOG_E(PHY, "[RAPROC] Most likely preamble %d, energy %d dB delay %d\n",
+        preamble_max,
+        preamble_energy_list[preamble_max],
+        preamble_delay_list[preamble_max]);
 
   if (preamble_energy_list[preamble_max] > 580) {
 

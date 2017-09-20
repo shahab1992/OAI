@@ -3968,6 +3968,10 @@ while ( eNB_rrc_inst == NULL ) {
             , configuration
 #endif
            );
+    for (int ue_id = 0; ue_id < NUMBER_OF_UE_MAX; ue_id++) {
+        eNB_rrc_inst[ctxt.module_id].carrier[CC_id].sizeof_paging[ue_id] = 0;
+        eNB_rrc_inst[ctxt.module_id].carrier[CC_id].paging[ue_id] = (uint8_t*) malloc16(256);
+    }
   }
 
 #if defined(Rel10) || defined(Rel14)
@@ -5056,7 +5060,8 @@ rrc_enb_task(
       break;
 
     case S1AP_PAGING_IND:
-      LOG_E(RRC, "[eNB %d] Received not yet implemented message %s\n", instance, msg_name_p);
+      LOG_D(RRC, "[eNB %d] Received Paging message from S1AP: %s\n", instance, msg_name_p);
+      rrc_eNB_process_PAGING_IND(msg_p, msg_name_p, instance);
       break;
   
     case S1AP_E_RAB_SETUP_REQ: 

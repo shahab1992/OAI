@@ -444,6 +444,15 @@ typedef struct {
   /// BCCH MCS
   uint32_t ccch_mcs;
 
+  /// num PCCH PDU per CC
+  uint32_t total_num_pcch_pdu;
+  /// PCCH buffer size
+  uint32_t pcch_buffer;
+  /// total PCCH buffer size
+  uint32_t total_pcch_buffer;
+  /// BCCH MCS
+  uint32_t pcch_mcs;
+
 /// num active users
   uint16_t num_dlactive_UEs;
   ///  available number of PRBs for a give SF
@@ -881,6 +890,11 @@ typedef struct {
   uint32_t BCCH_alloc_pdu;
   /// Outgoing CCCH pdu for PHY
   CCCH_PDU CCCH_pdu;
+  /// Outgoing BCCH DCI allocation
+  uint32_t PCCH_alloc_pdu;
+  /// Outgoing PCCH pdu for PHY
+  PCCH_PDU PCCH_pdu;
+
   RA_TEMPLATE RA_template[NB_RA_PROC_MAX];
   /// VRB map for common channels
   uint8_t vrb_map[100];
@@ -958,6 +972,8 @@ typedef struct {
   time_stats_t schedule_mch;
   /// processing time of eNB ULSCH reception
   time_stats_t rx_ulsch_sdu; // include rlc_data_ind
+  /// processing time of eNB PCH scheduler
+  time_stats_t schedule_pch;
 
 } eNB_MAC_INST;
 

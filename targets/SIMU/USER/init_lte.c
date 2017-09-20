@@ -128,7 +128,8 @@ PHY_VARS_eNB* init_lte_eNB(LTE_DL_FRAME_PARMS *frame_parms,
   LOG_D(PHY,"eNB %d : RA %p\n",eNB_id,PHY_vars_eNB->dlsch_ra);
   PHY_vars_eNB->dlsch_MCH = new_eNB_dlsch(1,8,NSOFT,frame_parms->N_RB_DL, 0, frame_parms);
   LOG_D(PHY,"eNB %d : MCH %p\n",eNB_id,PHY_vars_eNB->dlsch_MCH);
-  
+  PHY_vars_eNB->dlsch_PCH  = new_eNB_dlsch(1,8,NSOFT,frame_parms->N_RB_DL, abstraction_flag, frame_parms);
+  LOG_D(PHY,"eNB %d : PCH %p\n",eNB_id,PHY_vars_eNB->dlsch_PCH); 
   
   PHY_vars_eNB->rx_total_gain_dB=130;
   

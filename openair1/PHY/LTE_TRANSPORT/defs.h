@@ -126,6 +126,7 @@ typedef struct {
   MIMO_mode_t mimo_mode;
   /// Current RB allocation
   uint32_t rb_alloc[4];
+  uint32_t rb_alloc_odd[4];
   /// distributed/localized flag
   vrb_t vrb_type;
   /// Current subband PMI allocation

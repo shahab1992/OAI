@@ -81,6 +81,10 @@ int s1ap_eNB_handle_e_rab_setup_request(uint32_t               assoc_id,
 					uint32_t               stream,
 					struct s1ap_message_s *s1ap_message_p);
 
+static
+int s1ap_eNB_handle_paging(uint32_t               assoc_id,
+    uint32_t               stream,
+    struct s1ap_message_s *message_p);
 
 /* Handlers matrix. Only eNB related procedure present here */
 s1ap_message_decoded_callback messages_callback[][3] = {
@@ -94,7 +98,7 @@ s1ap_message_decoded_callback messages_callback[][3] = {
   { 0, 0, 0 }, /* E_RABRelease */
   { 0, 0, 0 }, /* E_RABReleaseIndication */
   { s1ap_eNB_handle_initial_context_request, 0, 0 }, /* InitialContextSetup */
-  { 0, 0, 0 }, /* Paging */
+  { s1ap_eNB_handle_paging, 0, 0 }, /* Paging */
   { s1ap_eNB_handle_nas_downlink, 0, 0 }, /* downlinkNASTransport */
   { 0, 0, 0 }, /* initialUEMessage */
   { 0, 0, 0 }, /* uplinkNASTransport */
@@ -983,4 +987,195 @@ int s1ap_eNB_handle_e_rab_setup_request(uint32_t               assoc_id,
   return 0;
 }
 
+static
+int s1ap_eNB_handle_paging(uint32_t               assoc_id,
+    uint32_t               stream,
+    struct s1ap_message_s *s1ap_message_p)
+{
+  S1ap_PagingIEs_t *paging_p;
+  s1ap_eNB_mme_data_t   *mme_desc_p        = NULL;
+  s1ap_eNB_instance_t   *s1ap_eNB_instance = NULL;
+  MessageDef            *message_p         = NULL;
 
+  DevAssert(s1ap_message_p != NULL);
+  // received Paging Message from MME
+  S1AP_DEBUG("[SCTP %d] Received Paging Message From MME\n",assoc_id);
+
+  paging_p = &s1ap_message_p->msg.s1ap_PagingIEs;
+
+  /* Paging procedure -> stream != 0 */
+  if (stream == 0) {
+    S1AP_ERROR("[SCTP %d] Received Paging procedure on stream (%d)\n",
+               assoc_id, stream);
+    return -1;
+  }
+
+  if ((mme_desc_p = s1ap_eNB_get_MME(NULL, assoc_id, 0)) == NULL) {
+    S1AP_ERROR("[SCTP %d] Received Paging for non "
+               "existing MME context\n", assoc_id);
+    return -1;
+  }
+
+  s1ap_eNB_instance = mme_desc_p->s1ap_eNB_instance;
+  if (s1ap_eNB_instance == NULL) {
+    S1AP_ERROR("[SCTP %d] Received Paging for non existing MME context : s1ap_eNB_instance is NULL\n",
+               assoc_id);
+    return -1;
+  }
+
+  message_p = itti_alloc_new_message(TASK_S1AP, S1AP_PAGING_IND);
+
+  /* convert S1ap_PagingIEs_t to s1ap_paging_ind_t */
+  /* convert UE Identity Index value */
+  S1AP_PAGING_IND(message_p).ue_index_value  = BIT_STRING_to_uint32(&paging_p->ueIdentityIndexValue);
+  S1AP_DEBUG("[SCTP %d] Received Paging ue_index_value (%d)\n",
+            assoc_id,(uint32_t)S1AP_PAGING_IND(message_p).ue_index_value);
+
+  S1AP_PAGING_IND(message_p).ue_paging_identity.choice.s_tmsi.mme_code = 0;
+  S1AP_PAGING_IND(message_p).ue_paging_identity.choice.s_tmsi.m_tmsi = 0;
+
+  /* convert UE Paging Identity */
+  if (paging_p->uePagingID.present == S1ap_UEPagingID_PR_s_TMSI) {
+      S1AP_PAGING_IND(message_p).ue_paging_identity.presenceMask = UE_PAGING_IDENTITY_s_tmsi;
+      OCTET_STRING_TO_INT8(&paging_p->uePagingID.choice.s_TMSI.mMEC, S1AP_PAGING_IND(message_p).ue_paging_identity.choice.s_tmsi.mme_code);
+      OCTET_STRING_TO_INT32(&paging_p->uePagingID.choice.s_TMSI.m_TMSI, S1AP_PAGING_IND(message_p).ue_paging_identity.choice.s_tmsi.m_tmsi);
+  } else if (paging_p->uePagingID.present == S1ap_UEPagingID_PR_iMSI) {
+      S1AP_PAGING_IND(message_p).ue_paging_identity.presenceMask = UE_PAGING_IDENTITY_imsi;
+      S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.length = 0;
+      for (int i = 0; i < paging_p->uePagingID.choice.iMSI.size; i++) {
+          S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.buffer[2*i] = (uint8_t)(paging_p->uePagingID.choice.iMSI.buf[i] & 0x0F );
+          S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.length++;
+          S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.buffer[2*i+1] = (uint8_t)((paging_p->uePagingID.choice.iMSI.buf[i]>>4) & 0x0F);
+          LOG_D(S1AP,"paging : i %d %d imsi %d %d \n",2*i,2*i+1,S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.buffer[2*i], S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.buffer[2*i+1]);
+          if (S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.buffer[2*i+1] == 0x0F) {
+              if(i != paging_p->uePagingID.choice.iMSI.size - 1){
+                  /* invalid paging_p->uePagingID.choise.iMSI.buffer */
+                  S1AP_ERROR("[SCTP %d] Received Paging : uePagingID.choise.iMSI error(i %d 0x0F)\n", assoc_id,i);
+                  return -1;
+              }
+          } else {
+              S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.length++;
+          }
+      }
+      if (S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.length >= S1AP_IMSI_LENGTH) {
+          /* invalid paging_p->uePagingID.choise.iMSI.size */
+          S1AP_ERROR("[SCTP %d] Received Paging : uePagingID.choise.iMSI.size(%d) is over IMSI length(%d)\n", assoc_id, S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.length, S1AP_IMSI_LENGTH);
+          return -1;
+      }  
+} else {
+      /* invalid paging_p->uePagingID.present */
+      S1AP_ERROR("[SCTP %d] Received Paging : uePagingID.present(%d) is unknown\n", assoc_id, paging_p->uePagingID.present);
+      return -1;
+  }
+
+#if 0
+  /* convert Paging DRX(optional) */
+  if (paging_p->presenceMask & S1AP_PAGINGIES_PAGINGDRX_PRESENT) {
+      switch(paging_p->pagingDRX) {
+        case S1ap_PagingDRX_v32:
+          S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_32;
+         break;
+        case S1ap_PagingDRX_v64:
+          S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_64;
+        break;
+        case S1ap_PagingDRX_v128:
+          S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_128;
+        break;
+        case S1ap_PagingDRX_v256:
+          S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_256;
+        break;
+        default:
+          // when UE Paging DRX is no value
+          S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_256;
+        break;
+      }
+  }
+#endif
+  S1AP_PAGING_IND(message_p).paging_drx = PAGING_DRX_256;
+
+  /* convert cnDomain */
+  if (paging_p->cnDomain == S1ap_CNDomain_ps) {
+      S1AP_PAGING_IND(message_p).cn_domain = CN_DOMAIN_PS;
+  } else if (paging_p->cnDomain == S1ap_CNDomain_cs) {
+      S1AP_PAGING_IND(message_p).cn_domain = CN_DOMAIN_CS;
+  } else {
+      /* invalid paging_p->cnDomain */
+      S1AP_ERROR("[SCTP %d] Received Paging : cnDomain(%ld) is unknown\n", assoc_id, paging_p->cnDomain);
+      return -1;
+  }
+
+  memset (&S1AP_PAGING_IND(message_p).plmn_identity[0], 0, sizeof(plmn_identity_t)*256);
+  memset (&S1AP_PAGING_IND(message_p).tac[0], 0, sizeof(int16_t)*256);
+  S1AP_PAGING_IND(message_p).tai_size = 0;
+
+  for (int i = 0; i < paging_p->taiList.s1ap_TAIItem.count; i++) {
+     S1AP_INFO("[SCTP %d] Received Paging taiList: i %d, count %d\n", assoc_id, i, paging_p->taiList.s1ap_TAIItem.count);
+     S1ap_TAIItem_t s1ap_TAIItem;
+     memset (&s1ap_TAIItem, 0, sizeof(S1ap_TAIItem_t));
+
+     memcpy(&s1ap_TAIItem, paging_p->taiList.s1ap_TAIItem.array[i], sizeof(S1ap_TAIItem_t));
+
+     TBCD_TO_MCC_MNC(&s1ap_TAIItem.tAI.pLMNidentity, S1AP_PAGING_IND(message_p).plmn_identity[i].mcc,
+              S1AP_PAGING_IND(message_p).plmn_identity[i].mnc,
+              S1AP_PAGING_IND(message_p).plmn_identity[i].mnc_digit_length);
+     OCTET_STRING_TO_INT16(&s1ap_TAIItem.tAI.tAC, S1AP_PAGING_IND(message_p).tac[i]);
+     S1AP_PAGING_IND(message_p).tai_size++;
+     S1AP_DEBUG("[SCTP %d] Received Paging: MCC %d, MNC %d, TAC %d\n", assoc_id, S1AP_PAGING_IND(message_p).plmn_identity[i].mcc, S1AP_PAGING_IND(message_p).plmn_identity[i].mnc, S1AP_PAGING_IND(message_p).tac[i]);
+  }
+
+#if 0
+ // CSG Id(optional) List is not used
+  if (paging_p->presenceMask & S1AP_PAGINGIES_CSG_IDLIST_PRESENT) {
+      // TODO
+  }
+
+  /* convert pagingPriority (optional) if has value */
+  if (paging_p->presenceMask & S1AP_PAGINGIES_PAGINGPRIORITY_PRESENT) {
+      switch(paging_p->pagingPriority) {
+      case S1ap_PagingPriority_priolevel1:
+          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL1;
+        break;
+      case S1ap_PagingPriority_priolevel2:
+          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL2;
+        break;
+      case S1ap_PagingPriority_priolevel3:
+          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL3;
+        break;
+      case S1ap_PagingPriority_priolevel4:
+          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL4;
+        break;
+      case S1ap_PagingPriority_priolevel5:
+          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL5;
+        break;
+      case S1ap_PagingPriority_priolevel6:
+          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL6;
+        break;
+      case S1ap_PagingPriority_priolevel7:
+          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL7;
+        break;
+      case S1ap_PagingPriority_priolevel8:
+          S1AP_PAGING_IND(message_p).paging_priority = PAGING_PRIO_LEVEL8;
+        break;
+      default:
+        /* invalid paging_p->pagingPriority */
+        S1AP_ERROR("[SCTP %d] Received paging : pagingPriority(%ld) is invalid\n", assoc_id, paging_p->pagingPriority);
+        return -1;
+      }
+  }
+#endif
+  //paging parameter values
+  S1AP_DEBUG("[SCTP %d] Received Paging parameters: ue_index_value %d  cn_domain %d paging_drx %d paging_priority %d\n",assoc_id,
+          S1AP_PAGING_IND(message_p).ue_index_value, S1AP_PAGING_IND(message_p).cn_domain,
+          S1AP_PAGING_IND(message_p).paging_drx, S1AP_PAGING_IND(message_p).paging_priority);
+  S1AP_DEBUG("[SCTP %d] Received Paging parameters(ue): presenceMask %d  s_tmsi.m_tmsi %d s_tmsi.mme_code %d IMSI length %d (0-5) %d%d%d%d%d%d\n",assoc_id,
+          S1AP_PAGING_IND(message_p).ue_paging_identity.presenceMask, S1AP_PAGING_IND(message_p).ue_paging_identity.choice.s_tmsi.m_tmsi,
+          S1AP_PAGING_IND(message_p).ue_paging_identity.choice.s_tmsi.mme_code, S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.length,
+          S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.buffer[0], S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.buffer[1],
+          S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.buffer[2], S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.buffer[3],
+          S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.buffer[4], S1AP_PAGING_IND(message_p).ue_paging_identity.choice.imsi.buffer[5]);
+
+  /* send message to RRC */
+  itti_send_msg_to_task(TASK_RRC_ENB, s1ap_eNB_instance->instance, message_p);
+
+  return 0;
+}
