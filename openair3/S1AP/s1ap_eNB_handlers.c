@@ -954,7 +954,7 @@ int s1ap_eNB_handle_e_rab_setup_request(uint32_t               assoc_id,
       S1AP_E_RAB_SETUP_REQ(message_p).e_rab_setup_params[i].nas_pdu.buffer = NULL;
       
       S1AP_WARN("NAS PDU is not provided, generate a E_RAB_SETUP Failure (TBD) back to MME \n");
-      return -1;
+      //return -1;
     }
 
     /* Set the transport layer address */
