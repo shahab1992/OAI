@@ -152,6 +152,8 @@
 /*!\brief maximum number of slices / groups */
 #define MAX_NUM_SLICES 4 
 
+#define U_PLANE_INACTIVITY_VALUE 6000
+
 /* 
  * eNB part 
  */ 
@@ -794,6 +796,7 @@ typedef struct {
   int32_t       ra_pdcch_order_sent;
   int32_t       ul_out_of_sync;
   int32_t       phr_received;
+  int32_t       uplane_inactivity_timer;
 } UE_sched_ctrl;
 /*! \brief eNB template for the Random access information */
 typedef struct {

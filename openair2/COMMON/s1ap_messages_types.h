@@ -54,6 +54,9 @@
 
 #define S1AP_UE_CONTEXT_RELEASE_REQ(mSGpTR)     (mSGpTR)->ittiMsg.s1ap_ue_release_req
 
+#define S1AP_E_RAB_RELEASE_COMMAND(mSGpTR)      (mSGpTR)->ittiMsg.s1ap_e_rab_release_command
+#define S1AP_E_RAB_RELEASE_RESPONSE(mSGpTR)     (mSGpTR)->ittiMsg.s1ap_e_rab_release_resp
+
 //-------------------------------------------------------------------------------------------//
 /* Maximum number of e-rabs to be setup/deleted in a single message.
  * Even if only one bearer will be modified by message.
@@ -271,6 +274,7 @@ typedef struct e_rab_modify_s {
   /* Unique e_rab_id for the UE. */
   uint8_t e_rab_id;
 } e_rab_modify_t;
+
 typedef enum S1ap_Cause_e {
   S1AP_CAUSE_NOTHING,  /* No components present */
   S1AP_CAUSE_RADIO_NETWORK,
@@ -580,6 +584,49 @@ typedef struct s1ap_e_rab_modify_resp_s {
   /* list of e_rabs that failed to be modify */
   e_rab_failed_t e_rabs_failed[S1AP_MAX_E_RAB];
 } s1ap_e_rab_modify_resp_t;
+
+typedef struct e_rab_release_s {
+  /* Unique e_rab_id for the UE. */
+  uint8_t                     e_rab_id;
+} e_rab_release_t;
+
+typedef struct s1ap_e_rab_release_command_s {
+  /* MME UE id  */
+  uint16_t mme_ue_s1ap_id;
+
+  /* eNB ue s1ap id as initialized by S1AP layer */
+  unsigned eNB_ue_s1ap_id:24;
+
+  /* The NAS PDU should be forwarded by the RRC layer to the NAS layer */
+  nas_pdu_t                   nas_pdu;
+
+  /* Number of e_rab to be released in the list */
+  uint8_t nb_e_rabs_torelease;
+
+  /* E RAB release command */
+  e_rab_release_t e_rab_release_params[S1AP_MAX_E_RAB];
+
+} s1ap_e_rab_release_command_t;
+
+typedef struct s1ap_e_rab_release_resp_s {
+  /* MME UE id  */
+  uint16_t mme_ue_s1ap_id;
+
+  /* eNB ue s1ap id as initialized by S1AP layer */
+  unsigned eNB_ue_s1ap_id:24;
+
+  /* Number of e_rab released in the list */
+  uint8_t       nb_of_e_rabs_released;
+
+  /* list of e_rabs released */
+  e_rab_release_t e_rab_release[S1AP_MAX_E_RAB];
+
+  /* Number of e_rab failed to be released in list */
+  uint8_t        nb_of_e_rabs_failed;
+  /* list of e_rabs that failed to be released */
+  e_rab_failed_t e_rabs_failed[S1AP_MAX_E_RAB];
+
+} s1ap_e_rab_release_resp_t;
 
 // S1AP --> RRC messages
 typedef struct s1ap_ue_release_command_s {

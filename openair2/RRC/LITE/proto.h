@@ -263,6 +263,19 @@ rrc_eNB_generate_dedeicatedRRCConnectionReconfiguration(
   const uint8_t                ho_state
 );
 
+
+/**\brief release Data Radio Bearer between ENB and UE
+   \param ctxt_pP Running context
+   \param ue_context_pP UE context of UE receiving the message*/
+void
+rrc_eNB_generate_dedicatedRRCConnectionReconfiguration_release(
+  const protocol_ctxt_t*   const ctxt_pP,
+  rrc_eNB_ue_context_t*    const ue_context_pP,
+  uint8_t                  xid,
+  uint32_t                 nas_length,
+  uint8_t*                 nas_buffer
+);
+
 void 
 rrc_eNB_reconfigure_DRBs (const protocol_ctxt_t* const ctxt_pP,
 			  rrc_eNB_ue_context_t*  ue_context_pP);
@@ -325,6 +338,12 @@ void mac_eNB_rrc_ul_failure(const module_id_t Mod_instP,
 			    const frame_t frameP,
 			    const sub_frame_t subframeP,
 			    const rnti_t rnti);
+
+void mac_eNB_rrc_uplane_failure(const module_id_t Mod_instP,
+                const int CC_id,
+                const frame_t frameP,
+                const sub_frame_t subframeP,
+                const rnti_t rnti);
 
 void mac_eNB_rrc_ul_in_sync(const module_id_t Mod_instP, 
 			    const int CC_id, 

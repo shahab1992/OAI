@@ -36,6 +36,8 @@ MESSAGE_DEF(S1AP_E_RAB_SETUP_RESPONSE_LOG    , MESSAGE_PRIORITY_MED, IttiMsgText
 MESSAGE_DEF(S1AP_E_RAB_MODIFY_REQUEST_LOG     , MESSAGE_PRIORITY_MED, IttiMsgText                      , s1ap_e_rab_modify_request_log)
 MESSAGE_DEF(S1AP_E_RAB_MODIFY_RESPONSE_LOG    , MESSAGE_PRIORITY_MED, IttiMsgText                      , s1ap_e_rab_modify_response_log)
 MESSAGE_DEF(S1AP_PAGING_LOG    , MESSAGE_PRIORITY_MED, IttiMsgText                      , s1ap_paging_log)
+MESSAGE_DEF(S1AP_E_RAB_RELEASE_REQUEST_LOG   , MESSAGE_PRIORITY_MED, IttiMsgText                      , s1ap_e_rab_release_request_log)
+MESSAGE_DEF(S1AP_E_RAB_RELEASE_RESPONSE_LOG  , MESSAGE_PRIORITY_MED, IttiMsgText                      , s1ap_e_rab_release_response_log)
 
 /* eNB application layer -> S1AP messages */
 MESSAGE_DEF(S1AP_REGISTER_ENB_REQ          , MESSAGE_PRIORITY_MED, s1ap_register_enb_req_t          , s1ap_register_enb_req)
@@ -58,6 +60,7 @@ MESSAGE_DEF(S1AP_UE_CTXT_MODIFICATION_FAIL , MESSAGE_PRIORITY_MED, s1ap_ue_ctxt_
 MESSAGE_DEF(S1AP_E_RAB_SETUP_RESP          , MESSAGE_PRIORITY_MED, s1ap_e_rab_setup_resp_t          , s1ap_e_rab_setup_resp)
 MESSAGE_DEF(S1AP_E_RAB_SETUP_REQUEST_FAIL  , MESSAGE_PRIORITY_MED, s1ap_e_rab_setup_req_fail_t      , s1ap_e_rab_setup_request_fail)
 MESSAGE_DEF(S1AP_E_RAB_MODIFY_RESP          , MESSAGE_PRIORITY_MED, s1ap_e_rab_modify_resp_t          , s1ap_e_rab_modify_resp)
+MESSAGE_DEF(S1AP_E_RAB_RELEASE_RESPONSE    , MESSAGE_PRIORITY_MED, s1ap_e_rab_release_resp_t        , s1ap_e_rab_release_resp)
 
 /* S1AP -> RRC messages */
 MESSAGE_DEF(S1AP_DOWNLINK_NAS              , MESSAGE_PRIORITY_MED, s1ap_downlink_nas_t              , s1ap_downlink_nas )
@@ -67,6 +70,7 @@ MESSAGE_DEF(S1AP_PAGING_IND                , MESSAGE_PRIORITY_MED, s1ap_paging_i
 MESSAGE_DEF(S1AP_E_RAB_SETUP_REQ            , MESSAGE_PRIORITY_MED, s1ap_e_rab_setup_req_t        , s1ap_e_rab_setup_req )
 MESSAGE_DEF(S1AP_E_RAB_MODIFY_REQ           , MESSAGE_PRIORITY_MED, s1ap_e_rab_modify_req_t        , s1ap_e_rab_modify_req )
 MESSAGE_DEF(S1AP_UE_CONTEXT_RELEASE_COMMAND, MESSAGE_PRIORITY_MED, s1ap_ue_release_command_t        , s1ap_ue_release_command)
+MESSAGE_DEF(S1AP_E_RAB_RELEASE_COMMAND     , MESSAGE_PRIORITY_MED, s1ap_e_rab_release_command_t     , s1ap_e_rab_release_command)
 
 /* S1AP <-> RRC messages (can be initiated either by MME or eNB) */
 MESSAGE_DEF(S1AP_UE_CONTEXT_RELEASE_REQ    , MESSAGE_PRIORITY_MED, s1ap_ue_release_req_t            , s1ap_ue_release_req)

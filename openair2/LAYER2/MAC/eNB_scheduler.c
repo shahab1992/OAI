@@ -279,6 +279,13 @@ void eNB_dlsch_ulsch_scheduler(module_id_t module_idP,uint8_t cooperation_flag, 
 	}
       }
     } // ul_failure_timer>0
+
+    UE_list->UE_sched_ctrl[i].uplane_inactivity_timer++;
+    if(UE_list->UE_sched_ctrl[i].uplane_inactivity_timer > (U_PLANE_INACTIVITY_VALUE*subframe_num(mac_xface->frame_parms))){
+       LOG_D(MAC,"UE %d rnti %x: U-Plane Failure after repeated PDCCH orders: Triggering RRC \n",i,rnti); 
+       mac_eNB_rrc_uplane_failure(module_idP,CC_id,frameP,subframeP,rnti);
+       UE_list->UE_sched_ctrl[i].uplane_inactivity_timer  = 0;
+    }// time > 60s
   }
 
 #if defined(ENABLE_ITTI)

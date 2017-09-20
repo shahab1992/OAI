@@ -986,6 +986,8 @@ schedule_ue_spec(
 		header_len_dtch_last--;
 	      }
 	      num_sdus++;
+
+	      UE_list->UE_sched_ctrl[UE_id].uplane_inactivity_timer = 0;
 	    } // no data for this LCID
 	    else {
 	      header_len_dtch-=3;
