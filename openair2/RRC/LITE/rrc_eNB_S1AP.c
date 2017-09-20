@@ -339,6 +339,8 @@ static void process_eNB_security_key (
 
   /* Saves the security key */
   memcpy (ue_context_pP->ue_context.kenb, security_key_pP, SECURITY_KEY_LENGTH);
+  memset (ue_context_pP->ue_context.nh, 0, SECURITY_KEY_LENGTH);
+  ue_context_pP->ue_context.nh_ncc = -1;
 
   for (i = 0; i < 32; i++) {
     sprintf(&ascii_buffer[2 * i], "%02X", ue_context_pP->ue_context.kenb[i]);
@@ -352,7 +354,7 @@ static void process_eNB_security_key (
 
 
 //------------------------------------------------------------------------------
-static void
+void
 rrc_pdcp_config_security(
   const protocol_ctxt_t* const ctxt_pP,
   rrc_eNB_ue_context_t*          const ue_context_pP,
@@ -1562,6 +1564,253 @@ int rrc_eNB_send_S1AP_E_RAB_SETUP_RESP(const protocol_ctxt_t* const ctxt_pP,
     
   }
   
+  return 0;
+}
+
+int rrc_eNB_process_S1AP_E_RAB_MODIFY_REQ(MessageDef *msg_p, const char *msg_name, instance_t instance)
+{
+  int                             i;
+  uint16_t                        ue_initial_id;
+  uint32_t                        eNB_ue_s1ap_id;
+  struct rrc_eNB_ue_context_s* ue_context_p = NULL;
+  protocol_ctxt_t              ctxt;
+
+  ue_initial_id  = S1AP_E_RAB_MODIFY_REQ (msg_p).ue_initial_id;
+  eNB_ue_s1ap_id = S1AP_E_RAB_MODIFY_REQ (msg_p).eNB_ue_s1ap_id;
+  ue_context_p   = rrc_eNB_get_ue_context_from_s1ap_ids(instance, ue_initial_id, eNB_ue_s1ap_id);
+  LOG_D(RRC, "[eNB %d] Received %s: ue_initial_id %d, eNB_ue_s1ap_id %d, nb_of_e_rabs %d\n",
+        instance, msg_name, ue_initial_id, eNB_ue_s1ap_id, S1AP_E_RAB_MODIFY_REQ (msg_p).nb_e_rabs_tomodify);
+
+  if (ue_context_p == NULL) {
+    /* Can not associate this message to an UE index, send a failure to S1AP and discard it! */
+    LOG_W(RRC, "[eNB %d] In S1AP_E_RAB_MODIFY_REQ: unknown UE from S1AP ids (%d, %d)\n", instance, ue_initial_id, eNB_ue_s1ap_id);
+    int nb_of_e_rabs_failed = 0;
+    MessageDef *msg_fail_p = NULL;
+
+    msg_fail_p = itti_alloc_new_message (TASK_RRC_ENB, S1AP_E_RAB_MODIFY_RESP);
+
+    S1AP_E_RAB_MODIFY_RESP (msg_fail_p).eNB_ue_s1ap_id = S1AP_E_RAB_MODIFY_REQ (msg_p).eNB_ue_s1ap_id;
+    S1AP_E_RAB_MODIFY_RESP (msg_fail_p).nb_of_e_rabs = 0;
+
+    for (nb_of_e_rabs_failed = 0; nb_of_e_rabs_failed < S1AP_E_RAB_MODIFY_REQ (msg_p).nb_e_rabs_tomodify; nb_of_e_rabs_failed++) {
+      S1AP_E_RAB_MODIFY_RESP (msg_fail_p).e_rabs_failed[nb_of_e_rabs_failed].e_rab_id =
+              S1AP_E_RAB_MODIFY_REQ (msg_p).e_rab_modify_params[nb_of_e_rabs_failed].e_rab_id;
+      S1AP_E_RAB_MODIFY_RESP (msg_fail_p).e_rabs_failed[nb_of_e_rabs_failed].cause = S1AP_CAUSE_RADIO_NETWORK;
+      S1AP_E_RAB_MODIFY_RESP (msg_fail_p).e_rabs_failed[nb_of_e_rabs_failed].cause_value = 31;//S1ap_CauseRadioNetwork_multiple_E_RAB_ID_instances;
+    }
+    S1AP_E_RAB_MODIFY_RESP (msg_fail_p).nb_of_e_rabs_failed = nb_of_e_rabs_failed;
+
+    itti_send_msg_to_task(TASK_S1AP, instance, msg_fail_p);
+    return (-1);
+
+  } else {
+    PROTOCOL_CTXT_SET_BY_INSTANCE(&ctxt, instance, ENB_FLAG_YES, ue_context_p->ue_context.rnti, 0, 0);
+    ue_context_p->ue_context.eNB_ue_s1ap_id = eNB_ue_s1ap_id;
+
+    /* Save e RAB information for later */
+    {
+      int j;
+      boolean_t is_treated[S1AP_MAX_E_RAB] = {FALSE};
+      uint8_t nb_of_failed_e_rabs = 0;
+
+      // keep the previous bearer
+      // the index for the rec
+      for (i = 0; i < S1AP_E_RAB_MODIFY_REQ (msg_p).nb_e_rabs_tomodify; i++) {
+        if (is_treated[i] == TRUE) {
+          // already treated
+          continue;
+        }
+        for (j = i+1; j < S1AP_E_RAB_MODIFY_REQ (msg_p).nb_e_rabs_tomodify; j++) {
+          if (is_treated[j] == FALSE &&
+            S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[j].e_rab_id == S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[i].e_rab_id) {
+            // handle multiple E-RAB ID
+            ue_context_p->ue_context.modify_e_rab[j].status = E_RAB_STATUS_NEW;
+            ue_context_p->ue_context.modify_e_rab[j].param.e_rab_id = S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[j].e_rab_id;
+            ue_context_p->ue_context.modify_e_rab[j].cause = S1AP_CAUSE_RADIO_NETWORK;
+            ue_context_p->ue_context.modify_e_rab[j].cause_value = 31;//S1ap_CauseRadioNetwork_multiple_E_RAB_ID_instances;
+            nb_of_failed_e_rabs++;
+            is_treated[i] = TRUE;
+            is_treated[j] = TRUE;
+          }
+        }
+        if (is_treated[i] == TRUE) {
+          // handle multiple E-RAB ID
+          ue_context_p->ue_context.modify_e_rab[i].status = E_RAB_STATUS_NEW;
+          ue_context_p->ue_context.modify_e_rab[i].param.e_rab_id = S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[i].e_rab_id;
+          ue_context_p->ue_context.modify_e_rab[i].cause = S1AP_CAUSE_RADIO_NETWORK;
+          ue_context_p->ue_context.modify_e_rab[i].cause_value = 31;//S1ap_CauseRadioNetwork_multiple_E_RAB_ID_instances;
+          nb_of_failed_e_rabs++;
+          continue;
+        }
+
+        if (S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[i].nas_pdu.length == 0) {
+          // nas_pdu.length == 0
+          ue_context_p->ue_context.modify_e_rab[i].status = E_RAB_STATUS_NEW;
+          ue_context_p->ue_context.modify_e_rab[i].param.e_rab_id = S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[i].e_rab_id;
+          ue_context_p->ue_context.modify_e_rab[i].cause = S1AP_CAUSE_NAS;
+          ue_context_p->ue_context.modify_e_rab[i].cause_value = 3;//S1ap_CauseNas_unspecified;
+          nb_of_failed_e_rabs++;
+          is_treated[i] = TRUE;
+          continue;
+        }
+
+        for (j = 0; j < NB_RB_MAX-3; j++) {
+          if (ue_context_p->ue_context.e_rab[j].param.e_rab_id == S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[i].e_rab_id) {
+            if(ue_context_p->ue_context.e_rab[j].status == E_RAB_STATUS_TORELEASE || ue_context_p->ue_context.e_rab[j].status == E_RAB_STATUS_DONE){
+              break;
+            }
+            ue_context_p->ue_context.modify_e_rab[i].status = E_RAB_STATUS_NEW;
+            ue_context_p->ue_context.modify_e_rab[i].cause = S1AP_CAUSE_NOTHING;
+            ue_context_p->ue_context.modify_e_rab[i].param.e_rab_id = S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[i].e_rab_id;
+            ue_context_p->ue_context.modify_e_rab[i].param.qos =  S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[i].qos;
+            ue_context_p->ue_context.modify_e_rab[i].param.nas_pdu.length = S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[i].nas_pdu.length;
+            ue_context_p->ue_context.modify_e_rab[i].param.nas_pdu.buffer = S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[i].nas_pdu.buffer;
+            ue_context_p->ue_context.modify_e_rab[i].param.sgw_addr = ue_context_p->ue_context.e_rab[j].param.sgw_addr;
+            ue_context_p->ue_context.modify_e_rab[i].param.gtp_teid = ue_context_p->ue_context.e_rab[j].param.gtp_teid;
+
+            is_treated[i] = TRUE;
+            break;
+          }
+        }
+
+        if (is_treated[i] == FALSE) {
+          // handle Unknown E-RAB ID
+          ue_context_p->ue_context.modify_e_rab[i].status = E_RAB_STATUS_NEW;
+          ue_context_p->ue_context.modify_e_rab[i].param.e_rab_id = S1AP_E_RAB_MODIFY_REQ(msg_p).e_rab_modify_params[i].e_rab_id;
+          ue_context_p->ue_context.modify_e_rab[i].cause = S1AP_CAUSE_RADIO_NETWORK;
+          ue_context_p->ue_context.modify_e_rab[i].cause_value = 30;//S1ap_CauseRadioNetwork_unknown_E_RAB_ID;
+          nb_of_failed_e_rabs++;
+          is_treated[i] = TRUE;
+        }
+      }
+
+      ue_context_p->ue_context.nb_of_modify_e_rabs = S1AP_E_RAB_MODIFY_REQ  (msg_p).nb_e_rabs_tomodify;
+      ue_context_p->ue_context.nb_of_failed_e_rabs = nb_of_failed_e_rabs;
+    }
+
+    /* TODO parameters yet to process ... */
+    {
+      //      S1AP_INITIAL_CONTEXT_SETUP_REQ(msg_p).ue_ambr;
+    }
+
+    if (ue_context_p->ue_context.nb_of_failed_e_rabs < ue_context_p->ue_context.nb_of_modify_e_rabs) {
+      if (0 == rrc_eNB_modify_dedicatedRRCConnectionReconfiguration(&ctxt, ue_context_p, 0)) {
+        return (0);
+      }
+    }
+
+    {
+      int nb_of_e_rabs_failed = 0;
+      MessageDef *msg_fail_p = NULL;
+
+      msg_fail_p = itti_alloc_new_message (TASK_RRC_ENB, S1AP_E_RAB_MODIFY_RESP);
+
+      S1AP_E_RAB_MODIFY_RESP (msg_fail_p).eNB_ue_s1ap_id = S1AP_E_RAB_MODIFY_REQ (msg_p).eNB_ue_s1ap_id;
+//      S1AP_E_RAB_MODIFY_RESP (msg_fail_p).e_rabs[S1AP_MAX_E_RAB];
+      S1AP_E_RAB_MODIFY_RESP (msg_fail_p).nb_of_e_rabs = 0;
+
+      for(nb_of_e_rabs_failed = 0; nb_of_e_rabs_failed < ue_context_p->ue_context.nb_of_failed_e_rabs; nb_of_e_rabs_failed++) {
+        S1AP_E_RAB_MODIFY_RESP (msg_fail_p).e_rabs_failed[nb_of_e_rabs_failed].e_rab_id =
+                ue_context_p->ue_context.modify_e_rab[nb_of_e_rabs_failed].param.e_rab_id;
+        S1AP_E_RAB_MODIFY_RESP (msg_fail_p).e_rabs_failed[nb_of_e_rabs_failed].cause = ue_context_p->ue_context.modify_e_rab[nb_of_e_rabs_failed].cause;
+      }
+      S1AP_E_RAB_MODIFY_RESP (msg_fail_p).nb_of_e_rabs_failed = nb_of_e_rabs_failed;
+
+      itti_send_msg_to_task (TASK_S1AP, instance, msg_fail_p);
+
+      ue_context_p->ue_context.nb_of_modify_e_rabs = 0;
+      ue_context_p->ue_context.nb_of_failed_e_rabs = 0;
+      memset(ue_context_p->ue_context.modify_e_rab, 0, sizeof(ue_context_p->ue_context.modify_e_rab));
+
+      return (0);
+    }
+  }  // end of ue_context_p != NULL
+}
+
+/*NN: careful about the typcast of xid (long -> uint8_t*/
+int rrc_eNB_send_S1AP_E_RAB_MODIFY_RESP(const protocol_ctxt_t* const ctxt_pP,
+           rrc_eNB_ue_context_t*          const ue_context_pP,
+           uint8_t xid ) {
+
+  MessageDef      *msg_p         = NULL;
+  int i;
+  int e_rab;
+  int e_rabs_done = 0;
+  int e_rabs_failed = 0;
+  msg_p = itti_alloc_new_message (TASK_RRC_ENB, S1AP_E_RAB_MODIFY_RESP);
+  S1AP_E_RAB_MODIFY_RESP (msg_p).eNB_ue_s1ap_id = ue_context_pP->ue_context.eNB_ue_s1ap_id;
+
+  for (e_rab = 0; e_rab < ue_context_pP->ue_context.nb_of_modify_e_rabs; e_rab++) {
+
+    /* only respond to the corresponding transaction */
+    if (xid == ue_context_pP->ue_context.modify_e_rab[e_rab].xid) {
+      if (ue_context_pP->ue_context.modify_e_rab[e_rab].status == E_RAB_STATUS_DONE) {
+        for (i = 0; i < ue_context_pP->ue_context.setup_e_rabs; i++) {
+          if (ue_context_pP->ue_context.modify_e_rab[e_rab].param.e_rab_id == ue_context_pP->ue_context.e_rab[i].param.e_rab_id) {
+            // Update ue_context_pP->ue_context.e_rab
+            ue_context_pP->ue_context.e_rab[i].status = E_RAB_STATUS_ESTABLISHED;
+            ue_context_pP->ue_context.e_rab[i].param.qos = ue_context_pP->ue_context.modify_e_rab[e_rab].param.qos;
+            ue_context_pP->ue_context.e_rab[i].cause = S1AP_CAUSE_NOTHING;
+            break;
+          }
+        }
+        if (i < ue_context_pP->ue_context.setup_e_rabs) {
+          S1AP_E_RAB_MODIFY_RESP (msg_p).e_rabs[e_rabs_done].e_rab_id = ue_context_pP->ue_context.modify_e_rab[e_rab].param.e_rab_id;
+              // TODO add other information from S1-U when it will be integrated
+
+          LOG_D (RRC,"enb_gtp_addr (msg index %d, e_rab index %d, status %d, xid %d): nb_of_modify_e_rabs %d,  e_rab_id %d \n ",
+              e_rabs_done,  e_rab, ue_context_pP->ue_context.modify_e_rab[e_rab].status, xid,
+              ue_context_pP->ue_context.nb_of_modify_e_rabs,
+              S1AP_E_RAB_MODIFY_RESP (msg_p).e_rabs[e_rabs_done].e_rab_id);
+
+          e_rabs_done++;
+        } else {
+          // unexpected
+          S1AP_E_RAB_MODIFY_RESP (msg_p).e_rabs_failed[e_rabs_failed].e_rab_id = ue_context_pP->ue_context.modify_e_rab[e_rab].param.e_rab_id;
+
+          S1AP_E_RAB_MODIFY_RESP (msg_p).e_rabs_failed[e_rabs_failed].cause = S1AP_CAUSE_RADIO_NETWORK;
+          S1AP_E_RAB_MODIFY_RESP (msg_p).e_rabs_failed[e_rabs_failed].cause_value = 30;//S1ap_CauseRadioNetwork_unknown_E_RAB_ID;
+
+          e_rabs_failed++;
+        }
+      } else if ((ue_context_pP->ue_context.modify_e_rab[e_rab].status == E_RAB_STATUS_NEW) ||
+          (ue_context_pP->ue_context.modify_e_rab[e_rab].status == E_RAB_STATUS_ESTABLISHED)){
+        LOG_D (RRC,"E-RAB is NEW or already ESTABLISHED\n");
+      } else {  /* status == E_RAB_STATUS_FAILED; */
+        S1AP_E_RAB_MODIFY_RESP (msg_p).e_rabs_failed[e_rabs_failed].e_rab_id = ue_context_pP->ue_context.modify_e_rab[e_rab].param.e_rab_id;
+        // add failure cause when defined
+        S1AP_E_RAB_MODIFY_RESP (msg_p).e_rabs_failed[e_rabs_failed].cause = ue_context_pP->ue_context.modify_e_rab[e_rab].cause;
+
+        e_rabs_failed++;
+      }
+    } else {
+      /*debug info for the xid */
+      LOG_D(RRC,"xid does not corresponds  (context e_rab index %d, status %d, xid %d/%d) \n ",
+             e_rab, ue_context_pP->ue_context.modify_e_rab[e_rab].status, xid, ue_context_pP->ue_context.modify_e_rab[e_rab].xid);
+    }
+  }
+
+
+  S1AP_E_RAB_MODIFY_RESP (msg_p).nb_of_e_rabs = e_rabs_done;
+  S1AP_E_RAB_MODIFY_RESP (msg_p).nb_of_e_rabs_failed = e_rabs_failed;
+  // NN: add conditions for e_rabs_failed
+  if (e_rabs_done > 0 || e_rabs_failed > 0) {
+    LOG_D(RRC,"S1AP_E_RAB_MODIFY_RESP: sending the message: nb_of_modify_e_rabs %d, total e_rabs %d, index %d\n",
+    ue_context_pP->ue_context.nb_of_modify_e_rabs, ue_context_pP->ue_context.setup_e_rabs, e_rab);
+MSC_LOG_TX_MESSAGE(
+     MSC_RRC_ENB,
+     MSC_S1AP_ENB,
+     (const char *)&S1AP_E_RAB_SETUP_RESP (msg_p),
+     sizeof(s1ap_e_rab_setup_resp_t),
+     MSC_AS_TIME_FMT" E_RAB_MODIFY_RESP UE %X eNB_ue_s1ap_id %u e_rabs:%u succ %u fail",
+     MSC_AS_TIME_ARGS(ctxt_pP),
+     ue_context_pP->ue_id_rnti,
+     S1AP_E_RAB_MODIFY_RESP (msg_p).eNB_ue_s1ap_id,
+     e_rabs_done, e_rabs_failed);
+
+    itti_send_msg_to_task (TASK_S1AP, ctxt_pP->instance, msg_p);
+  }
+
   return 0;
 }
 

@@ -261,4 +261,10 @@ float RSRQ_meas_mapping[35] = {
   -2
 };
 
+// only used for RRC connection re-establishment procedure TS36.331 5.3.7
+// [0]: current C-RNTI, [1]: prior C-RNTI
+// insert one when eNB received RRCConnectionReestablishmentRequest message
+// delete one when eNB received RRCConnectionReestablishmentComplete message
+uint16_t reestablish_rnti_map[NUMBER_OF_UE_MAX][2] = {{0}};
+
 #endif

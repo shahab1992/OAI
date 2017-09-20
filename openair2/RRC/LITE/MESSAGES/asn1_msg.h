@@ -202,6 +202,31 @@ do_RRCConnectionReconfiguration(
 #endif
                                         );
 
+
+/**
+\brief Generate an RRCConnectionReestablishment DL-CCCH-Message (eNB).  This routine configures SRB_ToAddMod (SRB1/SRB2) and
+PhysicalConfigDedicated IEs.  The latter does not enable periodic CQI reporting (PUCCH format 2/2a/2b) or SRS.
+@param ctxt_pP Running context
+@param ue_context_pP UE context
+@param CC_id         Component Carrier ID
+@param buffer Pointer to PER-encoded ASN.1 description of DL-CCCH-Message PDU
+@param transmission_mode Transmission mode for UE (1-9)
+@param UE_id UE index for this message
+@param Transaction_id Transaction_ID for this message
+@param SRB_configList Pointer (returned) to SRB1_config/SRB2_config(later) IEs for this UE
+@param physicalConfigDedicated Pointer (returned) to PhysicalConfigDedicated IE for this UE
+@returns Size of encoded bit stream in bytes*/
+uint8_t
+do_RRCConnectionReestablishment(
+  const protocol_ctxt_t*     const ctxt_pP,
+  rrc_eNB_ue_context_t*      const ue_context_pP,
+  int                              CC_id,
+  uint8_t*                   const buffer,
+  const uint8_t                    transmission_mode,
+  const uint8_t                    Transaction_id,
+  const LTE_DL_FRAME_PARMS*  const frame_parms,
+  SRB_ToAddModList_t               **SRB_configList,
+  struct PhysicalConfigDedicated   **physicalConfigDedicated);
 /**
 \brief Generate an RRCConnectionReestablishmentReject DL-CCCH-Message (eNB).
 @param Mod_id Module ID of eNB

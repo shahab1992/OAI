@@ -99,6 +99,7 @@ extern float RSRQ_meas_mapping[33];
 extern UE_PF_PO_t UE_PF_PO[MAX_NUM_CCs][NUMBER_OF_UE_MAX];
 extern pthread_mutex_t ue_pf_po_mutex;
 
+extern uint16_t reestablish_rnti_map[NUMBER_OF_UE_MAX][2];
 #endif
 
 

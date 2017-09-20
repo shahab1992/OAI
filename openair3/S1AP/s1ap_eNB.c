@@ -364,7 +364,13 @@ void *s1ap_eNB_task(void *arg)
 				&S1AP_E_RAB_SETUP_RESP(received_msg));
     }
     break;
-      
+
+    case S1AP_E_RAB_MODIFY_RESP: {
+      s1ap_eNB_e_rab_modify_resp(ITTI_MESSAGE_GET_INSTANCE(received_msg),
+        &S1AP_E_RAB_MODIFY_RESP(received_msg));
+    }
+    break;
+
     case S1AP_NAS_NON_DELIVERY_IND: {
       s1ap_eNB_nas_non_delivery_ind(ITTI_MESSAGE_GET_INSTANCE(received_msg),
                                     &S1AP_NAS_NON_DELIVERY_IND(received_msg));
