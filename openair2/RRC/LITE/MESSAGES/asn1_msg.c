@@ -2246,7 +2246,7 @@ do_RRCConnectionReestablishment(
       enb_properties->properties[ctxt_pP->instance]->downlink_frequency[CC_id],
       earfcn_dl,
       is_rel8_only == true ? "true": "false");
-
+#if defined(ENABLE_SECURITY)
   if (ue_context_pP->ue_context.nh_ncc >= 0) {
     derive_keNB_star (ue_context_pP->ue_context.nh, pci, earfcn_dl, is_rel8_only, KeNB_star);
     rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nextHopChainingCount = ue_context_pP->ue_context.nh_ncc;
@@ -2259,6 +2259,9 @@ do_RRCConnectionReestablishment(
   // copy KeNB_star to ue_context_pP->ue_context.kenb
   memcpy (ue_context_pP->ue_context.kenb, KeNB_star, 32);
   ue_context_pP->ue_context.kenb_ncc = 0;
+#else
+  rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nextHopChainingCount = 0;
+#endif
 
   rrcConnectionReestablishment->criticalExtensions.choice.c1.choice.rrcConnectionReestablishment_r8.nonCriticalExtension = NULL;
 
