@@ -1204,7 +1204,6 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
   T(T_ENB_RRC_CONNECTION_REESTABLISHMENT_COMPLETE, T_INT(ctxt_pP->module_id), T_INT(ctxt_pP->frame),
     T_INT(ctxt_pP->subframe), T_INT(ctxt_pP->rnti));
 
-  hashtable_rc_t                      h_rc;
   DRB_ToAddModList_t*                 DRB_configList = ue_context_pP->ue_context.DRB_configList;
   SRB_ToAddModList_t*                 SRB_configList = ue_context_pP->ue_context.SRB_configList;
   SRB_ToAddModList_t**                SRB_configList2 = NULL;
@@ -1212,7 +1211,10 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
   struct SRB_ToAddMod                *SRB2_config = NULL;
   struct DRB_ToAddMod                *DRB_config = NULL;
   int i = 0;
+# if defined(ENABLE_USE_MME)
   int j = 0;
+  hashtable_rc_t                      h_rc;
+#endif
   uint8_t                             buffer[RRC_BUF_SIZE];
   uint16_t                            size;
   MeasObjectToAddModList_t           *MeasObj_list                     = NULL;
@@ -1292,6 +1294,7 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
   ue_context_pP->ue_context.Srb1.Active = 1;
   //ue_context_pP->ue_context.Srb2.Srb_info.Srb_id = 2;
 
+# if defined(ENABLE_USE_MME)
   rrc_ue_s1ap_ids_t* rrc_ue_s1ap_ids_p = NULL;
   uint16_t ue_initial_id = ue_context_pP->ue_context.ue_initial_id;
   uint32_t eNB_ue_s1ap_id = ue_context_pP->ue_context.eNB_ue_s1ap_id;
@@ -1333,18 +1336,18 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
             ctxt_pP->instance,
             &create_tunnel_req,
             reestablish_rnti);
-
+#endif
   /* Update RNTI in ue_context */
   ue_context_pP->ue_id_rnti                    = ctxt_pP->rnti; // here ue_id_rnti is just a key, may be something else
   ue_context_pP->ue_context.rnti               = ctxt_pP->rnti;
-
+# if defined(ENABLE_USE_MME)
   uint8_t send_security_mode_command = FALSE;
   rrc_pdcp_config_security(
       ctxt_pP,
       ue_context_pP,
       send_security_mode_command);
   LOG_D(RRC, "set security successfully \n");
-
+#endif
   // Measurement ID list
   MeasId_list = CALLOC(1, sizeof(*MeasId_list));
   memset((void *)MeasId_list, 0, sizeof(*MeasId_list));
@@ -5782,9 +5785,12 @@ rrc_eNB_decode_dcch(
   UE_EUTRA_Capability_t              *UE_EUTRA_Capability = NULL;
   int i;
   struct rrc_eNB_ue_context_s*        ue_context_p = NULL;
+#if defined(ENABLE_ITTI)
+#   if defined(ENABLE_USE_MME)
   MessageDef *                        msg_delete_tunnels_p = NULL;
   uint8_t                             xid;
-
+#endif
+#endif
   int dedicated_DRB=0; 
 
   T(T_ENB_RRC_UL_DCCH_DATA_IN, T_INT(ctxt_pP->module_id), T_INT(ctxt_pP->frame),
