@@ -2432,8 +2432,6 @@ void fill_ulsch(PHY_VARS_eNB *eNB,nfapi_ul_config_ulsch_pdu *ulsch_pdu,int frame
   uint8_t UE_id;
   boolean_t new_ulsch = (find_ulsch(ulsch_pdu->ulsch_pdu_rel8.rnti,eNB,SEARCH_EXIST)==-1) ? TRUE : FALSE;
 
-  boolean_t new_ulsch = (find_ulsch(ulsch_pdu->ulsch_pdu_rel8.rnti,eNB,SEARCH_EXIST)==-1) ? TRUE : FALSE;
-
   AssertFatal((UE_id=find_ulsch(ulsch_pdu->ulsch_pdu_rel8.rnti,eNB,SEARCH_EXIST_OR_FREE))>=0,
 	      "No existing/free UE ULSCH for rnti %x\n",ulsch_pdu->ulsch_pdu_rel8.rnti);
 
