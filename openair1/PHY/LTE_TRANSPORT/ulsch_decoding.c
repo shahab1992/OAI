@@ -51,7 +51,8 @@
 
 #include "UTIL/LOG/vcd_signal_dumper.h"
 //#define DEBUG_ULSCH_DECODING
-
+extern decoder_if_t    decoder16;
+extern decoder_if_t    decoder8;
 void free_eNB_ulsch(LTE_eNB_ULSCH_t *ulsch)
 {
 
@@ -223,8 +224,7 @@ typedef uint8_t(*decoder_if_t)(int16_t *,
 
 
 
-extern decoder_if_t decoder8;
-extern decoder_if_t decoder16;
+
 
 int ulsch_decoding_data_2thread0(td_params* tdp) {
 

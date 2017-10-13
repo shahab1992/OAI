@@ -1511,6 +1511,22 @@ typedef struct RRU_config_s {
 #endif
 } RRU_config_t;
 
+/* API definition for decoder call */
+typedef uint8_t(*decoder_if_t)(int16_t *,
+    		    uint8_t *,
+    		    uint16_t,
+    		    uint16_t,
+    		    uint16_t,
+    		    uint8_t,
+    		    uint8_t,
+    		    uint8_t,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *);
 
 static inline void wait_sync(char *thread_name) {
 

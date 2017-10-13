@@ -47,12 +47,17 @@ void loader_init(void) {
 
   int ret = config_get( LoaderParams,sizeof(LoaderParams)/sizeof(paramdef_t),LOADER_CONFIG_PREFIX);
   if (ret <0) {
-       fprintf(stderr,"[LOADER] configuration couldn't be performed");
+       fprintf(stderr,"[LOADER]  %s %d configuration couldn't be performed",__FILE__, __LINE__);
        if (loader_data.shlibpath == NULL) {
          loader_data.shlibpath=DEFAULT_PATH;
         }
        return;
-  }   
+  }
+  loader_data.shlibfunc = malloc(loader_data.maxshlibs * sizeof(loader_shlibfunc_t));
+  if(loader_data.shlibfunc == NULL) {
+     fprintf(stderr,"[LOADER]  %s %d memory allocation error %s\n",__FILE__, __LINE__,strerror(errno));
+     exit_fun("[LOADER] unrecoverable error");
+  }
 }
 
 int load_module_shlib(char *modname,loader_shlibfunc_t *farray, int numf)
@@ -85,7 +90,7 @@ int load_module_shlib(char *modname,loader_shlibfunc_t *farray, int numf)
       fprintf(stderr,"[LOADER] library %s is not loaded: %s\n", tmpstr,dlerror());
       ret = -1;
    } else {
-      printf("[LOADER] library %s uccessfully loaded loaded\n", tmpstr);
+      printf("[LOADER] library %s successfully loaded\n", tmpstr);
       sprintf(tmpstr,"%s_autoinit",modname);
       fpi = dlsym(lib_handle,tmpstr);
 

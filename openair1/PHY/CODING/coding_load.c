@@ -33,21 +33,6 @@
 #include "PHY/defs.h"
 #include "common/utils/load_module_shlib.h" 
 
-typedef uint8_t(*decoder_if_t)(int16_t *,
-    		    uint8_t *,
-    		    uint16_t,
-    		    uint16_t,
-    		    uint16_t,
-    		    uint8_t,
-    		    uint8_t,
-    		    uint8_t,
-    		    time_stats_t *,
-    		    time_stats_t *,
-    		    time_stats_t *,
-    		    time_stats_t *,
-    		    time_stats_t *,
-    		    time_stats_t *,
-    		    time_stats_t *);
 
 loader_shlibfunc_t shlib_fdesc[6];
 
@@ -78,7 +63,6 @@ uint8_t nofunc(short *y,
 };
 
 void decoding_setmode (int mode) {
-printf("decoding_setmode %i\n",mode);
    switch (mode) {
        case 2:
           decoder8=nofunc;
