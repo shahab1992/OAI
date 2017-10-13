@@ -205,41 +205,27 @@ uint8_t extract_cqi_crc(uint8_t *cqi,uint8_t CQI_LENGTH)
 
 }
 
+typedef uint8_t(*decoder_if_t)(int16_t *,
+    		    uint8_t *,
+    		    uint16_t,
+    		    uint16_t,
+    		    uint16_t,
+    		    uint8_t,
+    		    uint8_t,
+    		    uint8_t,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *);
 
 
 
+extern decoder_if_t decoder8;
+extern decoder_if_t decoder16;
 
-extern decoder8(int16_t *y,
-                uint8_t *,
-                uint16_t,
-                uint16_t,
-                uint16_t,
-                uint8_t,
-                uint8_t,
-                uint8_t,
-                time_stats_t *,
-                time_stats_t *,
-                time_stats_t *,
-                time_stats_t *,
-                time_stats_t *,
-                time_stats_t *,
-                time_stats_t *);
-
-extern decoder16(int16_t *y,
-                uint8_t *,
-                uint16_t,
-                uint16_t,
-                uint16_t,
-                uint8_t,
-                uint8_t,
-                uint8_t,
-                time_stats_t *,
-                time_stats_t *,
-                time_stats_t *,
-                time_stats_t *,
-                time_stats_t *,
-                time_stats_t *,
-                time_stats_t *);
 int ulsch_decoding_data_2thread0(td_params* tdp) {
 
   PHY_VARS_eNB *eNB = tdp->eNB;
@@ -279,7 +265,7 @@ int ulsch_decoding_data_2thread0(td_params* tdp) {
   if (llr8_flag == 0)
     tc = decoder16;
   else
-    tc =  decoder8;
+    tc = decoder8;
 
 
 
@@ -705,9 +691,9 @@ int ulsch_decoding_data(PHY_VARS_eNB *eNB,int UE_id,int harq_pid,int llr8_flag) 
                 time_stats_t *);
 
   if (llr8_flag == 0)
-    tc = decoder16;
+    tc = *decoder16;
   else
-    tc = decoder8;
+    tc = *decoder8;
 
 
   for (r=0; r<ulsch_harq->C; r++) {

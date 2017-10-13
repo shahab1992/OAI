@@ -29,17 +29,54 @@
  * \note
  * \warning
  */
+#include <sys/types.h>
+#include "PHY/defs.h"
 #include "common/utils/load_module_shlib.h" 
 
-  loader_shlibfunc_t shlib_fdesc[6];
+typedef uint8_t(*decoder_if_t)(int16_t *,
+    		    uint8_t *,
+    		    uint16_t,
+    		    uint16_t,
+    		    uint16_t,
+    		    uint8_t,
+    		    uint8_t,
+    		    uint8_t,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *,
+    		    time_stats_t *);
 
-int (*decoder16)(void);
-int (*decoder8)(void);
+loader_shlibfunc_t shlib_fdesc[6];
+
+decoder_if_t    decoder16;
+decoder_if_t    decoder8;
 
 
 extern int _may_i_use_cpu_feature(unsigned __int64);
 
-void nofunc(void) { printf(".");return;};
+uint8_t nofunc(short *y,
+    unsigned char *decoded_bytes,
+    unsigned short n,
+    unsigned short f1,
+    unsigned short f2,
+    unsigned char max_iterations,
+    unsigned char crc_type,
+    unsigned char F,
+    time_stats_t *init_stats,
+    time_stats_t *alpha_stats,
+    time_stats_t *beta_stats,
+    time_stats_t *gamma_stats,
+    time_stats_t *ext_stats,
+    time_stats_t *intl1_stats,
+    time_stats_t *intl2_stats)
+{
+ printf(".");
+ return 0;
+};
+
 void decoding_setmode (int mode) {
 printf("decoding_setmode %i\n",mode);
    switch (mode) {
@@ -48,12 +85,12 @@ printf("decoding_setmode %i\n",mode);
           decoder16=nofunc;
        break;
        case 1:
-          decoder8=shlib_fdesc[2].fptr; 
-          decoder16=shlib_fdesc[3].fptr;         
+          decoder8=(decoder_if_t)shlib_fdesc[2].fptr; 
+          decoder16=(decoder_if_t)shlib_fdesc[3].fptr;         
        break;
        case 0:
-          decoder16=shlib_fdesc[4].fptr;
-          decoder8=shlib_fdesc[4].fptr;   
+          decoder16=(decoder_if_t)shlib_fdesc[4].fptr;
+          decoder8=(decoder_if_t)shlib_fdesc[4].fptr;   
        break;
    }
 
@@ -80,7 +117,7 @@ int load_codinglib(void) {
 
     
      ret=load_module_shlib("coding",shlib_fdesc,6);
-     if (ret < 0) exit_fun();
+     if (ret < 0) exit_fun("Error loading coding library");
      
      shlib_fdesc[0].fptr();
      shlib_fdesc[1].fptr();
